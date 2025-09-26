@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -12,6 +13,8 @@ interface AuthContextType {
     activeSchoolId: string | null;
     switchSchoolContext: (schoolId: string | null) => void;
     effectiveRole: UserRole | null;
+    profileSetupNeeded: boolean;
+    completeProfileSetup: (name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,21 +23,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
+    const [profileSetupNeeded, setProfileSetupNeeded] = useState(false);
+    const [tempSession, setTempSession] = useState<Session | null>(null);
 
     const fetchUserProfile = async (session: Session | null) => {
+        setProfileSetupNeeded(false);
+        setTempSession(null);
+
         if (session?.user) {
             try {
-                const { data: profile } = await supabase
+                const { data: profile, error } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
                 
+                // The error check handles cases where .single() fails because no rows are found
                 if (profile) {
                     setUser(profile as User);
                 } else {
-                    console.warn("Could not fetch user profile for session:", session.user.id);
-                    setUser(null);
+                    console.warn("User profile not found. Initiating setup.");
+                    setUser({ id: session.user.id, email: session.user.email } as User); // Set a partial user for context
+                    setProfileSetupNeeded(true);
+                    setTempSession(session);
                 }
             } catch (error) {
                 console.error("Error fetching user profile:", error);
@@ -46,7 +57,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     useEffect(() => {
-        // Fetch initial session on component mount
         const fetchInitialSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             await fetchUserProfile(session);
@@ -55,7 +65,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         fetchInitialSession();
 
-        // Listen for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             await fetchUserProfile(session);
         });
@@ -64,6 +73,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             subscription?.unsubscribe();
         };
     }, []);
+    
+    const completeProfileSetup = async (name: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+        if (!tempSession?.user?.email) {
+            return { success: false, error: 'No active session found.' };
+        }
+        
+        const { error } = await supabase.from('profiles').insert({
+            id: tempSession.user.id,
+            name,
+            email: tempSession.user.email,
+            role,
+            school_id: null,
+            status: 'Active',
+        });
+
+        if (error) {
+            console.error("Failed to create user profile:", error.message);
+            return { success: false, error: "Could not create your user profile. Please try again or contact support." };
+        }
+
+        await fetchUserProfile(tempSession);
+        return { success: true };
+    };
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
@@ -95,18 +127,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 name,
                 email,
                 role,
-                school_id: 'd9d2d8b8-0b8b-4f8e-8b8b-8b8b8b8b8b8b', // A default school ID placeholder
+                school_id: null, // An owner will create their school later.
                 status: 'Pending Approval',
             });
 
             if (profileError) {
-                // In a production app, you might want to delete the created auth user
-                // to avoid orphaned accounts. This requires admin privileges.
                 console.error("Failed to create user profile:", profileError.message);
                 return { success: false, error: "Could not create your user profile. Please contact support." };
             }
-
-            // Success. User needs to confirm their email.
             return { success: true };
         }
         
@@ -128,7 +156,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, activeSchoolId, switchSchoolContext, effectiveRole }}>
+        <AuthContext.Provider value={{ user, login, logout, register, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded, completeProfileSetup }}>
             {children}
         </AuthContext.Provider>
     );

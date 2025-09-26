@@ -11,11 +11,12 @@ import { ToastProvider } from './context/ToastContext';
 import { SyncProvider } from './context/SyncContext';
 import { PrintProvider, usePrint } from './context/PrintContext';
 import PrintPreview from './components/common/PrintPreview';
+import AccountSetupPage from './components/auth/AccountSetupPage';
 
 type AuthView = 'login' | 'register';
 
 const AppContent: React.FC = () => {
-    const { user } = useAuth();
+    const { user, profileSetupNeeded } = useAuth();
     const [authView, setAuthView] = useState<AuthView>('login');
     const { isPrinting } = usePrint();
 
@@ -24,6 +25,10 @@ const AppContent: React.FC = () => {
             return <LoginPage onSwitchToRegister={() => setAuthView('register')} />;
         }
         return <RegisterPage onSwitchToLogin={() => setAuthView('login')} />;
+    }
+
+    if (profileSetupNeeded) {
+        return <AccountSetupPage />;
     }
 
     return (
