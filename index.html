@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduSync - Student Record Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},
+              secondary: {"50":"#f8fafc","100":"#f1f5f9","200":"#e2e8f0","300":"#cbd5e1","400":"#94a3b8","500":"#64748b","600":"#475569","700":"#334155","800":"#1e293b","900":"#0f172a","950":"#020617"}
+            },
+            fontFamily: {
+              'body': [
+                'Inter', 
+                'ui-sans-serif', 
+                'system-ui', 
+                '-apple-system', 
+                'system-ui', 
+                'Segoe UI', 
+                'Roboto', 
+                'Helvetica Neue', 
+                'Arial', 
+                'Noto Sans', 
+                'sans-serif', 
+                'Apple Color Emoji', 
+                'Segoe UI Emoji', 
+                'Segoe UI Symbol', 
+                'Noto Color Emoji'
+              ],
+              'sans': [
+                'Inter', 
+                'ui-sans-serif', 
+                'system-ui', 
+                '-apple-system', 
+                'system-ui', 
+                'Segoe UI', 
+                'Roboto', 
+                'Helvetica Neue', 
+                'Arial', 
+                'Noto Sans', 
+                'sans-serif', 
+                'Apple Color Emoji', 
+                'Segoe UI Emoji', 
+                'Segoe UI Symbol', 
+                'Noto Color Emoji'
+              ]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @media print {
+        /* --- Universal Reset --- */
+        *,
+        *::before,
+        *::after {
+          background: transparent !important;
+          color: #000 !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          font-size: 10pt;
+          line-height: 1.3;
+          margin: 0;
+          padding: 0;
+        }
+        
+        /* --- Hide Screen-Only Elements --- */
+        .no-print, .no-print * {
+          display: none !important;
+        }
+        
+        /* --- FIX: Styles for PrintPreview component --- */
+        /* This ensures the fixed-position preview overlay becomes a static, printable block */
+        .print-preview-root {
+          position: static !important;
+          background: none !important;
+        }
+        
+        .print-preview-root > main {
+          overflow: visible !important;
+          padding: 0 !important;
+        }
+
+        /* --- Page Setup --- */
+        @page {
+          size: A4 portrait;
+          margin: 0.75in;
+        }
+        
+        /* --- Layout & Spacing --- */
+        main, .printable-report, .printable-area {
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          border-radius: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          box-shadow: none !important;
+        }
+        
+        /* --- Typography --- */
+        a {
+          text-decoration: none;
+          color: inherit;
+        }
+        p, h1, h2, h3, h4, h5, h6 {
+          orphans: 3;
+          widows: 3;
+        }
+        h2, h3 {
+          page-break-after: avoid;
+        }
+        
+        /* --- Table Styling --- */
+        table {
+          width: 100%;
+          border-collapse: collapse !important;
+          font-size: 9pt;
+        }
+        thead {
+          display: table-header-group; /* Repeat headers on each page */
+        }
+        tr, td, th {
+          page-break-inside: avoid !important;
+        }
+        th, td {
+          border: 1px solid #ccc !important;
+          padding: 4px 6px;
+        }
+        
+        /* --- Component-Specific Rules --- */
+
+        /* Report Card */
+        .printable-result-card {
+          page-break-inside: avoid;
+          border: 1px solid #000 !important;
+          box-shadow: none !important;
+          margin-bottom: 1in; /* Space between cards if multiple on one page */
+        }
+
+        /* Leaving Certificate */
+        @page certificate {
+          size: A4 landscape;
+          margin: 0;
+        }
+        .leaving-certificate-page {
+          page: certificate;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+          border: 4px double #000 !important;
+        }
+
+        /* Fee Challan (Single View) */
+        #printable-challan-wrapper {
+          position: static !important;
+          width: 100% !important;
+          height: auto !important;
+          box-shadow: none !important;
+          border: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .printable-challan-instance {
+          border: 2px solid #000 !important;
+          page-break-inside: avoid !important;
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+        }
+        #printable-challan-wrapper .school-copy { 
+            width: 40% !important;
+            border-right: 2px dashed #888 !important;
+        }
+        #printable-challan-wrapper .parent-copy { width: 60% !important; }
+        
+        /* Fee Challan (3-per-page Report) */
+        .challan-print-container .challan-page {
+          page-break-after: always;
+          display: flex;
+          flex-direction: column;
+          height: 100%; /* Use % instead of vh */
+          width: 100%;
+        }
+        .challan-print-container .challan-page:last-child {
+          page-break-after: auto;
+        }
+        .challan-print-instance {
+          display: flex;
+          flex: 1; /* Distribute space evenly */
+          border: 1px solid #000 !important;
+          overflow: hidden;
+        }
+        .challan-page .challan-print-instance:not(:last-child) {
+          border-bottom: 2px dashed #888 !important;
+        }
+        .challan-print-instance .school-copy {
+          width: 40% !important;
+          border-right: 2px dashed #888 !important;
+        }
+        .challan-print-instance .parent-copy {
+          width: 60% !important;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/+esm"
+  }
+}
+</script>
+</head>
+  <body class="bg-secondary-50 dark:bg-secondary-900">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
