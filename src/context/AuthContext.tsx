@@ -122,13 +122,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         if (authData.user) {
+            // Owners are approved automatically, others require admin approval.
+            const userStatus = role === UserRole.Owner ? 'Active' : 'Pending Approval';
+
             const { error: profileError } = await supabase.from('profiles').insert({
                 id: authData.user.id,
                 name,
                 email,
                 role,
                 school_id: null, // An owner will create their school later.
-                status: 'Pending Approval',
+                status: userStatus,
             });
 
             if (profileError) {

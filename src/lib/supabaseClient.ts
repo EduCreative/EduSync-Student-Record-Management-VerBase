@@ -1,12 +1,7 @@
-// FIX: The error "Cannot find type definition file for 'vite/client'" indicates a problem
-// with the TypeScript configuration (tsconfig.json). Since I cannot modify that file, this
-// change uses a type assertion `as any` to bypass the related TypeScript errors for `import.meta.env`.
-// The triple-slash directive was removed as it was the source of the first error.
-// The ideal solution is to fix the project's tsconfig.json to correctly include Vite's client types.
-
 import { createClient } from '@supabase/supabase-js';
 
-// FIX: Cast import.meta.env to `any` to bypass TypeScript errors when Vite client types are not loaded.
+// FIX: The error "Property 'env' does not exist on type 'ImportMeta'" is caused by missing Vite client types.
+// Casting `import.meta.env` to `any` bypasses this TypeScript error without needing to modify tsconfig.json.
 const supabaseUrl = (import.meta.env as any).VITE_SUPABASE_URL;
 const supabaseAnonKey = (import.meta.env as any).VITE_SUPABASE_ANON_KEY;
 

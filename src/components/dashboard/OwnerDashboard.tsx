@@ -1,23 +1,9 @@
-
-
 import React, { useMemo } from 'react';
-import { useData } from '../../context/DataContext';
-import { UserRole } from '../../types';
-import DoughnutChart from '../charts/DoughnutChart';
-import BarChart from '../charts/BarChart';
-
-// FIX: Changed JSX.Element to React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
-const StatCard: React.FC<{ title: string; value: string; icon: React.ReactElement; color: string }> = ({ title, value, icon, color }) => (
-    <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-transform transform hover:scale-105">
-        <div className={`p-3 rounded-full ${color}`}>
-            {icon}
-        </div>
-        <div>
-            <p className="text-sm text-secondary-500 dark:text-secondary-400">{title}</p>
-            <p className="text-2xl font-bold text-secondary-800 dark:text-secondary-100">{value}</p>
-        </div>
-    </div>
-);
+import { useData } from '../../context/DataContext.tsx';
+import { UserRole } from '../../types.ts';
+import DoughnutChart from '../charts/DoughnutChart.tsx';
+import BarChart from '../charts/BarChart.tsx';
+import StatCard from '../common/StatCard.tsx';
 
 const OwnerDashboard: React.FC = () => {
     const { schools, users, students, fees } = useData();
@@ -64,11 +50,11 @@ const OwnerDashboard: React.FC = () => {
             
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <StatCard title="Total Schools" value={schools.length.toString()} color="bg-primary-100 dark:bg-primary-900 dark:bg-opacity-50 text-primary-600 dark:text-primary-300" icon={<SchoolIcon className="w-6 h-6" />} />
-                <StatCard title="Total Users" value={users.length.toString()} color="bg-green-100 dark:bg-green-900 dark:bg-opacity-50 text-green-600 dark:text-green-300" icon={<UserCheckIcon className="w-6 h-6" />} />
-                <StatCard title="Total Students" value={students.length.toString()} color="bg-indigo-100 dark:bg-indigo-900 dark:bg-opacity-50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon className="w-6 h-6" />} />
-                <StatCard title="Total Fee Collection" value={`Rs. ${stats.totalCollection.toLocaleString()}`} color="bg-pink-100 dark:bg-pink-900 dark:bg-opacity-50 text-pink-600 dark:text-pink-300" icon={<CreditCardIcon className="w-6 h-6" />} />
-                <StatCard title="Pending Approvals" value={stats.pendingApprovals.toString()} color="bg-orange-100 dark:bg-orange-900 dark:bg-opacity-50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon className="w-6 h-6" />} />
+                <StatCard title="Total Schools" value={schools.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<SchoolIcon />} />
+                <StatCard title="Total Users" value={users.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<UserCheckIcon />} />
+                <StatCard title="Total Students" value={students.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} />
+                <StatCard title="Total Fee Collection" value={`Rs. ${stats.totalCollection.toLocaleString()}`} color="bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300" icon={<CreditCardIcon />} />
+                <StatCard title="Pending Approvals" value={stats.pendingApprovals.toString()} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon />} />
             </div>
 
             {/* Charts */}
