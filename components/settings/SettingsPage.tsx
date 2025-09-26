@@ -74,12 +74,13 @@ const SettingsPage: React.FC = () => {
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            // FIX: Ensure the file reader result is a string before processing.
-            if (!e.target || typeof e.target.result !== 'string') {
+            const result = e.target?.result;
+            // FIX: The result from FileReader can be an ArrayBuffer. Added a type guard to ensure it's a string before processing.
+            if (typeof result !== 'string') {
                 showToast('Error', 'Could not read file.', 'error');
                 return;
             }
-            const text = e.target.result;
+            const text = result;
             const lines = text.split('\n').filter(line => line.trim() !== '');
             const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
             

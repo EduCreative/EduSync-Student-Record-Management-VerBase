@@ -1,13 +1,14 @@
 # EduSync - Modern Student Record Management System
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue?logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase)](https://supabase.io/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite)](https://vitejs.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-2-3ECF8E?logo=supabase)](https://supabase.io/)
 
 **EduSync** is a comprehensive, responsive Student Record Management System designed for educational institutions. It provides a seamless, modern interface for managing all aspects of school administration, from student enrollment to financial reporting. Built with a robust, role-based access system, it offers tailored experiences for everyone from the school owner to the students themselves.
 
-The application is architected as a client-side React application powered by Supabase, offering real-time data synchronization and offline capabilities.
+The application is architected as a client-side React application powered by Supabase, offering real-time data synchronization and a rich, offline-capable user experience.
 
 ---
 
@@ -72,23 +73,23 @@ The application can be configured with demo accounts for each role. For a demons
 ## 🛠️ Technology Stack
 
 - **Frontend:** [React](https://reactjs.org/) 18.2, [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite](https://vitejs.dev/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Backend as a Service (BaaS):** [Supabase](https://supabase.io/) (for database, authentication, and storage)
 - **State Management:** React Context API
 - **Charts:** Custom-built SVG components (no external charting libraries)
-- **Dependencies:** Loaded via CDN (`esm.sh`) using an `importmap` in `index.html`, eliminating the need for `npm install`.
 
 ---
 
 ## 🚀 Setup and Installation
 
-This project is configured to run easily with minimal setup, connecting to a Supabase backend.
+This project is configured to run with a modern frontend toolchain (Vite) and connect to a Supabase backend.
 
 ### 1. Prerequisites
 
-- A modern web browser (Chrome, Firefox, Edge).
-- A Supabase account ([free tier is sufficient](https://supabase.com/)).
-- A local web server to serve the files (e.g., VS Code Live Server extension or `npx serve`).
+- [Node.js](https://nodejs.org/) (version 18 or higher)
+- A [Supabase](https://supabase.com/) account (free tier is sufficient)
+- A code editor like [VS Code](https://code.visualstudio.com/)
 
 ### 2. Supabase Configuration
 
@@ -109,34 +110,33 @@ This project is configured to run easily with minimal setup, connecting to a Sup
 
 ### 3. Local Setup
 
-1.  **Download the Project Files:**
-    - Clone or download the repository to your local machine.
+1.  **Clone the Repository:**
+    ```bash
+    git clone <repository-url>
+    cd edusync-student-record-management-verbase
+    ```
 
-2.  **Configure Supabase Client:**
-    - Create a `.env` file in the root of the project.
+2.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Configure Environment Variables:**
+    - Create a file named `.env` in the root of the project.
     - Add your Supabase credentials to this file:
     ```
-    VITE_SUPABASE_URL=YOUR_SUPABASE_URL
-    VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+    VITE_SUPABASE_URL=YOUR_SUPABASE_PROJECT_URL
+    VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_PUBLIC_KEY
     ```
-    - The `lib/supabaseClient.ts` file is already configured to read these variables.
+    - The `src/lib/supabaseClient.ts` file is already configured to read these variables.
 
 ### 4. Running the Application
 
-Because the application uses modern JavaScript modules (`import`/`export`), you need to serve it from a local web server. Opening `index.html` directly from the file system will not work.
-
-**Option A: Using VS Code Live Server**
-1. Install the [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension in Visual Studio Code.
-2. Right-click on `index.html` in the file explorer and select "Open with Live Server".
-
-**Option B: Using a Terminal**
-1. Make sure you have Node.js installed.
-2. Open a terminal in the project's root directory.
-3. Run the following command:
-   ```bash
-   npx serve
-   ```
-4. Open your browser and navigate to the local address provided by the server (e.g., `http://localhost:3000`).
+1.  **Start the Development Server:**
+    ```bash
+    npm run dev
+    ```
+2.  Open your browser and navigate to the local address provided by Vite (e.g., `http://localhost:5173`).
 
 ---
 
@@ -144,25 +144,31 @@ Because the application uses modern JavaScript modules (`import`/`export`), you 
 
 ```
 /
-├── components/         # Reusable React components
-│   ├── auth/           # Login, Register pages
-│   ├── charts/         # Custom chart components
-│   ├── common/         # Shared components (Avatar, Modal, etc.)
-│   ├── dashboard/      # Role-specific dashboard components
-│   ├── fees/           # Fee management components
-│   ├── layout/         # Header, Sidebar, main Layout
-│   ├── reports/        # Report generation and viewing components
-│   └── ...             # Other feature-specific components
-├── context/            # React Context providers for state management
-│   ├── AuthContext.tsx
-│   ├── DataContext.tsx   # Main data store and API logic
-│   ├── PrintContext.tsx  # Handles the print preview functionality
-│   └── ...
-├── lib/                # Third-party service clients
-│   └── supabaseClient.ts # Supabase client initialization
-├── types.ts            # Core TypeScript types and interfaces
-├── constants.ts        # App-wide constants (e.g., navigation links)
-├── App.tsx             # Main application component
-├── index.tsx           # React root entry point
-└── index.html          # The single HTML page
+├── public/               # Static assets
+├── src/
+│   ├── components/       # Reusable React components
+│   │   ├── auth/         # Login, Register pages
+│   │   ├── charts/       # Custom chart components
+│   │   ├── common/       # Shared components (Avatar, Modal, etc.)
+│   │   ├── dashboard/    # Role-specific dashboard components
+│   │   ├── fees/         # Fee management components
+│   │   ├── layout/       # Header, Sidebar, main Layout
+│   │   └── ...           # Other feature-specific components
+│   ├── context/          # React Context providers for state management
+│   │   ├── AuthContext.tsx
+│   │   ├── DataContext.tsx
+│   │   └── ...
+│   ├── lib/              # Third-party service clients
+│   │   └── supabaseClient.ts
+│   ├── types.ts          # Core TypeScript types and interfaces
+│   ├── constants.tsx     # App-wide constants
+│   ├── App.tsx           # Main application component
+│   ├── main.tsx          # React root entry point
+│   └── index.css         # Tailwind CSS entry
+├── .env.example          # Example environment file
+├── index.html            # The single HTML page entry
+├── package.json
+├── tailwind.config.js
+├── tsconfig.json
+└── vite.config.ts
 ```

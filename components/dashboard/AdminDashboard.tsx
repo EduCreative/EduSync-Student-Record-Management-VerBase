@@ -1,12 +1,12 @@
 
 import React, { useMemo } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
-import { UserRole, FeeChallan, Attendance, User } from '../../types';
-import Badge from '../common/Badge';
-import DoughnutChart from '../charts/DoughnutChart';
-import BarChart from '../charts/BarChart';
-import Avatar from '../common/Avatar';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { useData } from '../../context/DataContext.tsx';
+import { UserRole, FeeChallan, Attendance, User } from '../../types.ts';
+import Badge from '../common/Badge.tsx';
+import DoughnutChart from '../charts/DoughnutChart.tsx';
+import BarChart from '../charts/BarChart.tsx';
+import Avatar from '../common/Avatar.tsx';
 
 // FIX: Changed JSX.Element to React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
 const StatCard: React.FC<{ title: string; value: string; icon: React.ReactElement; color: string }> = ({ title, value, icon, color }) => (

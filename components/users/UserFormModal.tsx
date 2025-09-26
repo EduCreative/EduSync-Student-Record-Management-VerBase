@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, UserRole } from '../../types';
-import Modal from './Modal';
-import { useData } from '../../context/DataContext';
-import { useAuth } from '../../context/AuthContext';
-import { NAV_LINKS } from '../../constants';
-import ImageUpload from '../common/ImageUpload';
+import { User, UserRole } from '../../types.ts';
+import Modal from './Modal.tsx';
+import { useData } from '../../context/DataContext.tsx';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { NAV_LINKS } from '../../constants.ts';
+import ImageUpload from '../common/ImageUpload.tsx';
 
 interface UserFormModalProps {
     isOpen: boolean;

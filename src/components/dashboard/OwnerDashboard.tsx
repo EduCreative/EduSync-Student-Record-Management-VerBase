@@ -1,9 +1,10 @@
 
+
 import React, { useMemo } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { UserRole } from '../../types.ts';
-import DoughnutChart from '../charts/DoughnutChart.tsx';
-import BarChart from '../charts/BarChart.tsx';
+import { useData } from '../../context/DataContext';
+import { UserRole } from '../../types';
+import DoughnutChart from '../charts/DoughnutChart';
+import BarChart from '../charts/BarChart';
 
 // FIX: Changed JSX.Element to React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
 const StatCard: React.FC<{ title: string; value: string; icon: React.ReactElement; color: string }> = ({ title, value, icon, color }) => (
@@ -49,8 +50,6 @@ const OwnerDashboard: React.FC = () => {
             [UserRole.Student]: '#3b82f6',
         };
 
-        // FIX: Replaced Object.entries with Object.keys for better type inference.
-        // This ensures that `roleCounts[role]` is correctly typed as a number, resolving the ChartDataItem type mismatch.
         return (Object.keys(roleCounts) as UserRole[]).map(role => ({
             label: role,
             value: roleCounts[role],

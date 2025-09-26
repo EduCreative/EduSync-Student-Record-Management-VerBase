@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
-import { User, UserRole } from '../../types';
-import Badge from '../common/Badge';
-import UserFormModal from './UserFormModal';
-import Modal from './Modal';
-import Avatar from '../common/Avatar';
-import { formatDateTime } from '../../constants';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { useData } from '../../context/DataContext.tsx';
+import { User, UserRole } from '../../types.ts';
+import Badge from '../common/Badge.tsx';
+import UserFormModal from './UserFormModal.tsx';
+import Modal from './Modal.tsx';
+import Avatar from '../common/Avatar.tsx';
+import { formatDateTime } from '../../constants.ts';
 
 const UserManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { UserRole } from './types';
+import { UserRole } from './types.ts';
 
 // FIX: Converted all JSX to React.createElement calls to make the file valid TypeScript without changing its extension to .tsx. This resolves errors from attempting to parse JSX in a .ts file.
 

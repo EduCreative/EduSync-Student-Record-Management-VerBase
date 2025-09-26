@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types.ts';
-import { useAuth } from './AuthContext.tsx';
-import { useToast } from './ToastContext.tsx';
-import { useSync } from './SyncContext.tsx';
-import { supabase } from '../lib/supabaseClient.ts';
+import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
+import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
+import { useSync } from './SyncContext';
+import { supabase } from '../lib/supabaseClient';
 
 // Helper to convert snake_case object keys to camelCase
 const toCamelCase = (obj: any): any => {

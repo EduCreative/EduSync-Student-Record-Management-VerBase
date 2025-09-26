@@ -1,13 +1,14 @@
 
+
 import React from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { UserRole } from '../../types.ts';
-import OwnerDashboard from './OwnerDashboard.tsx';
-import AdminDashboard from './AdminDashboard.tsx';
-import AccountantDashboard from './AccountantDashboard.tsx';
-import TeacherDashboard from './TeacherDashboard.tsx';
-import ParentDashboard from './ParentDashboard.tsx';
-import StudentDashboard from './StudentDashboard.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
+import OwnerDashboard from './OwnerDashboard';
+import AdminDashboard from './AdminDashboard';
+import AccountantDashboard from './AccountantDashboard';
+import TeacherDashboard from './TeacherDashboard';
+import ParentDashboard from './ParentDashboard';
+import StudentDashboard from './StudentDashboard';
 
 
 const Dashboard: React.FC = () => {

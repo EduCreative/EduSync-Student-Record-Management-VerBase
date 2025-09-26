@@ -1,12 +1,13 @@
 
 
 
+
 import React, { useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { NAV_LINKS, formatDateTime } from '../../constants.ts';
-import { ActiveView } from './Layout.tsx';
-import { UserRole } from '../../types.ts';
-import { useSync } from '../../context/SyncContext.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { NAV_LINKS, formatDateTime } from '../../constants';
+import { ActiveView } from './Layout';
+import { UserRole } from '../../types';
+import { useSync } from '../../context/SyncContext';
 
 interface SidebarProps {
     sidebarOpen: boolean;
@@ -68,8 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeVi
                                 onClick={() => handleLinkClick(link.path)}
                                 className={`w-full flex items-center p-2 text-secondary-200 rounded-lg hover:bg-primary-700 dark:hover:bg-secondary-700 group ${isActive ? 'bg-primary-700 dark:bg-secondary-700' : ''}`}
                             >
-                                {/* FIX: Replaced direct rendering with React.cloneElement to correctly add className prop, fixing "Spread types may only be created from object types" error. */}
-                                {/* FIX: Cast element to a type that accepts className to resolve TS inference issue. */}
+                                {/* FIX: Cast icon to React.ReactElement<any> to allow passing the className prop without TypeScript errors. */}
                                 {React.cloneElement(link.icon as React.ReactElement<any>, { className: "w-6 h-6 text-secondary-300" })}
                                 <span className="ml-3 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-200">{link.name}</span>
                             </button>

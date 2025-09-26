@@ -1,23 +1,23 @@
 
 import React, { useState } from 'react';
-import Header from './Header.tsx';
-import Sidebar from './Sidebar.tsx';
-import Dashboard from '../dashboard/Dashboard.tsx';
-import UserManagementPage from '../users/UserManagementPage.tsx';
-import StudentManagementPage from '../students/StudentManagementPage.tsx';
-import StudentProfilePage from '../students/StudentProfilePage.tsx';
-import SettingsPage from '../settings/SettingsPage.tsx';
-import AttendancePage from '../attendance/AttendancePage.tsx';
-import FeeManagementPage from '../fees/FeeManagementPage.tsx';
-import ResultsPage from '../results/ResultsPage.tsx';
-import UserLogsPage from '../logs/UserLogsPage.tsx';
-import SchoolManagementPage from '../schools/SchoolManagementPage.tsx';
-import CalendarPage from '../calendar/CalendarPage.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { UserRole } from '../../types.ts';
-import LeavingCertificatePage from '../students/LeavingCertificatePage.tsx';
-import ReportsPage from '../reports/ReportsPage.tsx';
-import ToastContainer from '../common/ToastContainer.tsx';
+import Header from './Header';
+import Sidebar from './Sidebar';
+import Dashboard from '../dashboard/Dashboard';
+import UserManagementPage from '../users/UserManagementPage';
+import StudentManagementPage from '../students/StudentManagementPage';
+import StudentProfilePage from '../students/StudentProfilePage';
+import SettingsPage from '../settings/SettingsPage';
+import AttendancePage from '../attendance/AttendancePage';
+import FeeManagementPage from '../fees/FeeManagementPage';
+import ResultsPage from '../results/ResultsPage';
+import UserLogsPage from '../logs/UserLogsPage';
+import SchoolManagementPage from '../schools/SchoolManagementPage';
+import CalendarPage from '../calendar/CalendarPage';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
+import LeavingCertificatePage from '../students/LeavingCertificatePage';
+import ReportsPage from '../reports/ReportsPage';
+import ToastContainer from '../common/ToastContainer';
 
 export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountant' | 'schools' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | string;
 

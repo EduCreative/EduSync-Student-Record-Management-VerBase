@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -112,7 +111,7 @@ const ClassListReport: React.FC = () => {
                         <tbody>
                             {reportData.map(student => (
                                 <tr key={student.id} className="border-b dark:border-secondary-700">
-                                    {activeFields.map(field => <td key={field.key} className="px-4 py-2">{student[field.key] as string}</td>)}
+                                    {activeFields.map(field => <td key={field.key} className="px-4 py-2">{String(student[field.key] ?? '')}</td>)}
                                 </tr>
                             ))}
                         </tbody>

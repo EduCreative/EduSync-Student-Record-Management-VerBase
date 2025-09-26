@@ -40,12 +40,12 @@ const GenerateChallansModal: React.FC<GenerateChallansModalProps> = ({ isOpen, o
 
     const handleFeeHeadToggle = (feeHeadId: string) => {
         setFeeHeadSelections(prev => {
-            // FIX: Provide a default object for `current` to ensure type safety, as `prev[feeHeadId]` can be undefined for new entries.
+            // FIX: `prev[feeHeadId]` can be undefined. Provide a default object to avoid runtime errors when accessing properties.
             const current = prev[feeHeadId] || { selected: false, amount: 0 };
             return {
                 ...prev,
                 [feeHeadId]: {
-                    amount: current.amount,
+                    ...current,
                     selected: !current.selected,
                 },
             };
@@ -54,12 +54,12 @@ const GenerateChallansModal: React.FC<GenerateChallansModalProps> = ({ isOpen, o
 
     const handleAmountChange = (feeHeadId: string, value: string) => {
         setFeeHeadSelections(prev => {
-            // FIX: Provide a default object for `current` to ensure type safety, as `prev[feeHeadId]` can be undefined for new entries.
+            // FIX: `prev[feeHeadId]` can be undefined. Provide a default object to avoid runtime errors when accessing properties.
             const current = prev[feeHeadId] || { selected: false, amount: 0 };
             return {
                 ...prev,
                 [feeHeadId]: {
-                    selected: current.selected,
+                    ...current,
                     amount: Number(value) >= 0 ? Number(value) : 0,
                 },
             };

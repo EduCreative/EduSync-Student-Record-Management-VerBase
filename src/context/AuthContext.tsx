@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '../types.ts';
-import { supabase } from '../lib/supabaseClient.ts';
+import { User, UserRole } from '../types';
+import { supabase } from '../lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
 
 
