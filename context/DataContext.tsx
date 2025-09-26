@@ -102,50 +102,87 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const fetchData = async () => {
             if (!user) {
                 setLoading(false);
+                setSchools([]);
+                setUsers([]);
+                setClasses([]);
+                setStudents([]);
+                setAttendanceState([]);
+                setFees([]);
+                setResults([]);
+                setLogs([]);
+                setFeeHeads([]);
+                setEvents([]);
                 return;
             };
+
             setLoading(true);
+
+            // Helper function to fetch data from a single table and handle errors gracefully
+            const fetchTable = async (tableName: string, options: { order?: string, limit?: number } = {}) => {
+                let query = supabase.from(tableName).select('*');
+                if (options.order) {
+                    query = query.order(options.order, { ascending: false });
+                }
+                if (options.limit) {
+                    query = query.limit(options.limit);
+                }
+                const { data, error } = await query;
+                if (error) {
+                    console.error(`Error fetching ${tableName}:`, error.message);
+                    showToast('Fetch Error', `Could not load data for '${tableName}'. Check console, RLS policies, and if the table exists.`, 'error');
+                    return []; // Return an empty array on error to prevent app crash
+                }
+                return toCamelCase(data || []);
+            };
+
             try {
+                // FIX: Re-enabled fetching for all tables now that the user has run the schema.sql script.
                 const [
-                    schoolsRes, usersRes, classesRes, studentsRes, 
-                    attendanceRes, feesRes, resultsRes, logsRes, 
-                    feeHeadsRes, eventsRes
+                    schoolsData, 
+                    usersData, 
+                    classesData, 
+                    studentsData,
+                    attendanceData,
+                    feesData,
+                    resultsData,
+                    logsData,
+                    feeHeadsData,
+                    eventsData
                 ] = await Promise.all([
-                    supabase.from('schools').select('*'),
-                    supabase.from('profiles').select('*'), // Users are in the 'profiles' table
-                    supabase.from('classes').select('*'),
-                    supabase.from('students').select('*'),
-                    supabase.from('attendance').select('*'),
-                    supabase.from('fee_challans').select('*'),
-                    supabase.from('results').select('*'),
-                    supabase.from('activity_logs').select('*').order('timestamp', { ascending: false }).limit(100),
-                    supabase.from('fee_heads').select('*'),
-                    supabase.from('school_events').select('*'),
+                    fetchTable('schools'),
+                    fetchTable('profiles'), 
+                    fetchTable('classes'),
+                    fetchTable('students'),
+                    fetchTable('attendance'),
+                    fetchTable('fee_challans'),
+                    fetchTable('results'),
+                    fetchTable('activity_logs', { order: 'timestamp', limit: 100 }),
+                    fetchTable('fee_heads'),
+                    fetchTable('school_events'),
                 ]);
 
-                // Assuming Supabase returns snake_case, we convert to camelCase for the app
-                setSchools(toCamelCase(schoolsRes.data || []));
-                setUsers(toCamelCase(usersRes.data || []));
-                setClasses(toCamelCase(classesRes.data || []));
-                setStudents(toCamelCase(studentsRes.data || []));
-                setAttendanceState(toCamelCase(attendanceRes.data || []));
-                setFees(toCamelCase(feesRes.data || []));
-                setResults(toCamelCase(resultsRes.data || []));
-                setLogs(toCamelCase(logsRes.data || []));
-                setFeeHeads(toCamelCase(feeHeadsRes.data || []));
-                setEvents(toCamelCase(eventsRes.data || []));
-                updateSyncTime();
+                setSchools(schoolsData);
+                setUsers(usersData);
+                setClasses(classesData);
+                setStudents(studentsData);
+                setAttendanceState(attendanceData);
+                setFees(feesData);
+                setResults(resultsData);
+                setLogs(logsData);
+                setFeeHeads(feeHeadsData);
+                setEvents(eventsData);
                 
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                showToast('Error', 'Failed to load application data.', 'error');
+                updateSyncTime();
+            } catch (error) { // This catch is for unexpected programming errors
+                console.error("A critical error occurred during data processing:", error);
+                showToast('Critical Error', 'An unexpected error occurred. Please check the console.', 'error');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [user]);
+    }, [user, showToast, updateSyncTime]);
     
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;

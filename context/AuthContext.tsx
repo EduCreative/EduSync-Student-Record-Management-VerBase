@@ -1,8 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
-// FIX: Removed import of AuthChangeEvent and Session as they are not exported in some Supabase versions, causing errors.
-// The types will be inferred or set to 'string' and 'any' for broader compatibility.
+import { Session } from '@supabase/supabase-js';
 
 
 interface AuthContextType {
@@ -22,52 +21,52 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
 
-    useEffect(() => {
-        // FIX: Replaced non-exported Supabase types AuthChangeEvent with string and Session with any for compatibility.
-        const handleAuthChange = async (_event: string, session: any | null) => {
-            setLoading(true);
-            if (session?.user) {
-                try {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-                    
-                    if (profile) {
-                        setUser(profile as User);
-                    } else {
-                        // Profile might not be created yet, or fetch failed
-                        console.warn("Could not fetch user profile for session:", session.user.id);
-                        setUser(null);
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
+    const fetchUserProfile = async (session: Session | null) => {
+        if (session?.user) {
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+                
+                if (profile) {
+                    setUser(profile as User);
+                } else {
+                    console.warn("Could not fetch user profile for session:", session.user.id);
                     setUser(null);
                 }
-            } else {
+            } catch (error) {
+                console.error("Error fetching user profile:", error);
                 setUser(null);
             }
+        } else {
+            setUser(null);
+        }
+    };
+
+    useEffect(() => {
+        // Fetch initial session on component mount
+        const fetchInitialSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            await fetchUserProfile(session);
             setLoading(false);
         };
-        
-        // FIX: Adjusted destructuring for onAuthStateChange to match older Supabase versions which return subscription directly in data.
-        const { data: subscription } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-        // Fetch initial session
-        // FIX: Replaced async getSession() with sync session() to align with older Supabase client versions.
-        const session = supabase.auth.session();
-        handleAuthChange('INITIAL_SESSION', session);
+        fetchInitialSession();
+
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            await fetchUserProfile(session);
+        });
 
         return () => {
-            // FIX: Added optional chaining for safety in case subscription is null.
             subscription?.unsubscribe();
         };
     }, []);
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        // FIX: Replaced signInWithPassword with signIn for compatibility with older Supabase client versions.
-        const { error } = await supabase.auth.signIn({ email, password: pass });
+        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) {
             return { success: false, error: error.message };
         }
@@ -75,14 +74,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = async () => {
-        // FIX: Assuming signOut error is due to version mismatch, call it on supabase.auth. This is correct for most versions.
         await supabase.auth.signOut();
         setUser(null);
         setActiveSchoolId(null);
     };
 
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        // FIX: Assuming signUp error is due to version mismatch, call it on supabase.auth. This is correct for most versions.
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email: email,
             password: pass,

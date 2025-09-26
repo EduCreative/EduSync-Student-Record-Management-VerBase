@@ -1,13 +1,11 @@
 
-
-
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 // FIX: Corrected import. DataProvider is now correctly exported from DataContext.
 import { DataProvider } from './context/DataContext';
 import { ThemeProvider } from './context/ThemeContext';
 import LoginPage from './components/auth/LoginPage';
-import RegisterPage from './components/dashboard/RegisterPage';
+import RegisterPage from './components/auth/RegisterPage';
 import Layout from './components/layout/Layout';
 import { ToastProvider } from './context/ToastContext';
 import { SyncProvider } from './context/SyncContext';
