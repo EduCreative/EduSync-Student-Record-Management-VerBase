@@ -7,15 +7,24 @@ import DoughnutChart from '../charts/DoughnutChart.tsx';
 import BarChart from '../charts/BarChart.tsx';
 import Avatar from '../common/Avatar.tsx';
 import StatCard from '../common/StatCard.tsx';
+import { ActiveView } from '../layout/Layout.tsx';
 
-const QuickAction: React.FC<{ title: string; icon: React.ReactElement; }> = ({ title, icon }) => (
-     <button className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center">
+const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
+     <button 
+        onClick={onClick} 
+        disabled={!onClick}
+        className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-secondary-50 dark:disabled:hover:bg-secondary-700"
+    >
         {icon}
         <span className="text-sm font-medium">{title}</span>
     </button>
 );
 
-const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+    setActiveView: (view: ActiveView) => void;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
     const { users, students, getSchoolById, fees, attendance } = useData();
     
@@ -123,9 +132,10 @@ const AdminDashboard: React.FC = () => {
                 <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                     <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-2 gap-4">
-                        <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} />
-                        <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} />
-                        <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} />
+                        <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
+                        <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'fees' })} />
+                        <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'attendance' })} />
+                        <QuickAction title="Manage Classes" icon={<SchoolIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'classes' })} />
                         <QuickAction title="Send Notification" icon={<BellIcon className="w-8 h-8"/>} />
                     </div>
                 </div>
@@ -211,6 +221,6 @@ const UserCheckIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} 
 const UserPlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>;
 const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
-
+const SchoolIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></svg>;
 
 export default AdminDashboard;

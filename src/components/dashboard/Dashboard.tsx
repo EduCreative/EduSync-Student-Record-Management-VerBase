@@ -1,17 +1,19 @@
-
-
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
-import OwnerDashboard from './OwnerDashboard';
-import AdminDashboard from './AdminDashboard';
-import AccountantDashboard from './AccountantDashboard';
-import TeacherDashboard from './TeacherDashboard';
-import ParentDashboard from './ParentDashboard';
-import StudentDashboard from './StudentDashboard';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { UserRole } from '../../types.ts';
+import OwnerDashboard from './OwnerDashboard.tsx';
+import AdminDashboard from './AdminDashboard.tsx';
+import AccountantDashboard from './AccountantDashboard.tsx';
+import TeacherDashboard from './TeacherDashboard.tsx';
+import ParentDashboard from './ParentDashboard.tsx';
+import StudentDashboard from './StudentDashboard.tsx';
+import { ActiveView } from '../layout/Layout.tsx';
 
+interface DashboardProps {
+    setActiveView: (view: ActiveView) => void;
+}
 
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
 
     if (!user) {
@@ -25,7 +27,7 @@ const Dashboard: React.FC = () => {
         case UserRole.Owner:
             return <OwnerDashboard />;
         case UserRole.Admin:
-            return <AdminDashboard />;
+            return <AdminDashboard setActiveView={setActiveView} />;
         case UserRole.Accountant:
             return <AccountantDashboard />;
         case UserRole.Teacher:

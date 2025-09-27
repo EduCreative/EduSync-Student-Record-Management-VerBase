@@ -1,15 +1,13 @@
-
-
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useData } from '../../context/DataContext';
-import { UserRole } from '../../types';
-import { ActiveView } from './Layout';
-import Avatar from '../common/Avatar';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { useTheme } from '../../context/ThemeContext.tsx';
+import { useData } from '../../context/DataContext.tsx';
+import { UserRole } from '../../types.ts';
+import { ActiveView } from './Layout.tsx';
+import Avatar from '../common/Avatar.tsx';
 
 interface HeaderProps {
-    setSidebarOpen: (open: boolean) => void;
+    setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
     setActiveView: (view: ActiveView) => void;
 }
 
@@ -37,7 +35,10 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                         <button
                             className="text-secondary-500 hover:text-secondary-600 lg:hidden"
                             aria-controls="sidebar"
-                            onClick={() => setSidebarOpen(true)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSidebarOpen((old) => !old);
+                            }}
                         >
                             <span className="sr-only">Open sidebar</span>
                             <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

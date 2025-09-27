@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, UserRole } from '../../types.ts';
-import Modal from './Modal.tsx';
+import Modal from '../common/Modal.tsx';
 import { useData } from '../../context/DataContext.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
-import { NAV_LINKS } from '../../constants.ts';
+import { NAV_LINKS } from '../../constants.tsx';
 import ImageUpload from '../common/ImageUpload.tsx';
 
 interface UserFormModalProps {
@@ -186,7 +186,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 </div>
                 {!userToEdit && (
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Password</label>
+                        <label htmlFor="password" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Set Initial Password</label>
                         <input type="password" name="password" id="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full input-style" />
                         {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
                     </div>

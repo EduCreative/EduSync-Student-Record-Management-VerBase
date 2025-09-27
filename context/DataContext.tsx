@@ -50,7 +50,7 @@ interface DataContextType {
 
     // Data functions
     getSchoolById: (schoolId: string) => School | undefined;
-    addUser: (userData: Omit<User, 'id'>) => Promise<void>;
+    addUser: (userData: Omit<User, 'id'>, password?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
     addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
@@ -58,6 +58,7 @@ interface DataContextType {
     deleteStudent: (studentId: string) => Promise<void>;
     addClass: (classData: Omit<Class, 'id'>) => Promise<void>;
     updateClass: (updatedClass: Class) => Promise<void>;
+    deleteClass: (classId: string) => Promise<void>;
     setAttendance: (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => Promise<void>;
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
     generateChallansForMonth: (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => Promise<number>;
@@ -161,16 +162,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     fetchTable('school_events'),
                 ]);
 
-                setSchools(schoolsData);
-                setUsers(usersData);
-                setClasses(classesData);
-                setStudents(studentsData);
-                setAttendanceState(attendanceData);
-                setFees(feesData);
-                setResults(resultsData);
-                setLogs(logsData);
-                setFeeHeads(feeHeadsData);
-                setEvents(eventsData);
+                // FIX: Added explicit type assertions to ensure fetched data conforms to the expected types.
+                setSchools(schoolsData as School[]);
+                setUsers(usersData as User[]);
+                setClasses(classesData as Class[]);
+                setStudents(studentsData as Student[]);
+                setAttendanceState(attendanceData as Attendance[]);
+                setFees(feesData as FeeChallan[]);
+                setResults(resultsData as Result[]);
+                setLogs(logsData as ActivityLog[]);
+                setFeeHeads(feeHeadsData as FeeHead[]);
+                setEvents(eventsData as SchoolEvent[]);
                 
                 updateSyncTime();
             } catch (error) { // This catch is for unexpected programming errors
@@ -196,27 +198,65 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             timestamp: new Date().toISOString(),
         };
         const { data, error } = await supabase.from('activity_logs').insert(toSnakeCase(newLog)).select();
-        if (data) {
-            setLogs(prev => [toCamelCase(data[0]), ...prev]);
+        if (data && data.length > 0) {
+            // FIX: Cast result to ActivityLog to ensure type safety.
+            setLogs(prev => [toCamelCase(data[0]) as ActivityLog, ...prev]);
         }
         updateSyncTime();
     }, [user, updateSyncTime]);
 
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
-    // NOTE: This function creates a profile, but not an authenticated user.
-    // Use the register function in AuthContext for self-signup.
-    const addUser = async (userData: Omit<User, 'id'>) => {
-        // This flow is for admins creating users and is incomplete without a way
-        // to set a password, which typically requires backend logic or an invite flow.
-        showToast('Info', 'User profile created. Authentication must be handled separately.', 'info');
+    // FIX: Implemented addUser to create both an auth user and a profile.
+    const addUser = async (userData: Omit<User, 'id'>, password?: string) => {
+        if (!password) {
+            return showToast('Error', 'A password is required to create a new user.', 'error');
+        }
+
+        // Step 1: Create the authenticated user. Email confirmation is assumed to be on.
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+            email: userData.email,
+            password: password,
+        });
+
+        if (signUpError) {
+            return showToast('Error', `Could not create user: ${signUpError.message}`, 'error');
+        }
+
+        if (!authData.user) {
+            return showToast('Error', 'User was not created in authentication system.', 'error');
+        }
+
+        // Step 2: Create the user profile in the 'profiles' table.
+        const profileData = { ...userData, id: authData.user.id };
+        const { data: profileInsertData, error: profileError } = await supabase
+            .from('profiles')
+            .insert(toSnakeCase(profileData))
+            .select()
+            .single();
+        
+        if (profileError) {
+            console.error("Failed to create user profile:", profileError.message);
+            // This is a tricky state. The auth user exists but the profile doesn't.
+            // A robust solution would delete the orphaned auth user via an edge function.
+            return showToast('Error', 'Auth user created, but profile creation failed. Please contact support.', 'error');
+        }
+        
+        if (profileInsertData) {
+            const newUser = toCamelCase(profileInsertData) as User;
+            setUsers(prev => [...prev, newUser]);
+            addLog('User Added', `New user created: ${newUser.name}.`);
+            showToast('Success', `User ${newUser.name} created. They need to confirm their email to log in.`);
+        }
     };
 
     const updateUser = async (updatedUser: User) => {
         const { data, error } = await supabase.from('profiles').update(toSnakeCase(updatedUser)).eq('id', updatedUser.id).select();
         if (error) return showToast('Error', error.message, 'error');
-        if (data) {
-            setUsers(prev => prev.map(u => u.id === updatedUser.id ? toCamelCase(data[0]) : u));
+        // FIX: Ensure data is not null and has content before processing to prevent runtime errors.
+        if (data && data.length > 0) {
+            // FIX: Cast result to User to ensure type safety.
+            setUsers(prev => prev.map(u => u.id === updatedUser.id ? toCamelCase(data[0]) as User : u));
             addLog('User Updated', `User profile updated for ${updatedUser.name}.`);
             showToast('Success', `${updatedUser.name}'s profile has been updated.`);
         }
@@ -240,8 +280,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newStudent = { ...studentData, status: 'Active' };
         const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select();
         if (error) return showToast('Error', error.message, 'error');
-        if (data) {
-            setStudents(prev => [...prev, toCamelCase(data[0])]);
+        if (data && data.length > 0) {
+            // FIX: Cast result to Student to ensure type safety.
+            setStudents(prev => [...prev, toCamelCase(data[0]) as Student]);
             addLog('Student Added', `New student added: ${newStudent.name}.`);
             showToast('Success', `${newStudent.name} has been added.`);
         }
@@ -250,8 +291,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updateStudent = async (updatedStudent: Student) => {
         const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select();
         if (error) return showToast('Error', error.message, 'error');
-        if (data) {
-            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? toCamelCase(data[0]) : s));
+        // FIX: Ensure data is not null and has content before processing to prevent runtime errors.
+        if (data && data.length > 0) {
+            // FIX: Cast result to Student to ensure type safety.
+            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? toCamelCase(data[0]) as Student : s));
             addLog('Student Updated', `Profile updated for ${updatedStudent.name}.`);
             showToast('Success', `${updatedStudent.name}'s profile has been updated.`);
         }
@@ -269,25 +312,285 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    const addClass = async (classData: Omit<Class, 'id'>) => { /* ... */ };
-    const updateClass = async (updatedClass: Class) => { /* ... */ };
-    const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => { /* ... */ };
-    const recordFeePayment = async (challanId: string, amount: number, discount: number, paidDate: string) => { /* ... */ };
-    const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]): Promise<number> => { return 0; };
-    const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => { /* ... */ };
-    const updateFeeHead = async (updatedFeeHead: FeeHead) => { /* ... */ };
-    const deleteFeeHead = async (feeHeadId: string) => { /* ... */ };
-    const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => { /* ... */ };
-    const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => { /* ... */ };
-    const addSchool = async (name: string, address: string, logoUrl?: string | null) => { /* ... */ };
-    const updateSchool = async (updatedSchool: School) => { /* ... */ };
-    const deleteSchool = async (schoolId: string) => { /* ... */ };
+    const addClass = async (classData: Omit<Class, 'id'>) => {
+        const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data && data.length > 0) {
+            // FIX: Cast result to Class to ensure type safety.
+            setClasses(prev => [...prev, toCamelCase(data[0]) as Class]);
+            addLog('Class Added', `New class added: ${classData.name}.`);
+            showToast('Success', `Class "${classData.name}" has been created.`);
+        }
+    };
+
+    const updateClass = async (updatedClass: Class) => {
+        const { data, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select();
+        if (error) return showToast('Error', error.message, 'error');
+        // FIX: Ensure data is not null and has content before processing to prevent runtime errors.
+        if (data && data.length > 0) {
+            const updatedClassFromDB = toCamelCase(data[0]) as Class;
+            setClasses(prev => prev.map(c => c.id === updatedClass.id ? updatedClassFromDB : c));
+            addLog('Class Updated', `Class details updated for ${updatedClassFromDB.name}.`);
+            showToast('Success', `Class "${updatedClassFromDB.name}" has been updated.`);
+        }
+    };
+
+    // FIX: Added deleteClass function.
+    const deleteClass = async (classId: string) => {
+        const studentInClass = students.some(s => s.classId === classId);
+        if (studentInClass) {
+            return showToast('Error', 'Cannot delete class with students assigned.', 'error');
+        }
+
+        const classToDelete = classes.find(c => c.id === classId);
+        const className = classToDelete?.name;
+
+        const { error } = await supabase.from('classes').delete().eq('id', classId);
+        if (error) return showToast('Error', error.message, 'error');
+
+        setClasses(prev => prev.filter(c => c.id !== classId));
+        if (classToDelete && className) {
+            addLog('Class Deleted', `Class deleted: ${className}.`);
+            showToast('Success', `Class "${className}" deleted.`);
+        }
+    };
+
+    const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => {
+        if (!user) return;
+        const recordsToUpsert = attendanceData.map(item => ({
+            student_id: item.studentId,
+            date: date,
+            status: item.status,
+            school_id: user.schoolId
+        }));
+
+        const { data, error } = await supabase.from('attendance').upsert(recordsToUpsert, { onConflict: 'student_id, date' }).select();
+        
+        if (error) return showToast('Error', `Failed to save attendance: ${error.message}`, 'error');
+        
+        if (data && data.length > 0) {
+            // FIX: Cast result to Attendance[] to ensure type safety.
+            const upsertedRecords = toCamelCase(data) as Attendance[];
+            const otherDayRecords = attendance.filter(a => a.date !== date);
+            setAttendanceState([...otherDayRecords, ...upsertedRecords]);
+            addLog('Attendance Marked', `Attendance marked for date ${date}.`);
+            showToast('Success', 'Attendance saved successfully.');
+        }
+    };
+
+    const recordFeePayment = async (challanId: string, amount: number, discount: number, paidDate: string) => {
+        const challan = fees.find(f => f.id === challanId);
+        if (!challan) return showToast('Error', 'Challan not found.', 'error');
+
+        const newPaidAmount = challan.paidAmount + amount;
+        const newStatus = newPaidAmount + discount >= challan.totalAmount ? 'Paid' : 'Partial';
+
+        const { data, error } = await supabase.from('fee_challans')
+            .update({ 
+                paid_amount: newPaidAmount, 
+                status: newStatus, 
+                discount: discount,
+                paid_date: paidDate 
+            })
+            .eq('id', challanId)
+            .select();
+
+        if (error) return showToast('Error', error.message, 'error');
+        // FIX: Ensure data is not null and has content before processing to prevent runtime errors.
+        if (data && data.length > 0) {
+            // FIX: Cast result to FeeChallan to ensure type safety.
+            setFees(prev => prev.map(f => f.id === challanId ? toCamelCase(data[0]) as FeeChallan : f));
+            const student = students.find(s => s.id === challan.studentId);
+            // FIX: Added a check to ensure student exists before accessing its properties for logging.
+            if (student) {
+                addLog('Fee Payment Recorded', `Payment of Rs. ${amount} for ${student.name}.`);
+            }
+            showToast('Success', 'Payment recorded successfully.');
+        }
+    };
+    
+    const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]): Promise<number> => {
+        const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+        const activeStudents = students.filter(s => s.schoolId === schoolId && s.status === 'Active');
+        if (activeStudents.length === 0) {
+            showToast('Info', 'No active students found to generate challans for.', 'info');
+            return 0;
+        }
+        
+        const feeHeadsMap = new Map(feeHeads.map(fh => [fh.id, fh]));
+        const challansToCreate: Omit<FeeChallan, 'id'>[] = [];
+
+        for (const student of activeStudents) {
+            const alreadyExists = fees.some(f => f.studentId === student.id && f.month === month && f.year === year);
+            if (alreadyExists) continue;
+
+            const feeItems: { description: string, amount: number }[] = [];
+            let totalAmount = 0;
+
+            student.feeStructure?.forEach(fee => {
+                const feeHead = feeHeadsMap.get(fee.feeHeadId);
+                if (feeHead) {
+                    feeItems.push({ description: feeHead.name, amount: fee.amount });
+                    totalAmount += fee.amount;
+                }
+            });
+
+            selectedFeeHeads.forEach(selectedFee => {
+                 const feeHead = feeHeadsMap.get(selectedFee.feeHeadId);
+                 if (feeHead && !feeItems.some(item => item.description === feeHead.name)) {
+                     feeItems.push({ description: feeHead.name, amount: selectedFee.amount });
+                     totalAmount += selectedFee.amount;
+                 }
+            });
+
+            const previousBalance = student.openingBalance || 0;
+            if (previousBalance > 0) {
+                totalAmount += previousBalance;
+            }
+
+            const dueDate = new Date(year, months.indexOf(month), 10);
+
+            challansToCreate.push({
+                challanNumber: `CHN-${year}${String(months.indexOf(month)+1).padStart(2,'0')}-${String(Math.floor(1000 + Math.random() * 9000))}`,
+                studentId: student.id, classId: student.classId, month, year,
+                dueDate: dueDate.toISOString().split('T')[0], status: 'Unpaid',
+                feeItems, previousBalance, totalAmount, discount: 0, paidAmount: 0,
+            });
+        }
+
+        if (challansToCreate.length === 0) {
+            showToast('Info', 'All challans for this month and class already exist.', 'info');
+            return 0;
+        }
+
+        const { data, error } = await supabase.from('fee_challans').insert(challansToCreate.map(toSnakeCase)).select();
+        if (error) {
+            showToast('Error', `Failed to generate challans: ${error.message}`, 'error');
+            return 0;
+        }
+
+        if (data) {
+            // FIX: Cast result to FeeChallan[] to ensure type safety.
+            setFees(prev => [...prev, ...toCamelCase(data) as FeeChallan[]]);
+            addLog('Challans Generated', `${data.length} challans generated for ${month} ${year}.`);
+            showToast('Success', `${data.length} fee challans have been generated.`);
+            return data.length;
+        }
+        return 0;
+    };
+
+    const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
+        const { data, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data && data.length > 0) {
+            // FIX: Cast result to FeeHead to ensure type safety.
+            setFeeHeads(prev => [...prev, toCamelCase(data[0]) as FeeHead]);
+            addLog('Fee Head Added', `New fee head created: ${feeHeadData.name}.`);
+            showToast('Success', `Fee Head "${feeHeadData.name}" added.`);
+        }
+    };
+
+    const updateFeeHead = async (updatedFeeHead: FeeHead) => {
+        const { data, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select();
+        if (error) return showToast('Error', error.message, 'error');
+        // FIX: Ensure data is not null and has content before processing to prevent runtime errors.
+        if (data && data.length > 0) {
+            // FIX: Cast result to FeeHead to ensure type safety.
+            setFeeHeads(prev => prev.map(fh => fh.id === updatedFeeHead.id ? toCamelCase(data[0]) as FeeHead : fh));
+            addLog('Fee Head Updated', `Fee head updated: ${updatedFeeHead.name}.`);
+            showToast('Success', `Fee Head "${updatedFeeHead.name}" updated.`);
+        }
+    };
+
+    const deleteFeeHead = async (feeHeadId: string) => {
+        const { error } = await supabase.from('fee_heads').delete().eq('id', feeHeadId);
+        if (error) return showToast('Error', error.message, 'error');
+
+        const feeHeadToDelete = feeHeads.find(fh => fh.id === feeHeadId);
+        setFeeHeads(prev => prev.filter(fh => fh.id !== feeHeadId));
+        if (feeHeadToDelete) {
+             addLog('Fee Head Deleted', `Fee head deleted: ${feeHeadToDelete.name}.`);
+             showToast('Success', `Fee Head "${feeHeadToDelete.name}" deleted.`);
+        }
+    };
+
+    const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => {
+        const studentUpdate = { ...details, status: 'Left' };
+        const { data, error } = await supabase.from('students').update(toSnakeCase(studentUpdate)).eq('id', studentId).select().single();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data) {
+            // FIX: Cast result to Student to ensure type safety.
+            updateStudent(toCamelCase(data) as Student); // This will trigger a re-render via updateStudent
+            addLog('Certificate Issued', `Leaving certificate issued for student ID ${studentId}.`);
+            showToast('Success', `Leaving Certificate has been processed.`);
+        }
+    };
+    
+    const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
+        if (!user) return;
+        const recordsToUpsert = resultsToSave.map(r => toSnakeCase({ ...r, school_id: user.schoolId }));
+        
+        const { data, error } = await supabase.from('results').upsert(recordsToUpsert, { onConflict: 'student_id, exam, subject' }).select();
+
+        if (error) return showToast('Error', `Failed to save results: ${error.message}`, 'error');
+
+        if (data) {
+            const upsertedResults: Result[] = toCamelCase(data);
+            const upsertedMap = new Map(upsertedResults.map((r) => [`${r.studentId}-${r.exam}-${r.subject}`, r]));
+            const oldResultsFiltered = results.filter(r => !upsertedMap.has(`${r.studentId}-${r.exam}-${r.subject}`));
+            
+            setResults([...oldResultsFiltered, ...upsertedResults]);
+            addLog('Results Saved', `Results saved.`);
+            showToast('Success', 'Results have been saved.');
+        }
+    };
+
+    const addSchool = async (name: string, address: string, logoUrl?: string | null) => {
+        if (!user || user.role !== UserRole.Owner) {
+            return showToast('Error', 'You do not have permission to add schools.', 'error');
+        }
+        const newSchool: Omit<School, 'id'> = { name, address, logoUrl };
+        const { data, error } = await supabase.from('schools').insert(toSnakeCase(newSchool)).select();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data && data.length > 0) {
+            const addedSchool = toCamelCase(data[0]) as School;
+            setSchools(prev => [...prev, addedSchool]);
+            addLog('School Added', `New school added: ${name}.`);
+            showToast('Success', `School "${name}" has been created.`);
+        }
+    };
+
+    const updateSchool = async (updatedSchool: School) => {
+        const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data && data.length > 0) {
+            // FIX: Cast the returned data to School and use it for logs and state updates to ensure type safety.
+            const updatedSchoolFromDB = toCamelCase(data[0]) as School;
+            setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
+            addLog('School Updated', `Details updated for ${updatedSchoolFromDB.name}.`);
+            showToast('Success', `${updatedSchoolFromDB.name}'s details have been updated.`);
+        }
+    };
+
+    const deleteSchool = async (schoolId: string) => {
+        const schoolToDelete = schools.find(s => s.id === schoolId);
+
+        const { error } = await supabase.from('schools').delete().eq('id', schoolId);
+        if (error) return showToast('Error', error.message, 'error');
+
+        setSchools(prev => prev.filter(s => s.id !== schoolId));
+        // FIX: Check if schoolToDelete is found before accessing its name property to ensure type safety.
+        if(schoolToDelete) {
+             addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
+             showToast('Success', `${schoolToDelete.name} has been deleted.`);
+        }
+    };
 
 
     const value: DataContextType = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
         getSchoolById, addUser, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
-        addClass, updateClass, setAttendance, recordFeePayment, generateChallansForMonth,
+        addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults,
         addSchool, updateSchool, deleteSchool,
     };

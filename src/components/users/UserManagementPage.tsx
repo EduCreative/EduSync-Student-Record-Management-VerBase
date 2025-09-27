@@ -4,9 +4,9 @@ import { useData } from '../../context/DataContext.tsx';
 import { User, UserRole } from '../../types.ts';
 import Badge from '../common/Badge.tsx';
 import UserFormModal from './UserFormModal.tsx';
-import Modal from './Modal.tsx';
+import Modal from '../common/Modal.tsx';
 import Avatar from '../common/Avatar.tsx';
-import { formatDateTime } from '../../constants.ts';
+import { formatDateTime } from '../../constants.tsx';
 
 const UserManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();

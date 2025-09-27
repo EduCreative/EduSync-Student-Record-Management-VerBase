@@ -4,12 +4,26 @@ import { useData } from '../../context/DataContext.tsx';
 import { User, UserRole } from '../../types.ts';
 import Badge from '../common/Badge.tsx';
 import UserFormModal from '../users/UserFormModal.tsx';
-import Modal from '../users/Modal.tsx';
+import Modal from '../common/Modal.tsx';
 import Avatar from '../common/Avatar.tsx';
 
-const TeacherManagementPage: React.FC = () => {
+const formatDateTime = (isoString?: string): string => {
+    if (!isoString) return 'N/A';
+    try {
+        const date = new Date(isoString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = date.toLocaleString('en-GB', { month: 'short' });
+        const year = date.getFullYear();
+        const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return `${day}/${month}/${year}, ${time}`;
+    } catch (error) {
+        return 'Invalid Date';
+    }
+};
+
+const AccountantManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();
-    const { users, classes, addUser, updateUser, deleteUser } = useData();
+    const { users, addUser, updateUser, deleteUser } = useData();
     
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
 
@@ -21,29 +35,29 @@ const TeacherManagementPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const USERS_PER_PAGE = 10;
 
-    const schoolTeachers = useMemo(() => {
+    const schoolAccountants = useMemo(() => {
         return users.filter(user =>
-            user.schoolId === effectiveSchoolId && user.role === UserRole.Teacher
+            user.schoolId === effectiveSchoolId && user.role === UserRole.Accountant
         );
     }, [users, effectiveSchoolId]);
 
-    const filteredTeachers = useMemo(() => {
-        return schoolTeachers.filter(teacher => {
-            if (statusFilter !== 'all' && teacher.status !== statusFilter) return false;
-            if (searchTerm && !teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) && !teacher.email.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    const filteredAccountants = useMemo(() => {
+        return schoolAccountants.filter(accountant => {
+            if (statusFilter !== 'all' && accountant.status !== statusFilter) return false;
+            if (searchTerm && !accountant.name.toLowerCase().includes(searchTerm.toLowerCase()) && !accountant.email.toLowerCase().includes(searchTerm.toLowerCase())) return false;
             return true;
         });
-    }, [schoolTeachers, searchTerm, statusFilter]);
+    }, [schoolAccountants, searchTerm, statusFilter]);
     
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
 
-    const totalPages = Math.ceil(filteredTeachers.length / USERS_PER_PAGE);
-    const paginatedTeachers = useMemo(() => {
+    const totalPages = Math.ceil(filteredAccountants.length / USERS_PER_PAGE);
+    const paginatedAccountants = useMemo(() => {
         const startIndex = (currentPage - 1) * USERS_PER_PAGE;
-        return filteredTeachers.slice(startIndex, startIndex + USERS_PER_PAGE);
-    }, [filteredTeachers, currentPage]);
+        return filteredAccountants.slice(startIndex, startIndex + USERS_PER_PAGE);
+    }, [filteredAccountants, currentPage]);
     
     const handleOpenModal = (user: User | null = null) => {
         setUserToEdit(user);
@@ -71,15 +85,8 @@ const TeacherManagementPage: React.FC = () => {
         }
     };
 
-    const getAssignedClasses = (teacherId: string) => {
-        return classes
-            .filter(c => c.teacherId === teacherId)
-            .map(c => c.name)
-            .join(', ');
-    };
-
-    const showingFrom = filteredTeachers.length > 0 ? (currentPage - 1) * USERS_PER_PAGE + 1 : 0;
-    const showingTo = Math.min(currentPage * USERS_PER_PAGE, filteredTeachers.length);
+    const showingFrom = filteredAccountants.length > 0 ? (currentPage - 1) * USERS_PER_PAGE + 1 : 0;
+    const showingTo = Math.min(currentPage * USERS_PER_PAGE, filteredAccountants.length);
 
     return (
         <>
@@ -88,13 +95,13 @@ const TeacherManagementPage: React.FC = () => {
                 onClose={handleCloseModal} 
                 onSave={handleSaveUser} 
                 userToEdit={userToEdit}
-                defaultRole={UserRole.Teacher}
+                defaultRole={UserRole.Accountant}
                 lockRole={true}
             />
-            <Modal isOpen={!!userToDelete} onClose={() => setUserToDelete(null)} title="Confirm Teacher Deletion">
+            <Modal isOpen={!!userToDelete} onClose={() => setUserToDelete(null)} title="Confirm Accountant Deletion">
                 <div>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                        Are you sure you want to permanently delete the teacher{' '}
+                        Are you sure you want to permanently delete the accountant{' '}
                         <strong className="text-secondary-800 dark:text-secondary-200">{userToDelete?.name}</strong>?
                     </p>
                     <div className="mt-6 flex justify-end space-x-3">
@@ -106,9 +113,9 @@ const TeacherManagementPage: React.FC = () => {
 
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Teacher Management</h1>
+                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Accountant Management</h1>
                     <button onClick={() => handleOpenModal()} className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition">
-                        + Add Teacher
+                        + Add Accountant
                     </button>
                 </div>
 
@@ -116,9 +123,9 @@ const TeacherManagementPage: React.FC = () => {
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="search-teacher" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Search Teachers</label>
+                            <label htmlFor="search-accountant" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Search Accountants</label>
                             <input
-                                id="search-teacher"
+                                id="search-accountant"
                                 type="text"
                                 placeholder="By name or email..."
                                 value={searchTerm}
@@ -137,36 +144,36 @@ const TeacherManagementPage: React.FC = () => {
                     </div>
                 </div>
                 
-                {/* Teachers Table */}
+                {/* Accountants Table */}
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
                             <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                 <tr>
-                                    <th scope="col" className="px-6 py-3">Teacher</th>
+                                    <th scope="col" className="px-6 py-3">Accountant</th>
                                     <th scope="col" className="px-6 py-3">Status</th>
-                                    <th scope="col" className="px-6 py-3">Assigned Classes</th>
+                                    <th scope="col" className="px-6 py-3">Last Login</th>
                                     <th scope="col" className="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedTeachers.map(teacher => (
-                                    <tr key={teacher.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                {paginatedAccountants.map(accountant => (
+                                    <tr key={accountant.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center space-x-3">
-                                                <Avatar user={teacher} className="h-10 w-10" />
+                                                <Avatar user={accountant} className="h-10 w-10" />
                                                 <div>
-                                                    <div className="font-semibold text-secondary-900 dark:text-white">{teacher.name}</div>
-                                                    <div className="text-xs text-secondary-500">{teacher.email}</div>
+                                                    <div className="font-semibold text-secondary-900 dark:text-white">{accountant.name}</div>
+                                                    <div className="text-xs text-secondary-500">{accountant.email}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4"><Badge color={teacher.status === 'Active' ? 'green' : 'red'}>{teacher.status}</Badge></td>
-                                        <td className="px-6 py-4">{getAssignedClasses(teacher.id) || 'None'}</td>
+                                        <td className="px-6 py-4"><Badge color={accountant.status === 'Active' ? 'green' : 'red'}>{accountant.status}</Badge></td>
+                                        <td className="px-6 py-4">{formatDateTime(accountant.lastLogin)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center space-x-4">
-                                                <button onClick={() => handleOpenModal(teacher)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                                <button onClick={() => setUserToDelete(teacher)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                <button onClick={() => handleOpenModal(accountant)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
+                                                <button onClick={() => setUserToDelete(accountant)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -177,7 +184,7 @@ const TeacherManagementPage: React.FC = () => {
                     {totalPages > 0 && (
                          <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
                             <span className="text-sm text-secondary-700 dark:text-secondary-400">
-                                Showing {showingFrom} - {showingTo} of {filteredTeachers.length} teachers
+                                Showing {showingFrom} - {showingTo} of {filteredAccountants.length} accountants
                             </span>
                             <div className="flex items-center space-x-2">
                                 <button
@@ -206,4 +213,4 @@ const TeacherManagementPage: React.FC = () => {
     );
 };
 
-export default TeacherManagementPage;
+export default AccountantManagementPage;

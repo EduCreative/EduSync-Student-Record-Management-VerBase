@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext.tsx';
 import { User, UserRole } from '../../types.ts';
 import Badge from '../common/Badge.tsx';
 import UserFormModal from '../users/UserFormModal.tsx';
-import Modal from '../users/Modal.tsx';
+import Modal from '../common/Modal.tsx';
 import Avatar from '../common/Avatar.tsx';
 
 const TeacherManagementPage: React.FC = () => {

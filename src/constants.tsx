@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserRole } from './types';
+import { UserRole } from './types.ts';
 
 function DashboardIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -145,7 +145,6 @@ function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
     );
 }
 
-// FIX: Changed JSX.Element to React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
 export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: React.ReactElement }[]> = {
     [UserRole.Owner]: [
         { name: 'Overview', path: '/overview', icon: <DashboardIcon /> },
@@ -156,6 +155,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     [UserRole.Admin]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
+        { name: 'Classes', path: '/classes', icon: <SchoolIcon /> },
         { name: 'Users', path: '/users', icon: <UsersIcon /> },
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
         { name: 'Reports', path: '/reports', icon: <BarChartIcon /> },
@@ -173,7 +173,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     ],
     [UserRole.Teacher]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-        { name: 'My Classes', path: '/classes', icon: <SchoolIcon /> },
+        { name: 'My Classes', path: '/classes', icon: <BookKeyIcon /> },
         { name: 'Attendance', path: '/attendance', icon: <CheckCircleIcon /> },
         { name: 'Enter Results', path: '/results', icon: <EditIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },

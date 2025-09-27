@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
-import { User, UserRole } from '../../types';
-import Badge from '../common/Badge';
-import UserFormModal from '../users/UserFormModal';
-import Modal from '../users/Modal';
-import Avatar from '../common/Avatar';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { useData } from '../../context/DataContext.tsx';
+import { User, UserRole } from '../../types.ts';
+import Badge from '../common/Badge.tsx';
+import UserFormModal from '../users/UserFormModal.tsx';
+import Modal from '../users/Modal.tsx';
+import Avatar from '../common/Avatar.tsx';
 
 const formatDateTime = (isoString?: string): string => {
     if (!isoString) return 'N/A';
@@ -69,12 +69,12 @@ const AccountantManagementPage: React.FC = () => {
         setIsModalOpen(false);
     };
 
-    // FIX: Corrected the type for userData to ensure the 'status' property is included for new users, resolving a type error.
-    const handleSaveUser = (userData: User | Omit<User, 'id'>) => {
+    const handleSaveUser = (userData: User | (Omit<User, 'id'> & { password?: string })) => {
         if ('id' in userData) {
             updateUser(userData as User);
         } else {
-            addUser(userData as Omit<User, 'id'>);
+            const { password, ...profileData } = userData;
+            addUser(profileData as Omit<User, 'id'>, password);
         }
     };
 

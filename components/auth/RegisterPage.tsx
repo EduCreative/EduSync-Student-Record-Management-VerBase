@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -18,13 +19,16 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<UserRole>(UserRole.Parent);
     const [error, setError] = useState('');
-    const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+    const [formErrors, setFormErrors] = useState<{ name?: string; email?: string; password?: string }>({});
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const { register } = useAuth();
 
     const validate = () => {
-        const newErrors: { email?: string; password?: string } = {};
+        const newErrors: { name?: string; email?: string; password?: string } = {};
+        if (!name.trim()) {
+            newErrors.name = 'Full Name is required.';
+        }
         if (!email.trim()) {
             newErrors.email = 'Email Address is required.';
         } else if (!isValidEmail(email)) {
@@ -56,10 +60,14 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
         setLoading(false);
     };
 
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEmail(e.target.value);
-        if (formErrors.email) {
-            setFormErrors(prev => ({ ...prev, email: undefined }));
+    const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>, field: keyof typeof formErrors) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        setter(e.target.value);
+        if (formErrors[field]) {
+            setFormErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[field];
+                return newErrors;
+            });
         }
     };
 
@@ -93,16 +101,17 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 <form onSubmit={handleRegister} noValidate>
                     <div className="mb-4">
                         <label className="block text-secondary-700 dark:text-secondary-300 text-sm font-bold mb-2" htmlFor="name">Full Name</label>
-                        <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} className="shadow-inner appearance-none border rounded-lg w-full py-3 px-4 bg-secondary-100 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500" required />
+                        <input id="name" type="text" value={name} onChange={handleInputChange(setName, 'name')} className="shadow-inner appearance-none border rounded-lg w-full py-3 px-4 bg-secondary-100 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500" required />
+                        {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
                     </div>
                     <div className="mb-4">
                         <label className="block text-secondary-700 dark:text-secondary-300 text-sm font-bold mb-2" htmlFor="email">Email</label>
-                        <input id="email" type="email" value={email} onChange={handleEmailChange} className="shadow-inner appearance-none border rounded-lg w-full py-3 px-4 bg-secondary-100 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500" required />
+                        <input id="email" type="email" value={email} onChange={handleInputChange(setEmail, 'email')} className="shadow-inner appearance-none border rounded-lg w-full py-3 px-4 bg-secondary-100 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500" required />
                         {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                     </div>
                     <div className="mb-4">
                         <label className="block text-secondary-700 dark:text-secondary-300 text-sm font-bold mb-2" htmlFor="password">Password</label>
-                        <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow-inner appearance-none border rounded-lg w-full py-3 px-4 bg-secondary-100 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500" required />
+                        <input id="password" type="password" value={password} onChange={handleInputChange(setPassword, 'password')} className="shadow-inner appearance-none border rounded-lg w-full py-3 px-4 bg-secondary-100 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-700 dark:text-secondary-200 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500" required />
                          {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
                     </div>
                      <div className="mb-5 sm:mb-6">

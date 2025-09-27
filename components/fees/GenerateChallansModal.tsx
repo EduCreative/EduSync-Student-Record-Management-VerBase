@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import Modal from '../users/Modal';
-import { useData } from '../../context/DataContext';
-import { useAuth } from '../../context/AuthContext';
+import Modal from '../users/Modal.tsx';
+import { useData } from '../../context/DataContext.tsx';
+import { useAuth } from '../../context/AuthContext.tsx';
 
 interface GenerateChallansModalProps {
     isOpen: boolean;
@@ -40,7 +39,7 @@ const GenerateChallansModal: React.FC<GenerateChallansModalProps> = ({ isOpen, o
 
     const handleFeeHeadToggle = (feeHeadId: string) => {
         setFeeHeadSelections(prev => {
-            // FIX: `prev[feeHeadId]` can be undefined. Provide a default object to avoid runtime errors when accessing properties.
+            // FIX: Provide a default object for `prev[feeHeadId]` if it's undefined to prevent runtime errors.
             const current = prev[feeHeadId] || { selected: false, amount: 0 };
             return {
                 ...prev,
@@ -54,7 +53,7 @@ const GenerateChallansModal: React.FC<GenerateChallansModalProps> = ({ isOpen, o
 
     const handleAmountChange = (feeHeadId: string, value: string) => {
         setFeeHeadSelections(prev => {
-            // FIX: `prev[feeHeadId]` can be undefined. Provide a default object to avoid runtime errors when accessing properties.
+            // FIX: Provide a default object for `prev[feeHeadId]` if it's undefined to prevent runtime errors.
             const current = prev[feeHeadId] || { selected: false, amount: 0 };
             return {
                 ...prev,

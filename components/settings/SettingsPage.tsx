@@ -1,4 +1,3 @@
-
 import React, { useRef, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -75,7 +74,7 @@ const SettingsPage: React.FC = () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const result = e.target?.result;
-            // FIX: The result from FileReader can be an ArrayBuffer. Added a type guard to ensure it's a string before processing.
+            // FIX: The result from FileReader can be an ArrayBuffer or null. Added a type guard to ensure it's a string before processing.
             if (typeof result !== 'string') {
                 showToast('Error', 'Could not read file.', 'error');
                 return;
