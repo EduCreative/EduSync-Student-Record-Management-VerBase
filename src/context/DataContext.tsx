@@ -1,6 +1,9 @@
 
 
 
+
+
+
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
 import { useAuth } from './AuthContext';
@@ -567,8 +570,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            // FIX: Property 'name' does not exist on type 'unknown'. Cast the data to the correct type.
-            const updatedSchoolFromDB = toCamelCase(data as Record<string, any>) as School;
+            // FIX: Introduce a properly typed variable to prevent accessing properties on an unknown type.
+            const updatedSchoolFromDB = toCamelCase(data) as School;
             setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
             addLog('School Updated', `Details updated for ${updatedSchoolFromDB.name}.`);
             showToast('Success', `${updatedSchoolFromDB.name}'s details have been updated.`);
@@ -583,10 +586,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setSchools(prev => prev.filter(s => s.id !== schoolId));
         if (schoolToDelete) {
-             // FIX: Property 'name' does not exist on type 'unknown'. Cast to School to ensure type safety.
-             const schoolName = schoolToDelete.name;
-             addLog('School Deleted', `School deleted: ${schoolName}.`);
-             showToast('Success', `${schoolName} has been deleted.`);
+             // FIX: Relied on TypeScript's type narrowing within the if-block to safely access properties.
+             addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
+             showToast('Success', `${schoolToDelete.name} has been deleted.`);
         }
     };
 

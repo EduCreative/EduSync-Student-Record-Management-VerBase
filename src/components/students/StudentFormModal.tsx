@@ -108,10 +108,18 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         e.preventDefault();
         if (!validate()) return;
         
-        onSave({
+        const saveData = {
             ...formData,
-            userId: formData.userId || null,
-        });
+            userId: formData.userId || null, // Convert empty string back to null for DB
+        };
+
+        if (studentToEdit) {
+            onSave({ ...studentToEdit, ...saveData });
+        } else {
+            // Remove the 'status' for new students as it's set by the backend/data context
+            const { status, ...rest } = saveData;
+            onSave(rest);
+        }
         onClose();
     };
 
