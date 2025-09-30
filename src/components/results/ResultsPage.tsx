@@ -53,11 +53,14 @@ const ResultsPage: React.FC = () => {
         setMarks(prev => {
             const newMarks = new Map(prev);
             const current = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
-            // FIX: Use spread syntax for an immutable update, preventing state mutation bugs.
+            
+// FIX: Replaced object spread with explicit property assignment to prevent a potential type inference error. This creates a new object for the state update, ensuring immutability.
             const updatedEntry = {
-                ...current,
-                [field]: numValue,
+                marks: current.marks,
+                totalMarks: current.totalMarks,
             };
+            updatedEntry[field] = numValue;
+
             newMarks.set(studentId, updatedEntry);
             return newMarks;
         });

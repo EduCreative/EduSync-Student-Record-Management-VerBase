@@ -275,22 +275,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
         const newStudent = { ...studentData, status: 'Active' as const };
-        const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select();
+// FIX: Standardize query to use .single() for consistency and type safety.
+        const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            setStudents(prev => [...prev, toCamelCase(data[0]) as Student]);
+        if (data) {
+            setStudents(prev => [...prev, toCamelCase(data) as Student]);
             addLog('Student Added', `New student added: ${newStudent.name}.`);
             showToast('Success', `${newStudent.name} has been added.`);
         }
     };
     
     const updateStudent = async (updatedStudent: Student) => {
-        const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select();
+// FIX: Standardize query to use .single() for consistency and type safety.
+        const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? toCamelCase(data[0]) as Student : s));
-            addLog('Student Updated', `Profile updated for ${updatedStudent.name}.`);
-            showToast('Success', `${updatedStudent.name}'s profile has been updated.`);
+        if (data) {
+            const updatedStudentFromDB = toCamelCase(data) as Student;
+            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudentFromDB : s));
+            addLog('Student Updated', `Profile updated for ${updatedStudentFromDB.name}.`);
+            showToast('Success', `${updatedStudentFromDB.name}'s profile has been updated.`);
         }
     };
     
@@ -377,6 +380,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newPaidAmount = challan.paidAmount + amount;
         const newStatus = newPaidAmount + discount >= challan.totalAmount ? 'Paid' : 'Partial';
 
+// FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('fee_challans')
             .update({ 
                 paid_amount: newPaidAmount, 
@@ -385,11 +389,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 paid_date: paidDate 
             })
             .eq('id', challanId)
-            .select();
+            .select()
+            .single();
 
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            setFees(prev => prev.map(f => f.id === challanId ? toCamelCase(data[0]) as FeeChallan : f));
+        if (data) {
+            setFees(prev => prev.map(f => f.id === challanId ? toCamelCase(data) as FeeChallan : f));
             const student = students.find(s => s.id === challan.studentId);
             if (student) {
                 addLog('Fee Payment Recorded', `Payment of Rs. ${amount} for ${student.name}.`);
@@ -468,22 +473,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
-        const { data, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select();
+// FIX: Standardize query to use .single() for consistency and type safety.
+        const { data, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            setFeeHeads(prev => [...prev, toCamelCase(data[0]) as FeeHead]);
+        if (data) {
+            setFeeHeads(prev => [...prev, toCamelCase(data) as FeeHead]);
             addLog('Fee Head Added', `New fee head created: ${feeHeadData.name}.`);
             showToast('Success', `Fee Head "${feeHeadData.name}" added.`);
         }
     };
 
     const updateFeeHead = async (updatedFeeHead: FeeHead) => {
-        const { data, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select();
+// FIX: Standardize query to use .single() for consistency and type safety.
+        const { data, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            setFeeHeads(prev => prev.map(fh => fh.id === updatedFeeHead.id ? toCamelCase(data[0]) as FeeHead : fh));
-            addLog('Fee Head Updated', `Fee head updated: ${updatedFeeHead.name}.`);
-            showToast('Success', `Fee Head "${updatedFeeHead.name}" updated.`);
+        if (data) {
+            const updatedFeeHeadFromDB = toCamelCase(data) as FeeHead;
+            setFeeHeads(prev => prev.map(fh => fh.id === updatedFeeHead.id ? updatedFeeHeadFromDB : fh));
+            addLog('Fee Head Updated', `Fee head updated: ${updatedFeeHeadFromDB.name}.`);
+            showToast('Success', `Fee Head "${updatedFeeHeadFromDB.name}" updated.`);
         }
     };
 
@@ -535,10 +543,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'You do not have permission to add schools.', 'error');
         }
         const newSchool: Omit<School, 'id'> = { name, address, logoUrl };
-        const { data, error } = await supabase.from('schools').insert(toSnakeCase(newSchool)).select();
+// FIX: Standardize query to use .single() for consistency and type safety.
+        const { data, error } = await supabase.from('schools').insert(toSnakeCase(newSchool)).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            const addedSchool = toCamelCase(data[0]) as School;
+        if (data) {
+            const addedSchool = toCamelCase(data) as School;
             setSchools(prev => [...prev, addedSchool]);
             addLog('School Added', `New school added: ${name}.`);
             showToast('Success', `School "${name}" has been created.`);
@@ -546,10 +555,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateSchool = async (updatedSchool: School) => {
-        const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select();
+// FIX: Standardize query to use .single() for consistency and type safety.
+        const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            const updatedSchoolFromDB = toCamelCase(data[0]) as School;
+        if (data) {
+            const updatedSchoolFromDB = toCamelCase(data) as School;
             setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
             addLog('School Updated', `Details updated for ${updatedSchoolFromDB.name}.`);
             showToast('Success', `${updatedSchoolFromDB.name}'s details have been updated.`);
