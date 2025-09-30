@@ -1,7 +1,3 @@
-
-
-
-
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -49,11 +45,11 @@ const SettingsPage: React.FC = () => {
                 <div className="py-4 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                         <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300">Full Name</label>
-                        <input type="text" defaultValue={user?.name} className="md:col-span-2 input-style" />
+                        <input type="text" defaultValue={user?.name} className="md:col-span-2 input-field" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                         <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300">Email Address</label>
-                        <input type="email" defaultValue={user?.email} disabled className="md:col-span-2 input-style bg-secondary-100 dark:bg-secondary-700 cursor-not-allowed" />
+                        <input type="email" defaultValue={user?.email} disabled className="md:col-span-2 input-field bg-secondary-100 dark:bg-secondary-700 cursor-not-allowed" />
                     </div>
                      <div className="flex justify-end pt-2">
                         <button className="btn-primary">Update Profile</button>
@@ -62,7 +58,7 @@ const SettingsPage: React.FC = () => {
                 <div className="border-t dark:border-secondary-700 pt-4 mt-4 space-y-4">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                         <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300">New Password</label>
-                        <input type="password" placeholder="••••••••" className="md:col-span-2 input-style" />
+                        <input type="password" placeholder="••••••••" className="md:col-span-2 input-field" />
                     </div>
                      <div className="flex justify-end">
                         <button className="btn-primary">Change Password</button>
@@ -72,7 +68,7 @@ const SettingsPage: React.FC = () => {
              <style>{`
                 .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
                 .btn-secondary { @apply px-3 py-1 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-                .input-style { @apply w-full p-2 border rounded-md dark:bg-secondary-900 dark:border-secondary-600; }
+                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
             `}</style>
         </div>
     );

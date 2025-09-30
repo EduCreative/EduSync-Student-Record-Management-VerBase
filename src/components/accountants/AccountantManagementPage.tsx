@@ -117,12 +117,12 @@ const AccountantManagementPage: React.FC = () => {
                                 placeholder="By name or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600"
+                                className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500"
                             />
                         </div>
                         <div>
                             <label htmlFor="status-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Status</label>
-                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | 'Active' | 'Inactive')} className="w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600">
+                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | 'Active' | 'Inactive')} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
                                 <option value="all">All Statuses</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>

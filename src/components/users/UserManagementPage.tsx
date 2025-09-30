@@ -168,14 +168,14 @@ const UserManagementPage: React.FC = () => {
                                 placeholder="By name or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600"
+                                className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500"
                             />
                         </div>
 
                         {currentUser?.role === UserRole.Owner && !activeSchoolId && (
                             <div>
                                 <label htmlFor="school-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">School</label>
-                                <select id="school-filter" value={schoolFilter} onChange={e => setSchoolFilter(e.target.value)} className="w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600">
+                                <select id="school-filter" value={schoolFilter} onChange={e => setSchoolFilter(e.target.value)} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
                                     <option value="all">All Schools</option>
                                     {schools.map(school => <option key={school.id} value={school.id}>{school.name}</option>)}
                                 </select>
@@ -184,7 +184,7 @@ const UserManagementPage: React.FC = () => {
                         
                         <div>
                              <label htmlFor="role-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Role</label>
-                             <select id="role-filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value as UserRole | 'all')} className="w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600">
+                             <select id="role-filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value as UserRole | 'all')} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
                                 <option value="all">All Roles</option>
                                 {creatableRoles.map(role => <option key={role} value={role}>{role}</option>)}
                             </select>
@@ -192,7 +192,7 @@ const UserManagementPage: React.FC = () => {
                        
                         <div>
                             <label htmlFor="status-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Status</label>
-                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as User['status'] | 'all')} className="w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600">
+                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as User['status'] | 'all')} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
                                 <option value="all">All Statuses</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>

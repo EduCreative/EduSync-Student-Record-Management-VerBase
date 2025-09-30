@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { School } from '../../types';
@@ -48,11 +47,11 @@ const SchoolFormModal: React.FC<{
                 />
                 <div>
                     <label className="input-label">School Name</label>
-                    <input type="text" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} className="input-style" required />
+                    <input type="text" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} className="input-field" required />
                 </div>
                 <div>
                     <label className="input-label">Address</label>
-                    <textarea value={formData.address} onChange={e => setFormData(p => ({...p, address: e.target.value}))} className="input-style" rows={3} required></textarea>
+                    <textarea value={formData.address} onChange={e => setFormData(p => ({...p, address: e.target.value}))} className="input-field" rows={3} required></textarea>
                 </div>
                 <div className="flex justify-end space-x-2 pt-2">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
@@ -142,7 +141,7 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
             </div>
              <style>{`
                 .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-style { @apply w-full p-2 border rounded-md dark:bg-secondary-900 dark:border-secondary-600; }
+                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
                 .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
                 .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
                 .btn-danger { @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg; }

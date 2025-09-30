@@ -52,13 +52,15 @@ const ResultsPage: React.FC = () => {
 
         setMarks(prev => {
             const newMarks = new Map(prev);
-            // FIX: Explicitly typing `current` and providing a default value prevents type errors when a student has no prior record.
+            // FIX: Explicitly type `current` to ensure properties `marks` and `totalMarks` are recognized.
             const current: { marks: number; totalMarks: number } = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
             
+            // FIX: Using explicit property assignment to avoid potential issues with computed property type inference.
             const updatedEntry = {
-                ...current,
-                [field]: numValue
+                marks: current.marks,
+                totalMarks: current.totalMarks,
             };
+            updatedEntry[field] = numValue;
 
             newMarks.set(studentId, updatedEntry);
             return newMarks;
@@ -92,15 +94,15 @@ const ResultsPage: React.FC = () => {
             
             <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <select value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-style">
+                    <select value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
                         <option value="">Select Class</option>
                         {userClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
-                    <select value={selectedExam} onChange={e => setSelectedExam(e.target.value)} className="input-style">
+                    <select value={selectedExam} onChange={e => setSelectedExam(e.target.value)} className="input-field">
                         <option value="">Select Exam</option>
                         {exams.map(e => <option key={e} value={e}>{e}</option>)}
                     </select>
-                     <select value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)} className="input-style">
+                     <select value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)} className="input-field">
                         <option value="">Select Subject</option>
                         {subjects.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -126,10 +128,10 @@ const ResultsPage: React.FC = () => {
                                             <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
                                         </td>
                                         <td className="px-6 py-3">
-                                            <input type="number" value={marks.get(student.id)?.marks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'marks')} className="input-style w-24" />
+                                            <input type="number" value={marks.get(student.id)?.marks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'marks')} className="input-field w-24" />
                                         </td>
                                         <td className="px-6 py-3">
-                                            <input type="number" value={marks.get(student.id)?.totalMarks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'totalMarks')} className="input-style w-24" />
+                                            <input type="number" value={marks.get(student.id)?.totalMarks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'totalMarks')} className="input-field w-24" />
                                         </td>
                                     </tr>
                                 ))}
@@ -142,7 +144,7 @@ const ResultsPage: React.FC = () => {
                  </div>
             )}
              <style>{`
-                .input-style { @apply w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600; }
+                .input-field { @apply p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
                 .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
             `}</style>
         </div>

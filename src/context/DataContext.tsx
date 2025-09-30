@@ -72,6 +72,9 @@ interface DataContextType {
     addSchool: (name: string, address: string, logoUrl?: string | null) => Promise<void>;
     updateSchool: (updatedSchool: School) => Promise<void>;
     deleteSchool: (schoolId: string) => Promise<void>;
+    addEvent: (eventData: Omit<SchoolEvent, 'id'>) => Promise<void>;
+    updateEvent: (updatedEvent: SchoolEvent) => Promise<void>;
+    deleteEvent: (eventId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -85,7 +88,7 @@ export const useData = (): DataContextType => {
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { user } = useAuth();
+    const { user, activeSchoolId } = useAuth();
     const { showToast } = useToast();
     const { updateSyncTime } = useSync();
     
@@ -120,9 +123,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setLoading(true);
 
-            // Helper function to fetch data from a single table and handle errors gracefully
-            const fetchTable = async (tableName: string, options: { order?: string, limit?: number } = {}) => {
+            const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+
+            // Helper function to fetch data from a single table, with optional school filtering
+            const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
                 let query = supabase.from(tableName).select('*');
+                
+                // For Owners in overview, don't filter. For all other roles or Owners in context view, filter.
+                if (options.filterBySchool && effectiveSchoolId) {
+                    query = query.eq('school_id', effectiveSchoolId);
+                } else if (options.filterBySchool && user.role !== UserRole.Owner) {
+                     query = query.eq('school_id', user.schoolId);
+                }
+                
                 if (options.order) {
                     query = query.order(options.order, { ascending: false });
                 }
@@ -132,50 +145,55 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const { data, error } = await query;
                 if (error) {
                     console.error(`Error fetching ${tableName}:`, error.message);
-                    showToast('Fetch Error', `Could not load data for '${tableName}'. Check console, RLS policies, and if the table exists.`, 'error');
-                    return []; // Return an empty array on error to prevent app crash
+                    showToast('Fetch Error', `Could not load data for '${tableName}'. Check console.`, 'error');
+                    return [];
                 }
                 return toCamelCase(data || []);
             };
 
             try {
+                // Fetch all schools for the Owner's dropdown. Other roles don't need this but it's harmless.
+                const schoolsData = await fetchTable('schools');
+                
                 const [
-                    schoolsData, 
                     usersData, 
                     classesData, 
                     studentsData,
                     attendanceData,
-                    feesData,
                     resultsData,
                     logsData,
                     feeHeadsData,
-                    eventsData
+                    eventsData,
+                    allFees // Fees don't have school_id, fetch all then filter client-side
                 ] = await Promise.all([
-                    fetchTable('schools'),
-                    fetchTable('profiles'), 
-                    fetchTable('classes'),
-                    fetchTable('students'),
-                    fetchTable('attendance'),
+                    fetchTable('profiles', { filterBySchool: true }), 
+                    fetchTable('classes', { filterBySchool: true }),
+                    fetchTable('students', { filterBySchool: true }),
+                    fetchTable('attendance', { filterBySchool: true }),
+                    fetchTable('results', { filterBySchool: true }),
+                    fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
+                    fetchTable('fee_heads', { filterBySchool: true }),
+                    fetchTable('school_events', { filterBySchool: true }),
                     fetchTable('fee_challans'),
-                    fetchTable('results'),
-                    fetchTable('activity_logs', { order: 'timestamp', limit: 100 }),
-                    fetchTable('fee_heads'),
-                    fetchTable('school_events'),
                 ]);
+
+                // Client-side filtering for fees based on student's school context
+                const schoolStudentIds = new Set((studentsData as Student[]).map(s => s.id));
+                const feesData = (allFees as FeeChallan[]).filter(fee => schoolStudentIds.has(fee.studentId));
 
                 setSchools(schoolsData as School[]);
                 setUsers(usersData as User[]);
                 setClasses(classesData as Class[]);
                 setStudents(studentsData as Student[]);
                 setAttendanceState(attendanceData as Attendance[]);
-                setFees(feesData as FeeChallan[]);
+                setFees(feesData);
                 setResults(resultsData as Result[]);
                 setLogs(logsData as ActivityLog[]);
                 setFeeHeads(feeHeadsData as FeeHead[]);
                 setEvents(eventsData as SchoolEvent[]);
                 
                 updateSyncTime();
-            } catch (error) { // This catch is for unexpected programming errors
+            } catch (error) {
                 console.error("A critical error occurred during data processing:", error);
                 showToast('Critical Error', 'An unexpected error occurred. Please check the console.', 'error');
             } finally {
@@ -184,15 +202,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
 
         fetchData();
-    }, [user, showToast, updateSyncTime]);
+    }, [user, activeSchoolId, showToast, updateSyncTime]);
     
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
+
+        const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+
         const newLog: Omit<ActivityLog, 'id'> = {
             userId: user.id,
             userName: user.name,
             userAvatar: user.avatarUrl || '',
-            schoolId: user.schoolId,
+            schoolId: effectiveSchoolId || '',
             action,
             details,
             timestamp: new Date().toISOString(),
@@ -202,7 +223,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLogs(prev => [toCamelCase(data[0]) as ActivityLog, ...prev]);
         }
         updateSyncTime();
-    }, [user, updateSyncTime]);
+    }, [user, activeSchoolId, updateSyncTime]);
 
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
@@ -211,10 +232,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'A password is required to create a new user.', 'error');
         }
 
-        // Using Supabase client-side function. For this to not log out the admin,
-        // "Email confirmation" MUST be enabled in the Supabase project settings.
-        // When enabled, signUp returns the new user but doesn't start a session for them,
-        // thus preserving the admin's session.
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: userData.email,
             password: password,
@@ -228,7 +245,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'User was not created in authentication system. They may already exist.', 'error');
         }
 
-        // Create the user profile in the 'profiles' table.
         const profileData = { ...userData, id: signUpData.user.id };
         const { data: profileInsertData, error: profileError } = await supabase
             .from('profiles')
@@ -238,7 +254,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (profileError) {
             console.error("Failed to create user profile:", profileError.message);
-            // Here, we have an orphaned auth user. A backend process should clean this up.
             return showToast('Error', 'Auth user created, but profile creation failed. Please contact support.', 'error');
         }
         
@@ -251,7 +266,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateUser = async (updatedUser: User) => {
-        // FIX: Use .single() to ensure a single object is returned, preventing potential type issues with array access.
         const { data, error } = await supabase.from('profiles').update(toSnakeCase(updatedUser)).eq('id', updatedUser.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -276,7 +290,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
         const newStudent = { ...studentData, status: 'Active' as const };
-// FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -287,7 +300,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const updateStudent = async (updatedStudent: Student) => {
-// FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -311,7 +323,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const addClass = async (classData: Omit<Class, 'id'>) => {
-        // FIX: Use .single() to ensure a single object is returned, preventing potential type issues with array access.
         const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -323,7 +334,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateClass = async (updatedClass: Class) => {
-        // FIX: Use .single() to ensure a single object is returned, preventing potential type issues with array access.
         const { data, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -354,11 +364,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => {
         if (!user) return;
+        const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
         const recordsToUpsert = attendanceData.map(item => ({
             student_id: item.studentId,
             date: date,
             status: item.status,
-            school_id: user.schoolId
+            school_id: effectiveSchoolId
         }));
 
         const { data, error } = await supabase.from('attendance').upsert(recordsToUpsert, { onConflict: 'student_id, date' }).select();
@@ -381,7 +392,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newPaidAmount = challan.paidAmount + amount;
         const newStatus = newPaidAmount + discount >= challan.totalAmount ? 'Paid' : 'Partial';
 
-// FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('fee_challans')
             .update({ 
                 paid_amount: newPaidAmount, 
@@ -474,7 +484,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
-// FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -485,7 +494,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateFeeHead = async (updatedFeeHead: FeeHead) => {
-// FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
@@ -513,7 +521,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('students').update(toSnakeCase(studentUpdate)).eq('id', studentId).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            updateStudent(toCamelCase(data) as Student); // This will trigger a re-render via updateStudent
+            updateStudent(toCamelCase(data) as Student); 
             addLog('Certificate Issued', `Leaving certificate issued for student ID ${studentId}.`);
             showToast('Success', `Leaving Certificate has been processed.`);
         }
@@ -521,14 +529,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
         if (!user) return;
-        const recordsToUpsert = resultsToSave.map(r => toSnakeCase({ ...r, school_id: user.schoolId }));
+        const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+        const recordsToUpsert = resultsToSave.map(r => toSnakeCase({ ...r, school_id: effectiveSchoolId }));
         
         const { data, error } = await supabase.from('results').upsert(recordsToUpsert, { onConflict: 'student_id, exam, subject' }).select();
 
         if (error) return showToast('Error', `Failed to save results: ${error.message}`, 'error');
 
         if (data) {
-            // FIX: Explicitly cast the camelCased data to Result[] to ensure type safety.
             const upsertedResults: Result[] = toCamelCase(data) as Result[];
             const upsertedMap = new Map(upsertedResults.map((r) => [`${r.studentId}-${r.exam}-${r.subject}`, r]));
             const oldResultsFiltered = results.filter(r => !upsertedMap.has(`${r.studentId}-${r.exam}-${r.subject}`));
@@ -544,12 +552,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'You do not have permission to add schools.', 'error');
         }
         const newSchool: Omit<School, 'id'> = { name, address, logoUrl };
-        // FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('schools').insert(toSnakeCase(newSchool)).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            // FIX: Property 'name' does not exist on type 'unknown'. Adding explicit type to resolve.
-            const addedSchool: School = toCamelCase(data);
+            const addedSchool: School = toCamelCase(data) as School;
             setSchools(prev => [...prev, addedSchool]);
             addLog('School Added', `New school added: ${addedSchool.name}.`);
             showToast('Success', `School "${addedSchool.name}" has been created.`);
@@ -557,12 +563,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateSchool = async (updatedSchool: School) => {
-        // FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            // FIX: Property 'name' does not exist on type 'unknown'. Explicitly type the constant to ensure TypeScript correctly infers its shape as 'School'.
-            const updatedSchoolFromDB: School = toCamelCase(data);
+            // FIX: The type from Supabase can be 'unknown'. Casting to the specific type 'School' ensures type safety.
+            const updatedSchoolFromDB = toCamelCase(data) as School;
             setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
             addLog('School Updated', `Details updated for ${updatedSchoolFromDB.name}.`);
             showToast('Success', `${updatedSchoolFromDB.name}'s details have been updated.`);
@@ -577,8 +582,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setSchools(prev => prev.filter(s => s.id !== schoolId));
         if(schoolToDelete) {
-             addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
-             showToast('Success', `${schoolToDelete.name} has been deleted.`);
+             // FIX: The type guard `if(schoolToDelete)` is sufficient. Extracting the name to a variable to help the type checker.
+             const schoolName = schoolToDelete.name;
+             addLog('School Deleted', `School deleted: ${schoolName}.`);
+             showToast('Success', `${schoolName} has been deleted.`);
+        }
+    };
+
+    const addEvent = async (eventData: Omit<SchoolEvent, 'id'>) => {
+        const { data, error } = await supabase.from('school_events').insert(toSnakeCase(eventData)).select().single();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data) {
+            const newEvent = toCamelCase(data) as SchoolEvent;
+            setEvents(prev => [...prev, newEvent]);
+            addLog('Event Added', `New event created: ${newEvent.title}.`);
+            showToast('Success', `Event "${newEvent.title}" has been created.`);
+        }
+    };
+
+    const updateEvent = async (updatedEvent: SchoolEvent) => {
+        const { data, error } = await supabase.from('school_events').update(toSnakeCase(updatedEvent)).eq('id', updatedEvent.id).select().single();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data) {
+            const updatedEventFromDB = toCamelCase(data) as SchoolEvent;
+            setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEventFromDB : e));
+            addLog('Event Updated', `Event details updated for ${updatedEventFromDB.title}.`);
+            showToast('Success', `Event "${updatedEventFromDB.title}" has been updated.`);
+        }
+    };
+
+    const deleteEvent = async (eventId: string) => {
+        const eventToDelete = events.find(e => e.id === eventId);
+        const { error } = await supabase.from('school_events').delete().eq('id', eventId);
+        if (error) return showToast('Error', error.message, 'error');
+
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        if (eventToDelete) {
+            addLog('Event Deleted', `Event deleted: ${eventToDelete.title}.`);
+            showToast('Success', `Event "${eventToDelete.title}" deleted.`);
         }
     };
 
@@ -588,7 +629,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getSchoolById, addUser, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults,
-        addSchool, updateSchool, deleteSchool,
+        addSchool, updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent,
     };
 
     return (

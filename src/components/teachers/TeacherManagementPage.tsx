@@ -127,12 +127,12 @@ const TeacherManagementPage: React.FC = () => {
                                 placeholder="By name or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="input-style"
+                                className="input-field"
                             />
                         </div>
                         <div>
                             <label htmlFor="status-filter" className="input-label">Status</label>
-                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="input-style">
+                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="input-field">
                                 <option value="all">All Statuses</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
@@ -205,7 +205,7 @@ const TeacherManagementPage: React.FC = () => {
             </div>
             <style>{`
                 .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-style { @apply w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600; }
+                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
                 .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
                 .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
                 .btn-danger { @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg; }

@@ -32,13 +32,13 @@ export interface School {
 export interface Class {
     id: string;
     name: string;
-    teacherId: string;
+    teacherId: string | null;
     schoolId: string;
 }
 
 export interface Student {
     id: string;
-    userId?: string;
+    userId?: string | null;
     name: string;
     classId: string;
     schoolId: string;
@@ -125,4 +125,5 @@ export interface SchoolEvent {
     date: string; // YYYY-MM-DD
     category: 'Holiday' | 'Exam' | 'Event' | 'Meeting';
     description?: string;
+    schoolId: string;
 }

@@ -74,15 +74,15 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                 <div className="space-y-4">
                      <div>
                         <label htmlFor="dateOfLeaving" className="input-label">Date of Leaving</label>
-                        <input type="date" id="dateOfLeaving" value={details.dateOfLeaving} onChange={e => setDetails(d => ({...d, dateOfLeaving: e.target.value}))} className="input-style" />
+                        <input type="date" id="dateOfLeaving" value={details.dateOfLeaving} onChange={e => setDetails(d => ({...d, dateOfLeaving: e.target.value}))} className="input-field" />
                     </div>
                      <div>
                         <label htmlFor="reasonForLeaving" className="input-label">Reason for Leaving</label>
-                        <input type="text" id="reasonForLeaving" value={details.reasonForLeaving} onChange={e => setDetails(d => ({...d, reasonForLeaving: e.target.value}))} className="input-style" placeholder="e.g., Relocation" />
+                        <input type="text" id="reasonForLeaving" value={details.reasonForLeaving} onChange={e => setDetails(d => ({...d, reasonForLeaving: e.target.value}))} className="input-field" placeholder="e.g., Relocation" />
                     </div>
                      <div>
                         <label htmlFor="conduct" className="input-label">Conduct</label>
-                        <select id="conduct" value={details.conduct} onChange={e => setDetails(d => ({...d, conduct: e.target.value as Student['conduct']}))} className="input-style">
+                        <select id="conduct" value={details.conduct} onChange={e => setDetails(d => ({...d, conduct: e.target.value as Student['conduct']}))} className="input-field">
                             <option>Excellent</option>
                             <option>Good</option>
                             <option>Fair</option>
@@ -98,14 +98,14 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
             </div>
              <style>{`
                 .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-style { @apply w-full p-2 border rounded-md dark:bg-secondary-700 dark:border-secondary-600; }
+                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
                 .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
             `}</style>
         </div>
     );
 };
 
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 
 
 export default LeavingCertificatePage;
