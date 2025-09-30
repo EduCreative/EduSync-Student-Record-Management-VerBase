@@ -549,8 +549,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (data) {
             const addedSchool = toCamelCase(data) as School;
             setSchools(prev => [...prev, addedSchool]);
-            addLog('School Added', `New school added: ${name}.`);
-            showToast('Success', `School "${name}" has been created.`);
+            // FIX: Property 'name' does not exist on type 'unknown'. Using 'name' from 'addedSchool' which is typed as School.
+            addLog('School Added', `New school added: ${addedSchool.name}.`);
+            showToast('Success', `School "${addedSchool.name}" has been created.`);
         }
     };
 
@@ -559,7 +560,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            const updatedSchoolFromDB = toCamelCase(data) as School;
+            // FIX: Property 'name' does not exist on type 'unknown'. Explicitly type the constant to ensure TypeScript correctly infers its shape as 'School'.
+            const updatedSchoolFromDB: School = toCamelCase(data);
             setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
             addLog('School Updated', `Details updated for ${updatedSchoolFromDB.name}.`);
             showToast('Success', `${updatedSchoolFromDB.name}'s details have been updated.`);
