@@ -1,13 +1,15 @@
+
+
 import React, { useMemo } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { UserRole, FeeChallan, Attendance, User } from '../../types.ts';
-import Badge from '../common/Badge.tsx';
-import DoughnutChart from '../charts/DoughnutChart.tsx';
-import BarChart from '../charts/BarChart.tsx';
-import Avatar from '../common/Avatar.tsx';
-import StatCard from '../common/StatCard.tsx';
-import { ActiveView } from '../layout/Layout.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { UserRole, FeeChallan, Attendance } from '../../types';
+import Badge from '../common/Badge';
+import DoughnutChart from '../charts/DoughnutChart';
+import BarChart from '../charts/BarChart';
+import Avatar from '../common/Avatar';
+import StatCard from '../common/StatCard';
+import { ActiveView } from '../layout/Layout';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -78,7 +80,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }, [fees, students, effectiveSchoolId]);
 
     const attendanceData = useMemo(() => {
-        // Find the most recent date with attendance records for a realistic snapshot
         const latestDate = attendance.reduce((latest, a) => a.date > latest ? a.date : latest, '');
 
         const schoolStudentIds = new Set(schoolStudents.map(s => s.id));
@@ -106,7 +107,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                  <p className="text-secondary-500 dark:text-secondary-400">Welcome back, {user.name}. Here's what's happening at {school?.name}.</p>
             </div>
            
-            {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} />
                 <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} />
@@ -114,21 +114,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
             </div>
             
-            {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <DoughnutChart
-                    title="Fee Collection Status"
-                    data={feeStatusData}
-                />
-                <BarChart
-                    title="Today's Attendance Snapshot"
-                    data={attendanceData}
-                    color="#6366f1"
-                />
+                <DoughnutChart title="Fee Collection Status" data={feeStatusData} />
+                <BarChart title="Today's Attendance Snapshot" data={attendanceData} color="#6366f1" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Quick Actions */}
                 <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                     <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-2 gap-4">
@@ -136,11 +127,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                         <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'fees' })} />
                         <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'attendance' })} />
                         <QuickAction title="Manage Classes" icon={<SchoolIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'classes' })} />
-                        <QuickAction title="Send Notification" icon={<BellIcon className="w-8 h-8"/>} />
                     </div>
                 </div>
 
-                {/* Recent Activity */}
                 <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                     <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
                     <ul className="space-y-4">
@@ -168,52 +157,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                     </ul>
                 </div>
             </div>
-
-             {/* Manage School Users */}
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-                <h2 className="text-xl font-semibold mb-4">Manage School Users</h2>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
-                        <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
-                            <tr>
-                                <th scope="col" className="px-4 py-3">User</th>
-                                <th scope="col" className="px-4 py-3">Role</th>
-                                <th scope="col" className="px-4 py-3">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {schoolUsers.map(schoolUser => (
-                                <tr key={schoolUser.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center space-x-3">
-                                            <Avatar user={schoolUser} className="h-10 w-10" />
-                                            <div>
-                                                <div className="font-semibold text-secondary-900 dark:text-white">{schoolUser.name}</div>
-                                                <div className="text-xs text-secondary-500">{schoolUser.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4"><Badge>{schoolUser.role}</Badge></td>
-                                    <td className="px-4 py-4">
-                                        <Badge color={
-                                            schoolUser.status === 'Active' ? 'green' : 
-                                            schoolUser.status === 'Pending Approval' ? 'yellow' : 
-                                            schoolUser.status === 'Suspended' ? 'red' : 'secondary'
-                                        }>
-                                            {schoolUser.status}
-                                        </Badge>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     );
 };
 
-// Icons
 const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9"cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 const BriefcaseIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
 const DollarSignIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;

@@ -1,25 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { User, UserRole } from '../../types.ts';
-import Badge from '../common/Badge.tsx';
-import UserFormModal from '../users/UserFormModal.tsx';
-import Modal from '../common/Modal.tsx';
-import Avatar from '../common/Avatar.tsx';
-
-const formatDateTime = (isoString?: string): string => {
-    if (!isoString) return 'N/A';
-    try {
-        const date = new Date(isoString);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = date.toLocaleString('en-GB', { month: 'short' });
-        const year = date.getFullYear();
-        const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-        return `${day}/${month}/${year}, ${time}`;
-    } catch (error) {
-        return 'Invalid Date';
-    }
-};
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { User, UserRole } from '../../types';
+import Badge from '../common/Badge';
+import UserFormModal from '../users/UserFormModal';
+import Modal from '../common/Modal';
+import Avatar from '../common/Avatar';
+import { formatDateTime } from '../../constants';
 
 const AccountantManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();

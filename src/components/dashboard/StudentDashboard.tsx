@@ -1,9 +1,10 @@
 
+
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import Avatar from '../common/Avatar';
-import StatCard from '../common/StatCard.tsx';
+import StatCard from '../common/StatCard';
 
 const StudentDashboard: React.FC = () => {
     const { user } = useAuth();

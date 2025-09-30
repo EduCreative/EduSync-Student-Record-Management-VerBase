@@ -1,13 +1,15 @@
+
+
 import React from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { UserRole } from '../../types.ts';
-import OwnerDashboard from './OwnerDashboard.tsx';
-import AdminDashboard from './AdminDashboard.tsx';
-import AccountantDashboard from './AccountantDashboard.tsx';
-import TeacherDashboard from './TeacherDashboard.tsx';
-import ParentDashboard from './ParentDashboard.tsx';
-import StudentDashboard from './StudentDashboard.tsx';
-import { ActiveView } from '../layout/Layout.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
+import OwnerDashboard from './OwnerDashboard';
+import AdminDashboard from './AdminDashboard';
+import AccountantDashboard from './AccountantDashboard';
+import TeacherDashboard from './TeacherDashboard';
+import ParentDashboard from './ParentDashboard';
+import StudentDashboard from './StudentDashboard';
+import { ActiveView } from '../layout/Layout';
 
 interface DashboardProps {
     setActiveView: (view: ActiveView) => void;
@@ -20,7 +22,6 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
         return <div className="text-center p-8">Loading user data...</div>;
     }
 
-    // When an Owner selects a school, they should see the Admin dashboard for that school.
     const effectiveRole = user.role === UserRole.Owner && activeSchoolId ? UserRole.Admin : user.role;
 
     switch (effectiveRole) {

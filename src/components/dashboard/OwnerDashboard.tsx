@@ -1,10 +1,11 @@
 
+
 import React, { useMemo } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { UserRole } from '../../types.ts';
-import DoughnutChart from '../charts/DoughnutChart.tsx';
-import BarChart from '../charts/BarChart.tsx';
-import StatCard from '../common/StatCard.tsx';
+import { useData } from '../../context/DataContext';
+import { UserRole } from '../../types';
+import DoughnutChart from '../charts/DoughnutChart';
+import BarChart from '../charts/BarChart';
+import StatCard from '../common/StatCard';
 
 const OwnerDashboard: React.FC = () => {
     const { schools, users, students, fees } = useData();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
+import { useAuth } from '../../context/AuthContext';
 
 interface LoginPageProps {
     onSwitchToRegister: () => void;
@@ -20,7 +20,6 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    // FIX: Corrected typo in viewBox attribute
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
         <circle cx="12" cy="12" r="3" />
@@ -28,7 +27,6 @@ const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const EyeOffIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    // FIX: Corrected typo in viewBox attribute
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
         <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
@@ -73,7 +71,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
     };
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 to-indigo-900 text-white lg:grid lg:grid-cols-2 relative">
+        <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 to-primary-950 text-white lg:grid lg:grid-cols-2 relative">
             <div className="absolute inset-0 opacity-10">
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M40 0V80M0 40H80" stroke="white" strokeWidth="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
             </div>
@@ -162,7 +160,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-white text-primary-700 font-bold py-3 px-4 rounded-lg hover:bg-primary-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            className="w-full bg-white text-primary-800 font-bold py-3 px-4 rounded-lg hover:bg-primary-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                         >
                             {loading ? <SpinnerIcon /> : 'Sign In'}
                         </button>
@@ -193,7 +191,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
 };
 
 const SpinnerIcon = () => (
-    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>

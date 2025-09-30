@@ -1,8 +1,9 @@
 
+
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import StatCard from '../common/StatCard.tsx';
+import StatCard from '../common/StatCard';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; }> = ({ title, icon }) => (
      <button className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center">

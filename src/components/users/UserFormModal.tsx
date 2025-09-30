@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, UserRole } from '../../types.ts';
-import Modal from '../common/Modal.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { NAV_LINKS } from '../../constants.tsx';
-import ImageUpload from '../common/ImageUpload.tsx';
+import { User, UserRole } from '../../types';
+import Modal from '../common/Modal';
+import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
+import { NAV_LINKS } from '../../constants';
+import ImageUpload from '../common/ImageUpload';
 
 interface UserFormModalProps {
     isOpen: boolean;
@@ -15,14 +15,8 @@ interface UserFormModalProps {
     lockRole?: boolean;
 }
 
-/**
- * Validates if the given string is in a valid email format.
- * @param email The email string to validate.
- * @returns True if the email format is valid, otherwise false.
- */
 const isValidEmail = (email: string): boolean => {
     if (!email) return false;
-    // A more robust regex for email format validation.
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(email);
 };
@@ -46,7 +40,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const linksForRole = NAV_LINKS[formData.role] || [];
 
     useEffect(() => {
-        // Ensure form and errors are reset when modal opens
         if (isOpen) {
             if (userToEdit) {
                 setFormData({
@@ -76,7 +69,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 setDisabledLinks({});
             }
             setPassword('');
-            setErrors({}); // Reset errors on open
+            setErrors({});
         }
     }, [userToEdit, isOpen, currentUser, schools, defaultRole]);
 
@@ -114,7 +107,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        // Clear validation error when user starts typing
         if (errors[name as keyof typeof errors]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -134,7 +126,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) {
-            return; // Stop submission if validation fails
+            return;
         }
         const disabledNavLinks = Object.entries(disabledLinks)
             .filter(([, isDisabled]) => isDisabled)
@@ -156,7 +148,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 return Object.values(UserRole);
             
             case UserRole.Admin:
-                return Object.values(UserRole).filter(role => role !== UserRole.Owner);
+                return Object.values(UserRole).filter(role => ![UserRole.Owner, UserRole.Admin].includes(role));
 
             case UserRole.Teacher:
             case UserRole.Accountant:

@@ -1,10 +1,12 @@
+
+
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { useTheme } from '../../context/ThemeContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { UserRole } from '../../types.ts';
-import { ActiveView } from './Layout.tsx';
-import Avatar from '../common/Avatar.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useData } from '../../context/DataContext';
+import { UserRole } from '../../types';
+import { ActiveView } from './Layout';
+import Avatar from '../common/Avatar';
 
 interface HeaderProps {
     setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;

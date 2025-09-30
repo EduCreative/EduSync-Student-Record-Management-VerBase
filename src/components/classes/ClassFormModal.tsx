@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Class, UserRole } from '../../types.ts';
-import Modal from '../users/Modal.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
+import { Class, UserRole } from '../../types';
+import Modal from '../common/Modal';
+import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface ClassFormModalProps {
     isOpen: boolean;

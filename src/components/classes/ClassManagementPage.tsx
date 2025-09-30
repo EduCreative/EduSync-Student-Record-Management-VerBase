@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { Class, UserRole } from '../../types.ts';
-import Modal from '../users/Modal.tsx';
-import ClassFormModal from './ClassFormModal.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { Class, UserRole } from '../../types';
+import Modal from '../common/Modal';
+import ClassFormModal from './ClassFormModal';
 
 const ClassManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId, effectiveRole } = useAuth();

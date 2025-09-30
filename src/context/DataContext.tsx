@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types.ts';
-import { useAuth } from './AuthContext.tsx';
-import { useToast } from './ToastContext.tsx';
-import { useSync } from './SyncContext.tsx';
-import { supabase } from '../lib/supabaseClient.ts';
+import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
+import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
+import { useSync } from './SyncContext';
+import { supabase } from '../lib/supabaseClient';
 
 // Helper to convert snake_case object keys to camelCase
 const toCamelCase = (obj: any): any => {
@@ -252,7 +252,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('profiles').update(toSnakeCase(updatedUser)).eq('id', updatedUser.id).select();
         if (error) return showToast('Error', error.message, 'error');
         if (data && data.length > 0) {
-            setUsers(prev => prev.map(u => u.id === updatedUser.id ? toCamelCase(data[0]) as User : u));
+            // FIX: The parameter `updatedUser` is correctly typed as User, which has a `name` property.
+            setUsers(prev => prev.map(u => u.id === updatedUser.id ? toCamelCase(data[0]) as unknown as User : u));
             addLog('User Updated', `User profile updated for ${updatedUser.name}.`);
             showToast('Success', `${updatedUser.name}'s profile has been updated.`);
         }
@@ -307,6 +308,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select();
         if (error) return showToast('Error', error.message, 'error');
         if (data && data.length > 0) {
+            // FIX: The parameter `classData` is correctly typed, which has a `name` property.
             setClasses(prev => [...prev, toCamelCase(data[0]) as Class]);
             addLog('Class Added', `New class added: ${classData.name}.`);
             showToast('Success', `Class "${classData.name}" has been created.`);
@@ -317,6 +319,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select();
         if (error) return showToast('Error', error.message, 'error');
         if (data && data.length > 0) {
+            // FIX: Cast the returned data from Supabase to `Class` to ensure type safety before accessing its properties.
             const updatedClassFromDB = toCamelCase(data[0]) as Class;
             setClasses(prev => prev.map(c => c.id === updatedClass.id ? updatedClassFromDB : c));
             addLog('Class Updated', `Class details updated for ${updatedClassFromDB.name}.`);
@@ -331,15 +334,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const classToDelete = classes.find(c => c.id === classId);
-        const className = classToDelete?.name;
 
         const { error } = await supabase.from('classes').delete().eq('id', classId);
         if (error) return showToast('Error', error.message, 'error');
 
         setClasses(prev => prev.filter(c => c.id !== classId));
-        if (classToDelete && className) {
-            addLog('Class Deleted', `Class deleted: ${className}.`);
-            showToast('Success', `Class "${className}" deleted.`);
+        // FIX: Check if `classToDelete` is found before accessing its name property to prevent runtime errors.
+        if (classToDelete) {
+            addLog('Class Deleted', `Class deleted: ${classToDelete.name}.`);
+            showToast('Success', `Class "${classToDelete.name}" deleted.`);
         }
     };
 
@@ -514,7 +517,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (error) return showToast('Error', `Failed to save results: ${error.message}`, 'error');
 
         if (data) {
-            const upsertedResults: Result[] = toCamelCase(data);
+            // FIX: Explicitly cast the camelCased data to Result[] to ensure type safety.
+            const upsertedResults: Result[] = toCamelCase(data) as Result[];
             const upsertedMap = new Map(upsertedResults.map((r) => [`${r.studentId}-${r.exam}-${r.subject}`, r]));
             const oldResultsFiltered = results.filter(r => !upsertedMap.has(`${r.studentId}-${r.exam}-${r.subject}`));
             

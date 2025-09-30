@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { NAV_LINKS, formatDateTime } from '../../constants.tsx';
-import { ActiveView } from './Layout.tsx';
-import { UserRole } from '../../types.ts';
-import { useSync } from '../../context/SyncContext.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { NAV_LINKS, formatDateTime } from '../../constants';
+import { ActiveView } from './Layout';
+import { UserRole } from '../../types';
+import { useSync } from '../../context/SyncContext';
 
 interface SidebarProps {
     sidebarOpen: boolean;

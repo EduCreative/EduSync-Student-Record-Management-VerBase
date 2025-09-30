@@ -1,16 +1,17 @@
+
+
 import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext.tsx';
-// FIX: Corrected import. DataProvider is now correctly exported from DataContext.
-import { DataProvider } from './context/DataContext.tsx';
-import { ThemeProvider } from './context/ThemeContext.tsx';
-import LoginPage from './components/auth/LoginPage.tsx';
-import RegisterPage from './components/auth/RegisterPage.tsx';
-import Layout from './components/layout/Layout.tsx';
-import { ToastProvider } from './context/ToastContext.tsx';
-import { SyncProvider } from './context/SyncContext.tsx';
-import { PrintProvider, usePrint } from './context/PrintContext.tsx';
-import PrintPreview from './components/common/PrintPreview.tsx';
-import AccountSetupPage from './components/auth/AccountSetupPage.tsx';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { DataProvider } from './context/DataContext';
+import { ThemeProvider } from './context/ThemeContext';
+import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
+import Layout from './components/layout/Layout';
+import { ToastProvider } from './context/ToastContext';
+import { SyncProvider } from './context/SyncContext';
+import { PrintProvider, usePrint } from './context/PrintContext';
+import PrintPreview from './components/common/PrintPreview';
+import AccountSetupPage from './components/auth/AccountSetupPage';
 
 type AuthView = 'login' | 'register';
 

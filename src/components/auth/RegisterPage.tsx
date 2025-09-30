@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { UserRole } from '../../types.ts';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
 
 interface RegisterPageProps {
     onSwitchToLogin: () => void;
@@ -21,7 +21,6 @@ const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    // FIX: Corrected typo in viewBox attribute
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -98,13 +97,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
 
     if (success) {
         return (
-            <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 to-indigo-900 flex flex-col justify-center items-center p-4 text-white">
+            <div className="min-h-screen w-full bg-gradient-to-br from-golden-700 to-golden-950 flex flex-col justify-center items-center p-4 text-white">
                 <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 text-center">
                     <h1 className="text-2xl font-bold">Registration Successful!</h1>
-                    <p className="text-primary-200 mt-4">
+                    <p className="text-golden-200 mt-4">
                         Please check your email inbox for a confirmation link to activate your account.
                     </p>
-                    <button onClick={onSwitchToLogin} className="mt-6 w-full bg-white text-primary-700 font-bold py-3 px-4 rounded-lg hover:bg-primary-100 transition-colors">
+                    <button onClick={onSwitchToLogin} className="mt-6 w-full bg-white text-golden-800 font-bold py-3 px-4 rounded-lg hover:bg-golden-100 transition-colors">
                         Back to Login
                     </button>
                 </div>
@@ -113,7 +112,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     }
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 to-indigo-900 text-white lg:grid lg:grid-cols-2 relative">
+        <div className="min-h-screen w-full bg-gradient-to-br from-golden-700 to-golden-950 text-white lg:grid lg:grid-cols-2 relative">
              <div className="absolute inset-0 opacity-10">
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M40 0V80M0 40H80" stroke="white" strokeWidth="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
             </div>
@@ -125,11 +124,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                     <h2 className="text-5xl font-bold tracking-tight">
                         Join EduSync Today
                     </h2>
-                    <p className="mt-4 text-lg text-primary-200 max-w-md mx-auto">
+                    <p className="mt-4 text-lg text-golden-200 max-w-md mx-auto">
                         Streamline your school's management and enhance collaboration.
                     </p>
                 </div>
-                <div className="absolute bottom-8 text-sm text-primary-300">
+                <div className="absolute bottom-8 text-sm text-golden-300">
                     &copy; {new Date().getFullYear()} EduSync. All rights reserved.
                 </div>
             </div>
@@ -139,7 +138,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                         <h2 className="text-3xl font-bold tracking-tight text-white">
                             Create Account
                         </h2>
-                        <p className="text-primary-200 mt-2">
+                        <p className="text-golden-200 mt-2">
                             Fill in your details to get started.
                         </p>
                     </div>
@@ -148,31 +147,31 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
 
                     <form onSubmit={handleRegister} className="space-y-4" noValidate>
                         <div>
-                            <label className="block text-primary-200 text-sm font-bold mb-2" htmlFor="name">Full Name</label>
+                            <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="name">Full Name</label>
                             <div className="relative">
-                                <UserIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-primary-200/80"/>
+                                <UserIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <input id="name" type="text" value={name} onChange={handleInputChange(setName, 'name')} className="input-auth" required />
                             </div>
                              {formErrors.name && <p className="text-red-400 text-xs mt-1">{formErrors.name}</p>}
                         </div>
                         <div>
-                            <label className="block text-primary-200 text-sm font-bold mb-2" htmlFor="email">Email Address</label>
+                            <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="email">Email Address</label>
                              <div className="relative">
-                                <MailIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-primary-200/80"/>
+                                <MailIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <input id="email" type="email" value={email} onChange={handleInputChange(setEmail, 'email')} className="input-auth" required />
                             </div>
                             {formErrors.email && <p className="text-red-400 text-xs mt-1">{formErrors.email}</p>}
                         </div>
                         <div>
-                            <label className="block text-primary-200 text-sm font-bold mb-2" htmlFor="password">Password</label>
+                            <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="password">Password</label>
                              <div className="relative">
-                                <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-primary-200/80"/>
+                                <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <input id="password" type="password" value={password} onChange={handleInputChange(setPassword, 'password')} className="input-auth" required />
                             </div>
                             {formErrors.password && <p className="text-red-400 text-xs mt-1">{formErrors.password}</p>}
                         </div>
                         <div>
-                            <label className="block text-primary-200 text-sm font-bold mb-2" htmlFor="role">I am a...</label>
+                            <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="role">I am a...</label>
                             <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-auth">
                                 <option value={UserRole.Owner}>School Owner</option>
                                 <option value={UserRole.Parent}>Parent</option>
@@ -181,13 +180,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             </select>
                         </div>
                         <div className="pt-2">
-                            <button type="submit" disabled={loading} className="w-full bg-white text-primary-700 font-bold py-3 px-4 rounded-lg hover:bg-primary-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                            <button type="submit" disabled={loading} className="w-full bg-white text-golden-800 font-bold py-3 px-4 rounded-lg hover:bg-golden-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
                                 {loading ? <SpinnerIcon /> : 'Create Account'}
                             </button>
                         </div>
                     </form>
 
-                    <p className="text-center text-primary-200 text-sm mt-6">
+                    <p className="text-center text-golden-200 text-sm mt-6">
                         Already have an account?{' '}
                         <button onClick={onSwitchToLogin} className="font-semibold text-white hover:underline">
                             Sign In
@@ -196,14 +195,14 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 </div>
             </div>
             <style>{`.input-auth {
-                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-white/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400;
+                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-white/20 text-white placeholder-golden-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-golden-400;
             }`}</style>
         </div>
     );
 };
 
 const SpinnerIcon = () => (
-    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-golden-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>

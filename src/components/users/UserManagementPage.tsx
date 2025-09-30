@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { User, UserRole } from '../../types.ts';
-import Badge from '../common/Badge.tsx';
-import UserFormModal from './UserFormModal.tsx';
-import Modal from '../common/Modal.tsx';
-import Avatar from '../common/Avatar.tsx';
-import { formatDateTime } from '../../constants.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { User, UserRole } from '../../types';
+import Badge from '../common/Badge';
+import UserFormModal from './UserFormModal';
+import Modal from '../common/Modal';
+import Avatar from '../common/Avatar';
+import { formatDateTime } from '../../constants';
 
 const UserManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();
@@ -31,10 +31,7 @@ const UserManagementPage: React.FC = () => {
             case UserRole.Owner:
                 return Object.values(UserRole);
             case UserRole.Admin:
-                return Object.values(UserRole).filter(role => role !== UserRole.Owner);
-            case UserRole.Teacher:
-            case UserRole.Accountant:
-                return [UserRole.Parent, UserRole.Student];
+                return Object.values(UserRole).filter(role => ![UserRole.Owner, UserRole.Admin].includes(role));
             default:
                 return [];
         }
@@ -59,11 +56,14 @@ const UserManagementPage: React.FC = () => {
                 if (searchTerm && !user.name.toLowerCase().includes(searchTerm.toLowerCase()) && !user.email.toLowerCase().includes(searchTerm.toLowerCase())) {
                     return false;
                 }
+                // Admin should not see other Admins or Owners
+                if (currentUser?.role === UserRole.Admin && (user.role === UserRole.Admin || user.role === UserRole.Owner)) {
+                    return false;
+                }
                 return true;
             });
     }, [users, currentUser, searchTerm, roleFilter, schoolFilter, statusFilter, activeSchoolId, effectiveSchoolId]);
 
-    // Reset to page 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, roleFilter, schoolFilter, statusFilter]);
@@ -99,7 +99,7 @@ const UserManagementPage: React.FC = () => {
     const handleDeleteUser = () => {
         if (userToDelete) {
             deleteUser(userToDelete.id);
-            setUserToDelete(null); // Close modal after deletion
+            setUserToDelete(null); 
         }
     };
     
@@ -158,7 +158,6 @@ const UserManagementPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Filters */}
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                          <div className={currentUser?.role === UserRole.Owner ? 'sm:col-span-2 lg:col-span-1' : 'sm:col-span-2'}>
@@ -204,7 +203,6 @@ const UserManagementPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Users Table */}
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
