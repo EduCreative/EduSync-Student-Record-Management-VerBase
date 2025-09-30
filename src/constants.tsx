@@ -59,7 +59,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     [UserRole.Admin]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
-        { name: 'Classes', path: '/classes', icon: <SchoolIcon /> },
+        { name: 'Class Management', path: '/classes', icon: <SchoolIcon /> },
         { name: 'Teachers', path: '/teachers', icon: <UsersIcon /> },
         { name: 'Accountants', path: '/accountants', icon: <UsersIcon /> },
         { name: 'User Accounts', path: '/users', icon: <UsersIcon /> },
@@ -79,7 +79,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     ],
     [UserRole.Teacher]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-        { name: 'My Classes', path: '/classes', icon: <SchoolIcon /> },
+        { name: 'Class Management', path: '/classes', icon: <SchoolIcon /> },
         { name: 'Attendance', path: '/attendance', icon: <CheckCircleIcon /> },
         { name: 'Enter Results', path: '/results', icon: <EditIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },

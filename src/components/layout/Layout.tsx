@@ -37,7 +37,7 @@ const Layout: React.FC = () => {
         switch (activeView.view) {
             case 'schools':
                 if (effectiveRole === UserRole.Owner) {
-                    return <SchoolManagementPage />;
+                    return <SchoolManagementPage setActiveView={setActiveView} />;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
             case 'users':

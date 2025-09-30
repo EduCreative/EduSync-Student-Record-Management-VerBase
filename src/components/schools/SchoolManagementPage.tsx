@@ -4,6 +4,8 @@ import { useData } from '../../context/DataContext';
 import { School } from '../../types';
 import Modal from '../common/Modal';
 import ImageUpload from '../common/ImageUpload';
+import { useAuth } from '../../context/AuthContext';
+import { ActiveView } from '../layout/Layout';
 
 const SchoolFormModal: React.FC<{
     isOpen: boolean;
@@ -62,8 +64,13 @@ const SchoolFormModal: React.FC<{
 };
 
 
-const SchoolManagementPage: React.FC = () => {
+interface SchoolManagementPageProps {
+    setActiveView: (view: ActiveView) => void;
+}
+
+const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveView }) => {
     const { schools, addSchool, updateSchool, deleteSchool } = useData();
+    const { switchSchoolContext } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [schoolToEdit, setSchoolToEdit] = useState<School | null>(null);
     const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
@@ -74,6 +81,11 @@ const SchoolManagementPage: React.FC = () => {
         } else {
             addSchool(school.name, school.address, school.logoUrl);
         }
+    };
+
+    const handleSchoolClick = (schoolId: string) => {
+        switchSchoolContext(schoolId);
+        setActiveView({ view: 'dashboard' });
     };
     
     return (
@@ -109,7 +121,14 @@ const SchoolManagementPage: React.FC = () => {
                         <tbody>
                             {schools.map(school => (
                                 <tr key={school.id} className="border-b dark:border-secondary-700">
-                                    <td className="td-style font-medium">{school.name}</td>
+                                    <td className="td-style font-medium">
+                                        <button 
+                                            onClick={() => handleSchoolClick(school.id)} 
+                                            className="text-primary-600 dark:text-primary-400 hover:underline text-left"
+                                        >
+                                            {school.name}
+                                        </button>
+                                    </td>
                                     <td className="td-style">{school.address}</td>
                                     <td className="td-style space-x-2">
                                         <button onClick={() => { setSchoolToEdit(school); setIsModalOpen(true); }} className="text-primary-600 hover:underline">Edit</button>
