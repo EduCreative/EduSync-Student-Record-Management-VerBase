@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -13,7 +9,7 @@ import SettingsPage from '../settings/SettingsPage';
 import AttendancePage from '../attendance/AttendancePage';
 import FeeManagementPage from '../fees/FeeManagementPage';
 import ResultsPage from '../results/ResultsPage';
-import UserLogsPage from '../logs/UserLogsPage';
+import UserLogsPage from '../logs/UserLogsPage.tsx';
 import SchoolManagementPage from '../schools/SchoolManagementPage';
 import CalendarPage from '../calendar/CalendarPage';
 import { useAuth } from '../../context/AuthContext';

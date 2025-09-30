@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
 import { useAuth } from './AuthContext';
@@ -543,20 +544,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'You do not have permission to add schools.', 'error');
         }
         const newSchool: Omit<School, 'id'> = { name, address, logoUrl };
-// FIX: Standardize query to use .single() for consistency and type safety.
+        // FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('schools').insert(toSnakeCase(newSchool)).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            const addedSchool = toCamelCase(data) as School;
+            // FIX: Property 'name' does not exist on type 'unknown'. Adding explicit type to resolve.
+            const addedSchool: School = toCamelCase(data);
             setSchools(prev => [...prev, addedSchool]);
-            // FIX: Property 'name' does not exist on type 'unknown'. Using 'name' from 'addedSchool' which is typed as School.
             addLog('School Added', `New school added: ${addedSchool.name}.`);
             showToast('Success', `School "${addedSchool.name}" has been created.`);
         }
     };
 
     const updateSchool = async (updatedSchool: School) => {
-// FIX: Standardize query to use .single() for consistency and type safety.
+        // FIX: Standardize query to use .single() for consistency and type safety.
         const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {

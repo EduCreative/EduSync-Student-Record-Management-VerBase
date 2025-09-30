@@ -52,15 +52,13 @@ const ResultsPage: React.FC = () => {
 
         setMarks(prev => {
             const newMarks = new Map(prev);
-            // FIX: Property 'marks' does not exist on type 'unknown'. Explicitly type `current` to resolve type inference issue.
-            const current: { marks: number, totalMarks: number } = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
+            // FIX: Explicitly typing `current` and providing a default value prevents type errors when a student has no prior record.
+            const current: { marks: number; totalMarks: number } = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
             
-// FIX: Replaced object spread with explicit property assignment to prevent a potential type inference error. This creates a new object for the state update, ensuring immutability.
             const updatedEntry = {
-                marks: current.marks,
-                totalMarks: current.totalMarks,
+                ...current,
+                [field]: numValue
             };
-            updatedEntry[field] = numValue;
 
             newMarks.set(studentId, updatedEntry);
             return newMarks;
