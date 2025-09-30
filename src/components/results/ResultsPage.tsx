@@ -53,7 +53,7 @@ const ResultsPage: React.FC = () => {
         setMarks(prev => {
             const newMarks = new Map(prev);
             const current = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
-            // FIX: Use spread syntax and a computed property for a more concise and immutable update. This resolves potential type errors where an intermediate object might be incomplete.
+            // FIX: Use spread syntax for an immutable update, preventing state mutation bugs.
             const updatedEntry = {
                 ...current,
                 [field]: numValue,

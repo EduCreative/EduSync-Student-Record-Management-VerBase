@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
 import { useAuth } from './AuthContext';
@@ -341,7 +342,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (error) return showToast('Error', error.message, 'error');
 
         setClasses(prev => prev.filter(c => c.id !== classId));
-        // FIX: Check if `classToDelete` is found before accessing its name property to prevent runtime errors.
         if (classToDelete) {
             addLog('Class Deleted', `Class deleted: ${classToDelete.name}.`);
             showToast('Success', `Class "${classToDelete.name}" deleted.`);
