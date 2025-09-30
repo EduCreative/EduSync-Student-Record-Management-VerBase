@@ -5,7 +5,7 @@ import Modal from '../common/Modal';
 interface FeeHeadFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (feeHead: Omit<FeeHead, 'id'> | FeeHead) => void;
+    onSave: (feeHead: Omit<FeeHead, 'id' | 'schoolId'> | FeeHead) => void;
     feeHeadToEdit: FeeHead | null;
 }
 

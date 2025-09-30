@@ -25,7 +25,7 @@ const FeeHeadsManagement: React.FC = () => {
         setIsFormModalOpen(false);
     };
 
-    const handleSaveFeeHead = (data: Omit<FeeHead, 'id'> | FeeHead) => {
+    const handleSaveFeeHead = (data: Omit<FeeHead, 'id' | 'schoolId'> | FeeHead) => {
         if (!effectiveSchoolId) return;
 
         if ('id' in data) {

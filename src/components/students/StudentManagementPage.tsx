@@ -60,11 +60,11 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         setIsModalOpen(false);
     };
 
-    const handleSaveStudent = (studentData: Student | Omit<Student, 'id'>) => {
+    const handleSaveStudent = (studentData: Student | Omit<Student, 'id' | 'status'>) => {
         if ('id' in studentData) {
             updateStudent(studentData);
         } else {
-            addStudent(studentData as Omit<Student, 'id' | 'status'>);
+            addStudent(studentData);
         }
     };
 

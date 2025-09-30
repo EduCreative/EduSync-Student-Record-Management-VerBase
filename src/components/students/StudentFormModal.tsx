@@ -9,7 +9,7 @@ import ImageUpload from '../common/ImageUpload';
 interface StudentFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (studentData: Student | Omit<Student, 'id'>) => void;
+    onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => void;
     studentToEdit?: Student | null;
 }
 
