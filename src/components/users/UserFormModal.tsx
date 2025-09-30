@@ -22,13 +22,13 @@ const isValidEmail = (email: string): boolean => {
 };
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, userToEdit, defaultRole, lockRole = false }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, activeSchoolId } = useAuth();
     const { schools } = useData();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         role: defaultRole || UserRole.Student,
-        schoolId: currentUser?.schoolId || schools[0]?.id || '',
+        schoolId: '',
         status: 'Pending Approval' as User['status'],
         avatarUrl: null as string | null | undefined,
     });
@@ -36,7 +36,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const [disabledLinks, setDisabledLinks] = useState<Record<string, boolean>>({});
     const [errors, setErrors] = useState<{ name?: string; email?: string; role?: string; schoolId?: string; password?: string; }>({});
 
-    const isOwnerView = currentUser?.role === UserRole.Owner;
+    const isOwnerGlobalView = currentUser?.role === UserRole.Owner && !activeSchoolId;
+    const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
     const linksForRole = NAV_LINKS[formData.role] || [];
 
     useEffect(() => {
@@ -62,7 +63,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     name: '',
                     email: '',
                     role: defaultRole || UserRole.Student,
-                    schoolId: currentUser?.schoolId || schools[0]?.id || '',
+                    schoolId: effectiveSchoolId || '',
                     status: 'Pending Approval',
                     avatarUrl: null,
                 });
@@ -71,7 +72,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
             setPassword('');
             setErrors({});
         }
-    }, [userToEdit, isOpen, currentUser, schools, defaultRole]);
+    }, [userToEdit, isOpen, currentUser, schools, defaultRole, effectiveSchoolId]);
 
     const validate = () => {
         const newErrors: { name?: string; email?: string; role?: string; schoolId?: string; password?: string; } = {};
@@ -96,7 +97,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
             newErrors.role = 'A user role must be selected.';
         }
 
-        if (isOwnerView && !formData.schoolId) {
+        if (isOwnerGlobalView && !formData.schoolId) {
             newErrors.schoolId = 'A school must be selected.';
         }
 
@@ -192,7 +193,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     </select>
                     {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
                 </div>
-                {isOwnerView && (
+                {isOwnerGlobalView && (
                     <div>
                         <label htmlFor="schoolId" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">School</label>
                         <select name="schoolId" id="schoolId" value={formData.schoolId} onChange={handleChange} required className="w-full input-style">
@@ -215,7 +216,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                         </select>
                     </div>
                 )}
-                 {isOwnerView && userToEdit && (
+                 {currentUser?.role === UserRole.Owner && userToEdit && (
                     <div className="pt-2">
                         <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Menu Permissions</label>
                         <div className="space-y-2 max-h-40 overflow-y-auto p-3 bg-secondary-50 dark:bg-secondary-700 rounded-md border dark:border-secondary-600">

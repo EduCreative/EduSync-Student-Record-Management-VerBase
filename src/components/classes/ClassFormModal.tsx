@@ -12,15 +12,17 @@ interface ClassFormModalProps {
 }
 
 const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave, classToEdit }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, activeSchoolId } = useAuth();
     const { users } = useData();
 
     const [formData, setFormData] = useState({ name: '', teacherId: '' });
     const [error, setError] = useState('');
 
+    const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
+
     const schoolTeachers = useMemo(() => {
-        return users.filter(u => u.schoolId === currentUser?.schoolId && u.role === UserRole.Teacher);
-    }, [users, currentUser]);
+        return users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Teacher);
+    }, [users, effectiveSchoolId]);
 
     useEffect(() => {
         if (isOpen) {
@@ -43,7 +45,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
         const saveData = {
             ...formData,
             teacherId: formData.teacherId || null,
-            schoolId: currentUser?.schoolId || '',
+            schoolId: effectiveSchoolId || '',
         };
 
         if (classToEdit) {
