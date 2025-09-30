@@ -195,7 +195,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             details,
             timestamp: new Date().toISOString(),
         };
-        const { data, error } = await supabase.from('activity_logs').insert(toSnakeCase(newLog)).select();
+        const { data } = await supabase.from('activity_logs').insert(toSnakeCase(newLog)).select();
         if (data && data.length > 0) {
             setLogs(prev => [toCamelCase(data[0]) as ActivityLog, ...prev]);
         }
@@ -249,13 +249,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const updateUser = async (updatedUser: User) => {
-        const { data, error } = await supabase.from('profiles').update(toSnakeCase(updatedUser)).eq('id', updatedUser.id).select();
+        // FIX: Use .single() to ensure a single object is returned, preventing potential type issues with array access.
+        const { data, error } = await supabase.from('profiles').update(toSnakeCase(updatedUser)).eq('id', updatedUser.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            // FIX: The parameter `updatedUser` is correctly typed as User, which has a `name` property.
-            setUsers(prev => prev.map(u => u.id === updatedUser.id ? toCamelCase(data[0]) as unknown as User : u));
-            addLog('User Updated', `User profile updated for ${updatedUser.name}.`);
-            showToast('Success', `${updatedUser.name}'s profile has been updated.`);
+        if (data) {
+            const updatedUserFromDB = toCamelCase(data) as User;
+            setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
+            addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
+            showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
         }
     };
 
@@ -305,22 +306,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const addClass = async (classData: Omit<Class, 'id'>) => {
-        const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select();
+        // FIX: Use .single() to ensure a single object is returned, preventing potential type issues with array access.
+        const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            // FIX: The parameter `classData` is correctly typed, which has a `name` property.
-            setClasses(prev => [...prev, toCamelCase(data[0]) as Class]);
-            addLog('Class Added', `New class added: ${classData.name}.`);
-            showToast('Success', `Class "${classData.name}" has been created.`);
+        if (data) {
+            const newClass = toCamelCase(data) as Class;
+            setClasses(prev => [...prev, newClass]);
+            addLog('Class Added', `New class added: ${newClass.name}.`);
+            showToast('Success', `Class "${newClass.name}" has been created.`);
         }
     };
 
     const updateClass = async (updatedClass: Class) => {
-        const { data, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select();
+        // FIX: Use .single() to ensure a single object is returned, preventing potential type issues with array access.
+        const { data, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
-        if (data && data.length > 0) {
-            // FIX: Cast the returned data from Supabase to `Class` to ensure type safety before accessing its properties.
-            const updatedClassFromDB = toCamelCase(data[0]) as Class;
+        if (data) {
+            const updatedClassFromDB = toCamelCase(data) as Class;
             setClasses(prev => prev.map(c => c.id === updatedClass.id ? updatedClassFromDB : c));
             addLog('Class Updated', `Class details updated for ${updatedClassFromDB.name}.`);
             showToast('Success', `Class "${updatedClassFromDB.name}" has been updated.`);

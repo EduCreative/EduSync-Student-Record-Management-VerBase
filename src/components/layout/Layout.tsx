@@ -89,7 +89,7 @@ const Layout: React.FC = () => {
                 return <Dashboard setActiveView={setActiveView} />;
             case 'reports':
                 if ([UserRole.Admin, UserRole.Accountant].includes(effectiveRole as UserRole)) {
-                    return <ReportsPage setActiveView={setActiveView} />;
+                    return <ReportsPage />;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
             case 'results':

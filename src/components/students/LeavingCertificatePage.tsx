@@ -1,11 +1,11 @@
 
+
 import React, { useState, useMemo } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { usePrint } from '../../context/PrintContext.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { formatDate } from '../../constants.tsx';
-import { ActiveView } from '../layout/Layout.tsx';
-import { Student } from '../../types.ts';
+import { useData } from '../../context/DataContext';
+import { usePrint } from '../../context/PrintContext';
+import { formatDate } from '../../constants';
+import { ActiveView } from '../layout/Layout';
+import { Student } from '../../types';
 
 interface LeavingCertificatePageProps {
     studentId: string;
@@ -14,7 +14,6 @@ interface LeavingCertificatePageProps {
 
 const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ studentId, setActiveView }) => {
     const { students, classes, getSchoolById, issueLeavingCertificate } = useData();
-    const { user } = useAuth();
     const { showPrintPreview } = usePrint();
 
     const student = useMemo(() => students.find(s => s.id === studentId), [students, studentId]);

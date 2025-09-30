@@ -1,14 +1,15 @@
 
+
 import React, { useMemo } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
-import { Student } from '../../types.ts';
-import Avatar from '../common/Avatar.tsx';
-import StatCard from '../common/StatCard.tsx';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
+import { Student } from '../../types';
+import Avatar from '../common/Avatar';
+import StatCard from '../common/StatCard';
 
 const ParentDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { students, classes, fees, attendance, results } = useData();
+    const { students } = useData();
 
     const myChildren = useMemo(() => {
         if (!user || !user.childStudentIds) return [];

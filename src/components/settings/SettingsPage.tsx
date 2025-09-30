@@ -1,10 +1,11 @@
 
+
 import React from 'react';
-import { useTheme } from '../../context/ThemeContext.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const SettingsPage: React.FC = () => {
-    const { theme, toggleTheme, fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
+    const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
     const { user } = useAuth();
 
     return (

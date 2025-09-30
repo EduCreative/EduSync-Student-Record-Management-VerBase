@@ -1,9 +1,10 @@
+
 import React, { useMemo } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { formatDate } from '../../constants.tsx';
-import Avatar from '../common/Avatar.tsx';
-import Badge from '../common/Badge.tsx';
-import { ActiveView } from '../layout/Layout.tsx';
+import { useData } from '../../context/DataContext';
+import { formatDate } from '../../constants';
+import Avatar from '../common/Avatar';
+import Badge from '../common/Badge';
+import { ActiveView } from '../layout/Layout';
 
 interface StudentProfilePageProps {
     studentId: string;

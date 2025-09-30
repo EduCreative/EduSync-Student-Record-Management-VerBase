@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { SchoolEvent } from '../../types.ts';
+import { useData } from '../../context/DataContext';
+import { SchoolEvent } from '../../types';
 
 const CalendarPage: React.FC = () => {
     const { events } = useData();

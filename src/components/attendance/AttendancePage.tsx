@@ -1,9 +1,10 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { Student, Attendance, UserRole } from '../../types.ts';
-import Avatar from '../common/Avatar.tsx';
+import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole } from '../../types';
+import Avatar from '../common/Avatar';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 

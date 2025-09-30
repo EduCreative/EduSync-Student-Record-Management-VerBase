@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { School } from '../../types.ts';
-import Modal from '../common/Modal.tsx';
-import ImageUpload from '../common/ImageUpload.tsx';
+import { useData } from '../../context/DataContext';
+import { School } from '../../types';
+import Modal from '../common/Modal';
+import ImageUpload from '../common/ImageUpload';
 
 const SchoolFormModal: React.FC<{
     isOpen: boolean;

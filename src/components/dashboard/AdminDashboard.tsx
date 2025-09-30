@@ -4,10 +4,8 @@ import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UserRole, FeeChallan, Attendance } from '../../types';
-import Badge from '../common/Badge';
 import DoughnutChart from '../charts/DoughnutChart';
 import BarChart from '../charts/BarChart';
-import Avatar from '../common/Avatar';
 import StatCard from '../common/StatCard';
 import { ActiveView } from '../layout/Layout';
 

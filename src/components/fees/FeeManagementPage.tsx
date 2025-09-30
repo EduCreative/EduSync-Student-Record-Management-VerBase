@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext.tsx';
+import { useAuth } from '../../context/AuthContext';
 
 // Placeholder components for tabs
 const FeeCollectionTab = () => <div className="p-4">Fee collection functionality will be here.</div>;

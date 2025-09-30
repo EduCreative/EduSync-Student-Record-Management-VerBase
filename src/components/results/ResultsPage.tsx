@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
-import { useData } from '../../context/DataContext.tsx';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { UserRole, Result } from '../../types.ts';
-import Avatar from '../common/Avatar.tsx';
+import { useData } from '../../context/DataContext';
+import { useAuth } from '../../context/AuthContext';
+import { UserRole, Result } from '../../types';
+import Avatar from '../common/Avatar';
 
 const ResultsPage: React.FC = () => {
     const { user, effectiveRole } = useAuth();
@@ -54,7 +53,12 @@ const ResultsPage: React.FC = () => {
         setMarks(prev => {
             const newMarks = new Map(prev);
             const current = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
-            newMarks.set(studentId, { ...current, [field]: numValue });
+            // FIX: Use spread syntax and a computed property for a more concise and immutable update. This resolves potential type errors where an intermediate object might be incomplete.
+            const updatedEntry = {
+                ...current,
+                [field]: numValue,
+            };
+            newMarks.set(studentId, updatedEntry);
             return newMarks;
         });
     };

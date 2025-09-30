@@ -1,12 +1,10 @@
 
-import React from 'react';
-import { ActiveView } from '../layout/Layout.tsx';
-import { usePrint } from '../../context/PrintContext.tsx';
-import { useData } from '../../context/DataContext.tsx';
 
-interface ReportsPageProps {
-    setActiveView: (view: ActiveView) => void;
-}
+import React from 'react';
+import { usePrint } from '../../context/PrintContext';
+import { useData } from '../../context/DataContext';
+
+interface ReportsPageProps {}
 
 const ReportCard: React.FC<{ title: string; description: string; icon: React.ReactElement; onGenerate: () => void; }> = ({ title, description, icon, onGenerate }) => (
     <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg border border-secondary-200 dark:border-secondary-700">
@@ -26,7 +24,7 @@ const ReportCard: React.FC<{ title: string; description: string; icon: React.Rea
 );
 
 
-const ReportsPage: React.FC<ReportsPageProps> = ({ setActiveView }) => {
+const ReportsPage: React.FC<ReportsPageProps> = () => {
     const { showPrintPreview } = usePrint();
     const { fees, students } = useData();
     
