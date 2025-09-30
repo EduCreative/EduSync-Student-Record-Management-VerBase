@@ -52,13 +52,15 @@ const ResultsPage: React.FC = () => {
 
         setMarks(prev => {
             const newMarks = new Map(prev);
-            // FIX: Explicitly type `current` to ensure properties `marks` and `totalMarks` are recognized.
-            const current: { marks: number; totalMarks: number } = newMarks.get(studentId) || { marks: 0, totalMarks: 100 };
+            // FIX: Explicitly cast the result of `get` to ensure TS knows the type.
+            const current = newMarks.get(studentId) as { marks: number, totalMarks: number } | undefined;
             
-            // FIX: Using explicit property assignment to avoid potential issues with computed property type inference.
+            // FIX: Spread types may only be created from object types.
+            // Create a new entry safely by checking for an existing record and providing defaults,
+            // which avoids spreading a potentially non-object type.
             const updatedEntry = {
-                marks: current.marks,
-                totalMarks: current.totalMarks,
+                marks: current?.marks ?? 0,
+                totalMarks: current?.totalMarks ?? 100,
             };
             updatedEntry[field] = numValue;
 

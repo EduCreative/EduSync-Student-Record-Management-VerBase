@@ -50,7 +50,29 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     useEffect(() => {
         if (isOpen) {
             if (studentToEdit) {
-                setFormData({ ...getInitialFormData(), ...studentToEdit });
+                // Explicitly map properties from studentToEdit to the form state shape
+                // to avoid type conflicts from spreading an object with a different structure.
+                setFormData({
+                    name: studentToEdit.name,
+                    rollNumber: studentToEdit.rollNumber,
+                    classId: studentToEdit.classId,
+                    fatherName: studentToEdit.fatherName,
+                    fatherCnic: studentToEdit.fatherCnic,
+                    dateOfBirth: studentToEdit.dateOfBirth,
+                    dateOfAdmission: studentToEdit.dateOfAdmission,
+                    contactNumber: studentToEdit.contactNumber,
+                    address: studentToEdit.address,
+                    gender: studentToEdit.gender,
+                    avatarUrl: studentToEdit.avatarUrl,
+                    schoolId: studentToEdit.schoolId,
+                    userId: studentToEdit.userId ?? '', // Coalesce null/undefined to empty string
+                    secondaryContactNumber: studentToEdit.secondaryContactNumber || '',
+                    lastSchoolAttended: studentToEdit.lastSchoolAttended || '',
+                    admittedInClass: studentToEdit.admittedInClass || '',
+                    caste: studentToEdit.caste || '',
+                    openingBalance: studentToEdit.openingBalance || 0,
+                    status: studentToEdit.status,
+                });
             } else {
                 setFormData(getInitialFormData());
             }

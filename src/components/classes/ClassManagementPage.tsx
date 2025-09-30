@@ -106,7 +106,7 @@ const ClassManagementPage: React.FC = () => {
                                 {schoolClasses.map(c => (
                                     <tr key={c.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
                                         <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{c.name}</td>
-                                        <td className="px-6 py-4">{teacherMap.get(c.teacherId) || 'Not Assigned'}</td>
+                                        <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
                                         <td className="px-6 py-4">{studentCountMap[c.id] || 0}</td>
                                         {canManage && (
                                             <td className="px-6 py-4 whitespace-nowrap">
