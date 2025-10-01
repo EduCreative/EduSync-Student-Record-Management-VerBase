@@ -129,8 +129,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
 
     const handlePasswordReset = async () => {
         if (!userToEdit) return;
-        // FIX: Replaced `resetPasswordForEmail` with `api.resetPasswordForEmail` for supabase-js v1 compatibility.
-        const { error } = await supabase.auth.api.resetPasswordForEmail(userToEdit.email);
+        const { error } = await supabase.auth.resetPasswordForEmail(userToEdit.email);
         if (error) {
             showToast('Error', error.message, 'error');
         } else {

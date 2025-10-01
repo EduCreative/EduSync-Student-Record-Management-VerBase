@@ -84,7 +84,8 @@ const ResultsViewer: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y dark:divide-secondary-700">
-                                        {examResults.map(result => (
+                                        {/* FIX: Cast examResults to Result[] to resolve 'map does not exist on type unknown' error. */}
+                                        {(examResults as Result[]).map(result => (
                                             <tr key={result.id}>
                                                 <td className="px-6 py-4 font-medium">{result.subject}</td>
                                                 <td className="px-6 py-4 text-center">{result.marks}</td>

@@ -64,7 +64,8 @@ const AttendanceViewer: React.FC = () => {
         Object.entries(eventsByDate).forEach(([dateStr, status]) => {
             const date = new Date(dateStr);
             if(date.getMonth() === month && date.getFullYear() === year) {
-                summary[status]++;
+                // FIX: Cast status to a valid key type for the summary object.
+                summary[status as keyof typeof summary]++;
             }
         });
         return summary;

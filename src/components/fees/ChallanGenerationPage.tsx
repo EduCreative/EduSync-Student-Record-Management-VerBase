@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -20,7 +20,8 @@ const ChallanGenerationPage: React.FC = () => {
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
-    useMemo(() => {
+    // FIX: Changed useMemo to useEffect to prevent side-effects in a memoized function.
+    useEffect(() => {
         const newMap = new Map<string, { selected: boolean; amount: number }>();
         feeHeads.forEach(fh => {
             newMap.set(fh.id, { selected: true, amount: fh.defaultAmount });
@@ -29,7 +30,8 @@ const ChallanGenerationPage: React.FC = () => {
     }, [feeHeads]);
 
     const handleFeeHeadToggle = (id: string) => {
-        setSelectedFeeHeads(prev => {
+        // FIX: Explicitly type `prev` to ensure correct type inference for `current`.
+        setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
             if (current) {
@@ -43,7 +45,8 @@ const ChallanGenerationPage: React.FC = () => {
         const numAmount = parseInt(amount, 10);
         if (isNaN(numAmount)) return;
         
-        setSelectedFeeHeads(prev => {
+        // FIX: Explicitly type `prev` to ensure correct type inference for `current`.
+        setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
             if (current) {

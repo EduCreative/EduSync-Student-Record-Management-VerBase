@@ -42,9 +42,10 @@ const ResultsEntry: React.FC = () => {
 
         studentsInClass.forEach(student => {
             const existingRecord = recordsForExamAndSubject.find(r => r.studentId === student.id);
+            // FIX: Add type assertion to resolve 'property does not exist on type unknown' error.
             newMarks.set(student.id, {
-                marks: existingRecord?.marks ?? 0,
-                totalMarks: existingRecord?.totalMarks || 100,
+                marks: (existingRecord as Result | undefined)?.marks ?? 0,
+                totalMarks: (existingRecord as Result | undefined)?.totalMarks || 100,
             });
         });
         setMarks(newMarks);

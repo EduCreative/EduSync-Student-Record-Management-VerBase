@@ -6,10 +6,10 @@ import ImageUpload from '../common/ImageUpload';
 import { ActiveView } from '../layout/Layout';
 
 interface UserProfilePageProps {
-    setActiveView: (view: ActiveView) => void;
+    // setActiveView: (view: ActiveView) => void;
 }
 
-const UserProfilePage: React.FC<UserProfilePageProps> = ({ setActiveView }) => {
+const UserProfilePage: React.FC<UserProfilePageProps> = () => {
     const { user, updateUserPassword } = useAuth();
     const { getSchoolById, updateUser } = useData();
     const { showToast } = useToast();

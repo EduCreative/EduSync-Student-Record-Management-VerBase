@@ -246,16 +246,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'A password is required to create a new user.', 'error');
         }
 
-        // FIX: Replaced `signUp` and adjusted destructuring for supabase-js v1 compatibility.
-        const { user: signedUpUser, error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
             email: userData.email,
             password: password,
         });
-
+        
         if (signUpError) {
             return showToast('Error', `Could not create auth user: ${signUpError.message}`, 'error');
         }
 
+        const signedUpUser = data.user;
         if (!signedUpUser) {
             return showToast('Error', 'User was not created in authentication system. They may already exist.', 'error');
         }
@@ -465,8 +465,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             selectedFeeHeads.forEach(selectedFee => {
                  const feeHead = feeHeadsMap.get(selectedFee.feeHeadId);
-                 if (feeHead && !feeItems.some(item => item.description === feeHead.name)) {
-                     feeItems.push({ description: feeHead.name, amount: selectedFee.amount });
+                 // FIX: Cast `feeHead` to `FeeHead` to resolve 'property does not exist on type unknown' error.
+                 if (feeHead && !feeItems.some(item => item.description === (feeHead as FeeHead).name)) {
+                     feeItems.push({ description: (feeHead as FeeHead).name, amount: selectedFee.amount });
                      totalAmount += selectedFee.amount;
                  }
             });
@@ -671,10 +672,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         for (const userData of usersToAdd) {
             const { password, ...profileData } = userData;
             if (password) {
-                 // FIX: Replaced `signUp` and adjusted destructuring for supabase-js v1 compatibility.
-                 const { user: signedUpUser, error: signUpError } = await supabase.auth.signUp({
+                const { data, error: signUpError } = await supabase.auth.signUp({
                     email: userData.email, password: password,
                 });
+                const signedUpUser = data.user;
                 if (signUpError || !signedUpUser) {
                      showToast('Error', `Could not create auth user for ${userData.email}: ${signUpError?.message}`, 'error');
                      continue;

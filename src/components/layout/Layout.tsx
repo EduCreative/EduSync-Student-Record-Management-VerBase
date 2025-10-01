@@ -109,7 +109,7 @@ const Layout: React.FC = () => {
             case 'settings':
                 return <SettingsPage />;
             case 'userProfile':
-                return <UserProfilePage setActiveView={setActiveView} />;
+                return <UserProfilePage />;
             case 'dashboard':
             case 'overview': // Treat owner's overview as dashboard
             default:
