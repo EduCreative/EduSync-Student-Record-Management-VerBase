@@ -55,7 +55,8 @@ const AttendanceMarker: React.FC = () => {
             const currentStatus = newRecords.get(studentId);
             const currentIndex = currentStatus ? statuses.indexOf(currentStatus) : -1;
             const nextIndex = (currentIndex + 1) % statuses.length;
-            newRecords.set(studentId, statuses[nextIndex]);
+            // FIX: Explicitly cast to AttendanceStatus to prevent type error.
+            newRecords.set(studentId, statuses[nextIndex] as AttendanceStatus);
             return newRecords;
         });
     };
