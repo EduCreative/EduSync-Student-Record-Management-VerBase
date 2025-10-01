@@ -57,7 +57,7 @@ export interface Student {
     rollNumber: string;
     avatarUrl?: string | null;
     fatherName: string;
-    fatherCnic: string;
+    fathersCnic: string;
     dateOfBirth: string;
     dateOfAdmission: string;
     contactNumber: string;

@@ -24,7 +24,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         rollNumber: '',
         classId: '',
         fatherName: '',
-        fatherCnic: '',
+        fathersCnic: '',
         dateOfBirth: '',
         dateOfAdmission: new Date().toISOString().split('T')[0],
         admittedClass: '',
@@ -58,7 +58,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     rollNumber: studentToEdit.rollNumber,
                     classId: studentToEdit.classId,
                     fatherName: studentToEdit.fatherName,
-                    fatherCnic: studentToEdit.fatherCnic,
+                    fathersCnic: studentToEdit.fathersCnic,
                     dateOfBirth: studentToEdit.dateOfBirth,
                     dateOfAdmission: studentToEdit.dateOfAdmission,
                     admittedClass: studentToEdit.admittedClass,
@@ -119,17 +119,19 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         };
 
         let success = false;
-        if (studentToEdit) {
-            success = await onSave({ ...studentToEdit, ...saveData });
-        } else {
-            // Remove the 'status' for new students as it's set by the backend/data context
-            const { status, ...rest } = saveData;
-            success = await onSave(rest);
-        }
-
-        setIsSaving(false);
-        if (success) {
-            onClose();
+        try {
+            if (studentToEdit) {
+                success = await onSave({ ...studentToEdit, ...saveData });
+            } else {
+                // Remove the 'status' for new students as it's set by the backend/data context
+                const { status, ...rest } = saveData;
+                success = await onSave(rest);
+            }
+        } finally {
+            setIsSaving(false);
+            if (success) {
+                onClose();
+            }
         }
     };
 
@@ -172,8 +174,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         {errors.fatherName && <p className="text-red-500 text-xs mt-1">{errors.fatherName}</p>}
                     </div>
                     <div>
-                        <label htmlFor="fatherCnic" className="input-label">Father's CNIC</label>
-                        <input type="text" name="fatherCnic" id="fatherCnic" value={formData.fatherCnic} onChange={handleChange} className="w-full input-field" />
+                        <label htmlFor="fathersCnic" className="input-label">Father's CNIC</label>
+                        <input type="text" name="fathersCnic" id="fathersCnic" value={formData.fathersCnic} onChange={handleChange} className="w-full input-field" />
                     </div>
                     <div>
                         <label htmlFor="caste" className="input-label">Caste</label>

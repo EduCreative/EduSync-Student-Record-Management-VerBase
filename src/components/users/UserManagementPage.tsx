@@ -117,8 +117,9 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
     const handleImportUsers = async (data: any[]) => {
         const usersToImport = data.map(item => ({
             ...item,
-            status: 'Active', // Default status for imported users
+            status: item.status || 'Active', // Use status from CSV or default to 'Active'
             schoolId: item.schoolId || effectiveSchoolId, // Use schoolId from CSV or current context
+            avatarUrl: item.avatarUrl || null,
         }));
         await bulkAddUsers(usersToImport);
     };
@@ -128,6 +129,8 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
         email: "john.doe@example.com",
         role: "Teacher",
         password: "securePassword123",
+        status: "Active",
+        avatarUrl: "https://example.com/avatar.png",
         ...(isOwnerGlobalView && { schoolId: "paste_valid_school_id_here" })
     }];
 

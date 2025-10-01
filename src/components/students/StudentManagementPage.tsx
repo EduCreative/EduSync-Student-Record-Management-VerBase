@@ -85,6 +85,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             ...item,
             schoolId: effectiveSchoolId,
             openingBalance: Number(item.openingBalance) || 0,
+            userId: item.userId || null,
         }));
         await bulkAddStudents(studentsToImport);
     };
@@ -94,12 +95,19 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         rollNumber: "101",
         classId: schoolClasses[0]?.id || "paste_valid_class_id_here",
         fatherName: "Zulfiqar Ahmed",
-        fatherCnic: "35202-1234567-1",
+        fathersCnic: "35202-1234567-1",
         dateOfBirth: "2010-05-15",
         dateOfAdmission: new Date().toISOString().split('T')[0],
+        admittedClass: "Grade 5",
+        caste: "Arain",
+        lastSchoolAttended: "Previous Public School",
         contactNumber: "0300-1234567",
+        secondaryContactNumber: "0321-7654321",
         address: "123 School Lane, City",
         gender: "Male",
+        avatarUrl: "https://example.com/student.png",
+        userId: "parent_user_id_or_leave_blank",
+        openingBalance: 0,
     }];
 
     const requiredHeaders = ['name', 'rollNumber', 'classId', 'fatherName', 'dateOfBirth', 'contactNumber'];

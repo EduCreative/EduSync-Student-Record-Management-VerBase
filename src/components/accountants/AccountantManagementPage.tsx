@@ -80,8 +80,9 @@ const AccountantManagementPage: React.FC = () => {
         const accountantsToImport = data.map(item => ({
             ...item,
             role: UserRole.Accountant,
-            status: 'Active',
+            status: item.status || 'Active',
             schoolId: effectiveSchoolId,
+            avatarUrl: item.avatarUrl || null,
         }));
         await bulkAddUsers(accountantsToImport);
     };
@@ -89,7 +90,9 @@ const AccountantManagementPage: React.FC = () => {
     const sampleDataForImport = [{
         name: "Adam Smith",
         email: "accountant.adam@example.com",
-        password: "securePassword123"
+        password: "securePassword123",
+        status: "Active",
+        avatarUrl: "https://example.com/avatar.png",
     }];
 
     const requiredHeaders = ['name', 'email', 'password'];
