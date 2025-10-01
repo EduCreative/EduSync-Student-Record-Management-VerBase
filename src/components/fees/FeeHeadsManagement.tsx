@@ -4,12 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { FeeHead, UserRole } from '../../types';
 import Modal from '../common/Modal';
 import FeeHeadFormModal from './FeeHeadFormModal';
+import { Permission } from '../../permissions';
 
 const FeeHeadsManagement: React.FC = () => {
-    const { user, activeSchoolId } = useAuth();
+    const { user, activeSchoolId, hasPermission } = useAuth();
     const { feeHeads, addFeeHead, updateFeeHead, deleteFeeHead } = useData();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+    const canManage = hasPermission(Permission.CAN_MANAGE_FEE_HEADS);
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [feeHeadToEdit, setFeeHeadToEdit] = useState<FeeHead | null>(null);
@@ -61,9 +63,11 @@ const FeeHeadsManagement: React.FC = () => {
             <div className="p-4 sm:p-6">
                  <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold text-secondary-900 dark:text-white">Manage Fee Heads</h2>
-                    <button onClick={() => handleOpenModal()} className="btn-primary">
-                        + Add Fee Head
-                    </button>
+                    {canManage && (
+                        <button onClick={() => handleOpenModal()} className="btn-primary">
+                            + Add Fee Head
+                        </button>
+                    )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -81,10 +85,14 @@ const FeeHeadsManagement: React.FC = () => {
                                     <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{fh.name}</td>
                                     <td className="px-6 py-4">Rs. {fh.defaultAmount.toLocaleString()}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center space-x-4">
-                                            <button onClick={() => handleOpenModal(fh)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                            <button onClick={() => setFeeHeadToDelete(fh)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
-                                        </div>
+                                        {canManage ? (
+                                            <div className="flex items-center space-x-4">
+                                                <button onClick={() => handleOpenModal(fh)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
+                                                <button onClick={() => setFeeHeadToDelete(fh)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-secondary-400 italic">No actions</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

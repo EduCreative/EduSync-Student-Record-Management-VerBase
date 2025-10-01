@@ -29,7 +29,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = () => {
         }
     }, [user]);
 
-    const school = user ? getSchoolById(user.schoolId) : null;
+    const school = user?.schoolId != null ? getSchoolById(user.schoolId) : null;
 
     const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault();

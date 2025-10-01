@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
+import { Permission, ROLE_PERMISSIONS } from '../permissions';
 
 // Helper to convert snake_case object keys to camelCase
 const toCamelCase = (obj: any): any => {
@@ -28,6 +29,7 @@ interface AuthContextType {
     // This is no longer needed as profile is created on register
     profileSetupNeeded: boolean; 
     completeProfileSetup: (name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+    hasPermission: (permission: Permission) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -198,12 +200,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const effectiveRole = user?.role === UserRole.Owner && activeSchoolId ? UserRole.Admin : user?.role || null;
 
+    const hasPermission = (permission: Permission): boolean => {
+        if (!effectiveRole) return false;
+        // Owner in global view (effectiveRole is Owner) has all permissions
+        if (effectiveRole === UserRole.Owner) return true;
+        
+        const userPermissions = ROLE_PERMISSIONS[effectiveRole];
+        return userPermissions?.includes(permission) || false;
+    };
+
     if (loading) {
         return <div className="flex items-center justify-center h-screen bg-secondary-50 dark:bg-secondary-900 text-primary-500">Loading...</div>;
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded: false, completeProfileSetup }}>
+        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded: false, completeProfileSetup, hasPermission }}>
             {children}
         </AuthContext.Provider>
     );

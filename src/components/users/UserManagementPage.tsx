@@ -10,13 +10,14 @@ import { formatDateTime, DownloadIcon, UploadIcon } from '../../constants';
 import TableSkeleton from '../common/skeletons/TableSkeleton';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
+import { Permission } from '../../permissions';
 
 interface UserManagementPageProps {
     payload?: { roleFilter?: UserRole };
 }
 
 const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
-    const { user: currentUser, activeSchoolId } = useAuth();
+    const { user: currentUser, activeSchoolId, hasPermission } = useAuth();
     const { users, schools, getSchoolById, bulkAddUsers, updateUser, deleteUser, loading } = useData();
     
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
@@ -142,7 +143,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
             email: u.email,
             role: u.role,
             status: u.status,
-            school: getSchoolById(u.schoolId)?.name || 'N/A',
+            school: u.schoolId != null ? getSchoolById(u.schoolId)?.name || 'N/A' : 'N/A',
             last_login: formatDateTime(u.lastLogin),
         }));
         exportToCsv(dataToExport, 'users_export');
@@ -222,9 +223,11 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                         <button onClick={handleExport} className="btn-secondary">
                             <DownloadIcon className="w-4 h-4" /> Export CSV
                         </button>
-                        <button onClick={() => handleOpenModal()} className="btn-primary">
-                            + Add User
-                        </button>
+                        {hasPermission(Permission.CAN_MANAGE_USERS) && (
+                            <button onClick={() => handleOpenModal()} className="btn-primary">
+                                + Add User
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -292,7 +295,10 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                     </thead>
                                     <tbody>
                                         {paginatedUsers.map(user => {
-                                            const canPerformActions = (() => {
+                                            const canManage = hasPermission(Permission.CAN_MANAGE_USERS);
+                                            const canDelete = hasPermission(Permission.CAN_DELETE_USERS);
+
+                                            const canPerformActionsOnUser = (() => {
                                                 if (!currentUser || currentUser.id === user.id) return false;
                                                 if (user.role === UserRole.Owner) return false;
                                                 if (currentUser.role === UserRole.Admin && user.role === UserRole.Admin) return false;
@@ -311,7 +317,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4"><Badge>{user.role}</Badge></td>
-                                                    {currentUser?.role === UserRole.Owner && !activeSchoolId && <td className="px-6 py-4">{getSchoolById(user.schoolId)?.name || 'N/A'}</td>}
+                                                    {currentUser?.role === UserRole.Owner && !activeSchoolId && <td className="px-6 py-4">{user.schoolId != null ? getSchoolById(user.schoolId)?.name || 'N/A' : 'N/A'}</td>}
                                                     <td className="px-6 py-4">
                                                         <Badge color={getStatusBadgeColor(user.status)}>
                                                             {user.status}
@@ -320,20 +326,22 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                                     <td className="px-6 py-4">{formatDateTime(user.lastLogin)}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center space-x-4">
-                                                            <button 
-                                                                onClick={() => handleOpenModal(user)} 
-                                                                className="font-medium text-primary-600 dark:text-primary-500 hover:underline disabled:text-secondary-400 disabled:no-underline disabled:cursor-not-allowed"
-                                                                disabled={!canPerformActions}
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => setUserToDelete(user)} 
-                                                                className="font-medium text-red-600 dark:text-red-500 hover:underline disabled:text-secondary-400 disabled:no-underline disabled:cursor-not-allowed"
-                                                                disabled={!canPerformActions}
-                                                            >
-                                                                Delete
-                                                            </button>
+                                                            {canManage && canPerformActionsOnUser && (
+                                                                <button 
+                                                                    onClick={() => handleOpenModal(user)} 
+                                                                    className="font-medium text-primary-600 dark:text-primary-500 hover:underline"
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                            )}
+                                                             {canDelete && canPerformActionsOnUser && (
+                                                                <button 
+                                                                    onClick={() => setUserToDelete(user)} 
+                                                                    className="font-medium text-red-600 dark:text-red-500 hover:underline"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                             )}
                                                         </div>
                                                     </td>
                                                 </tr>

@@ -11,13 +11,14 @@ import TableSkeleton from '../common/skeletons/TableSkeleton';
 import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
+import { Permission } from '../../permissions';
 
 interface StudentManagementPageProps {
     setActiveView: (view: ActiveView) => void;
 }
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
-    const { user, activeSchoolId } = useAuth();
+    const { user, activeSchoolId, hasPermission } = useAuth();
     const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents } = useData();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
@@ -31,6 +32,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const STUDENTS_PER_PAGE = 10;
+    
+    const canManage = hasPermission(Permission.CAN_MANAGE_STUDENTS);
+    const canDelete = hasPermission(Permission.CAN_DELETE_STUDENTS);
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
     const classMap = useMemo(() => new Map(schoolClasses.map(c => [c.id, c.name])), [schoolClasses]);
@@ -148,13 +152,15 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Student Management</h1>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
-                            <UploadIcon className="w-4 h-4" /> Import CSV
-                        </button>
+                        {canManage && (
+                            <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
+                                <UploadIcon className="w-4 h-4" /> Import CSV
+                            </button>
+                        )}
                         <button onClick={handleExport} className="btn-secondary">
                             <DownloadIcon className="w-4 h-4" /> Export CSV
                         </button>
-                        <button onClick={() => handleOpenModal()} className="btn-primary">+ Add Student</button>
+                        {canManage && <button onClick={() => handleOpenModal()} className="btn-primary">+ Add Student</button>}
                     </div>
                 </div>
 
@@ -210,8 +216,12 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-4">
                                                         <button onClick={() => setActiveView({ view: 'studentProfile', payload: { studentId: student.id }})} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">View</button>
-                                                        <button onClick={() => handleOpenModal(student)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                                        <button onClick={() => setStudentToDelete(student)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                        {canManage && (
+                                                            <button onClick={() => handleOpenModal(student)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
+                                                        )}
+                                                        {canDelete && (
+                                                            <button onClick={() => setStudentToDelete(student)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

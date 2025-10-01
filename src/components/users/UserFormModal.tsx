@@ -51,7 +51,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     name: userToEdit.name,
                     email: userToEdit.email,
                     role: userToEdit.role,
-                    schoolId: userToEdit.schoolId,
+                    schoolId: userToEdit.schoolId || '',
                     status: userToEdit.status,
                     avatarUrl: userToEdit.avatarUrl,
                 });

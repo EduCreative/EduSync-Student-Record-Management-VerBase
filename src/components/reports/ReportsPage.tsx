@@ -4,6 +4,8 @@ import BulkChallanReportModal from './BulkChallanReportModal';
 import ClassListReportModal from './ClassListReportModal';
 import DefaulterReportModal from './DefaulterReportModal';
 import FeeCollectionReportModal from './FeeCollectionReportModal';
+import { useAuth } from '../../context/AuthContext';
+import { Permission } from '../../permissions';
 
 type ReportType = 'feeCollection' | 'defaulter' | 'classList' | 'bulkChallan' | 'reportCard';
 
@@ -29,44 +31,56 @@ const ReportCard: React.FC<{ title: string; description: string; icon: React.Rea
 
 const ReportsPage: React.FC<ReportsPageProps> = () => {
     const [activeReport, setActiveReport] = useState<ReportType | null>(null);
+    const { hasPermission } = useAuth();
     
-    const reports = [
+    const allReports = [
         { 
             id: 'feeCollection' as ReportType,
             title: "Fee Collection Report", 
             description: "View total fees collected within a specific date range.", 
             icon: <DollarSignIcon className="w-6 h-6" />,
-            onGenerate: () => setActiveReport('feeCollection'),
         },
         { 
             id: 'defaulter' as ReportType,
             title: "Fee Defaulter Report", 
             description: "List all students with unpaid or partially paid fees.", 
             icon: <AlertTriangleIcon className="w-6 h-6" />,
-            onGenerate: () => setActiveReport('defaulter'),
         },
         { 
             id: 'classList' as ReportType,
             title: "Printable Class Lists", 
             description: "Generate and print lists of students for any class.", 
             icon: <UsersIcon className="w-6 h-6" />,
-            onGenerate: () => setActiveReport('classList'),
         },
          { 
             id: 'bulkChallan' as ReportType,
             title: "Bulk Fee Challans", 
             description: "Print three-part fee challans for an entire class.", 
             icon: <FileTextIcon className="w-6 h-6" />,
-            onGenerate: () => setActiveReport('bulkChallan'),
         },
          { 
             id: 'reportCard' as ReportType,
             title: "Student Report Cards", 
             description: "Generate and print detailed report cards for students.", 
             icon: <AwardIcon className="w-6 h-6" />,
-            onGenerate: () => setActiveReport('reportCard'),
         },
     ];
+
+    const availableReports = allReports.filter(report => {
+        switch (report.id) {
+            case 'feeCollection':
+            case 'defaulter':
+                return hasPermission(Permission.CAN_VIEW_FINANCIAL_REPORTS);
+            case 'classList':
+                return hasPermission(Permission.CAN_VIEW_STUDENT_LISTS);
+            case 'bulkChallan':
+                return hasPermission(Permission.CAN_MANAGE_FEES);
+            case 'reportCard':
+                return hasPermission(Permission.CAN_VIEW_ACADEMIC_REPORTS);
+            default:
+                return false;
+        }
+    });
 
     return (
         <>
@@ -82,7 +96,7 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
                     Generate, view, and print important school documents from one place.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {reports.map(report => (
+                    {availableReports.map(report => (
                         <ReportCard key={report.title} {...report} onGenerate={() => setActiveReport(report.id)} />
                     ))}
                 </div>

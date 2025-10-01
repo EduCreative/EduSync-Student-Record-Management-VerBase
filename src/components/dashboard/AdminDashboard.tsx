@@ -1,6 +1,5 @@
 
 
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -34,7 +33,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     if (!user) return null;
     
     const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
-    const school = getSchoolById(effectiveSchoolId);
+    const school = effectiveSchoolId != null ? getSchoolById(effectiveSchoolId) : null;
     
     const schoolStudents = useMemo(() => students.filter(s => s.schoolId === effectiveSchoolId), [students, effectiveSchoolId]);
     const schoolTeachers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Teacher), [users, effectiveSchoolId]);

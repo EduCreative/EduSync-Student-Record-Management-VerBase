@@ -8,9 +8,10 @@ import TableSkeleton from '../common/skeletons/TableSkeleton';
 import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
+import { Permission } from '../../permissions';
 
 const ClassManagementPage: React.FC = () => {
-    const { user: currentUser, activeSchoolId, effectiveRole } = useAuth();
+    const { user: currentUser, activeSchoolId, effectiveRole, hasPermission } = useAuth();
     const { classes, users, students, addClass, updateClass, deleteClass, loading, bulkAddClasses } = useData();
 
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
@@ -19,6 +20,8 @@ const ClassManagementPage: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [classToEdit, setClassToEdit] = useState<Class | null>(null);
     const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+    
+    const canManageClasses = hasPermission(Permission.CAN_MANAGE_CLASSES);
 
     const schoolClasses = useMemo(() => {
         if (effectiveRole === UserRole.Teacher) {
@@ -91,19 +94,17 @@ const ClassManagementPage: React.FC = () => {
         }));
         exportToCsv(dataToExport, 'classes_export');
     };
-
-    const canManage = effectiveRole === UserRole.Admin || effectiveRole === UserRole.Owner;
     
     const tableColumns = [
         { width: '30%' }, { width: '30%' }, { width: '20%' },
     ];
-    if (canManage) {
+    if (canManageClasses) {
         tableColumns.push({ width: '20%' });
     }
 
     return (
         <>
-            {canManage && (
+            {canManageClasses && (
                 <>
                     <ClassFormModal 
                         isOpen={isFormModalOpen}
@@ -134,9 +135,9 @@ const ClassManagementPage: React.FC = () => {
             </Modal>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{canManage ? 'Class Management' : 'My Classes'}</h1>
+                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{canManageClasses ? 'Class Management' : 'My Classes'}</h1>
                     <div className="flex items-center gap-2">
-                         {canManage && (
+                         {canManageClasses && (
                              <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
                                 <UploadIcon className="w-4 h-4" /> Import CSV
                             </button>
@@ -144,7 +145,7 @@ const ClassManagementPage: React.FC = () => {
                         <button onClick={handleExport} className="btn-secondary">
                            <DownloadIcon className="w-4 h-4" /> Export CSV
                         </button>
-                        {canManage && (
+                        {canManageClasses && (
                             <button onClick={() => handleOpenModal()} className="btn-primary">
                                 + Add Class
                             </button>
@@ -163,7 +164,7 @@ const ClassManagementPage: React.FC = () => {
                                         <th scope="col" className="px-6 py-3">Class Name</th>
                                         <th scope="col" className="px-6 py-3">Teacher</th>
                                         <th scope="col" className="px-6 py-3">No. of Students</th>
-                                        {canManage && <th scope="col" className="px-6 py-3">Actions</th>}
+                                        {canManageClasses && <th scope="col" className="px-6 py-3">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -172,7 +173,7 @@ const ClassManagementPage: React.FC = () => {
                                             <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{c.name}</td>
                                             <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
                                             <td className="px-6 py-4">{studentCountMap[c.id] || 0}</td>
-                                            {canManage && (
+                                            {canManageClasses && (
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-4">
                                                         <button onClick={() => handleOpenModal(c)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>

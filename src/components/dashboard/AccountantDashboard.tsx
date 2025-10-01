@@ -19,7 +19,7 @@ const AccountantDashboard: React.FC = () => {
     const { getSchoolById, fees, students, loading } = useData();
 
     if (!user) return null;
-    const school = getSchoolById(user.schoolId);
+    const school = user.schoolId != null ? getSchoolById(user.schoolId) : null;
 
     const stats = useMemo(() => {
         const schoolFees = fees.filter(fee => {
