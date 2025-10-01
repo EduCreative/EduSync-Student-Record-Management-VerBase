@@ -58,33 +58,77 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        let query = supabase
+        // Special handling for the owner account to ensure access.
+        if (email.toLowerCase() === 'kmasroor50@gmail.com') {
+            // First, try to find the owner profile by email, ignoring password
+            const { data: existingOwner, error: findError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('email', email.toLowerCase())
+                .single();
+    
+            // "PGRST116: single row not found" is the expected 'error' if user doesn't exist. We can ignore it.
+            if (findError && findError.code !== 'PGRST116') {
+                return { success: false, error: findError.message };
+            }
+    
+            let userProfile: User;
+    
+            if (existingOwner) {
+                // Owner profile exists, use it.
+                userProfile = toCamelCase(existingOwner) as User;
+            } else {
+                // Owner profile does not exist, create it.
+                console.warn("Owner profile not found for kmasroor50@gmail.com. Creating a new one.");
+                const newOwnerData = {
+                    id: crypto.randomUUID(),
+                    name: 'Khurram Masroor (Owner)',
+                    email: email.toLowerCase(),
+                    role: UserRole.Owner,
+                    school_id: null,
+                    status: 'Active' as const,
+                    password: 'password' // Set a default password
+                };
+                const { data: newOwner, error: createError } = await supabase
+                    .from('profiles')
+                    .insert(newOwnerData)
+                    .select()
+                    .single();
+    
+                if (createError || !newOwner) {
+                    return { success: false, error: "Failed to automatically create owner profile. Please contact support." };
+                }
+                userProfile = toCamelCase(newOwner) as User;
+            }
+            
+            // Log in the user with the found or created profile
+            setUser(userProfile);
+            localStorage.setItem('edusync_user', JSON.stringify(userProfile));
+            
+            // Update last login time
+            await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfile.id);
+            
+            return { success: true };
+        }
+    
+        // Original login logic for all other users
+        const { data, error } = await supabase
             .from('profiles')
             .select('*')
-            .eq('email', email);
-
-        // Bypass password check for the specified owner account.
-        if (email.toLowerCase() !== 'kmasroor50@gmail.com') {
-            query = query.eq('password', pass); // NOTE: Storing plain text passwords is INSECURE. This is for demo purposes only.
-        }
-
-        const { data, error } = await query.single();
-
+            .eq('email', email)
+            .eq('password', pass)
+            .single();
+    
         if (error || !data) {
-            // Provide a more specific error if the owner account isn't found
-            if (email.toLowerCase() === 'kmasroor50@gmail.com' && !data) {
-                 return { success: false, error: 'Owner account with this email does not exist.' };
-            }
             return { success: false, error: 'Invalid email or password.' };
         }
         
-        const userProfile = toCamelCase(data) as User;
-        setUser(userProfile);
-        localStorage.setItem('edusync_user', JSON.stringify(userProfile));
+        const userProfileData = toCamelCase(data) as User;
+        setUser(userProfileData);
+        localStorage.setItem('edusync_user', JSON.stringify(userProfileData));
         
-        // Log last login time
-        await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfile.id);
-
+        await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfileData.id);
+    
         return { success: true };
     };
 

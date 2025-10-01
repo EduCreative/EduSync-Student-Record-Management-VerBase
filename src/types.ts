@@ -25,7 +25,7 @@ export interface User {
     name: string;
     email: string;
     role: UserRole;
-    schoolId: string;
+    schoolId: string | null;
     status: 'Active' | 'Inactive' | 'Pending Approval' | 'Suspended';
     avatarUrl?: string | null;
     lastLogin?: string;
