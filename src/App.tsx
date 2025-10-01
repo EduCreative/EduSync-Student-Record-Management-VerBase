@@ -10,13 +10,14 @@ import Layout from './components/layout/Layout';
 import { ToastProvider } from './context/ToastContext';
 import { SyncProvider } from './context/SyncContext';
 import { PrintProvider, usePrint } from './context/PrintContext';
+// FIX: Import PrintPreview component to resolve 'Cannot find name' error.
 import PrintPreview from './components/common/PrintPreview';
-import AccountSetupPage from './components/auth/AccountSetupPage';
+import { NotificationProvider } from './context/NotificationContext';
 
 type AuthView = 'login' | 'register';
 
 const AppContent: React.FC = () => {
-    const { user, profileSetupNeeded } = useAuth();
+    const { user } = useAuth();
     const [authView, setAuthView] = useState<AuthView>('login');
     const { isPrinting } = usePrint();
 
@@ -25,10 +26,6 @@ const AppContent: React.FC = () => {
             return <LoginPage onSwitchToRegister={() => setAuthView('register')} />;
         }
         return <RegisterPage onSwitchToLogin={() => setAuthView('login')} />;
-    }
-
-    if (profileSetupNeeded) {
-        return <AccountSetupPage />;
     }
 
     return (
@@ -45,15 +42,17 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
         <AuthProvider>
-            <SyncProvider>
-                <ToastProvider>
-                    <DataProvider>
-                        <PrintProvider>
-                            <AppContent />
-                        </PrintProvider>
-                    </DataProvider>
-                </ToastProvider>
-            </SyncProvider>
+            <NotificationProvider>
+                <SyncProvider>
+                    <ToastProvider>
+                        <DataProvider>
+                            <PrintProvider>
+                                <AppContent />
+                            </PrintProvider>
+                        </DataProvider>
+                    </ToastProvider>
+                </SyncProvider>
+            </NotificationProvider>
         </AuthProvider>
     </ThemeProvider>
   );

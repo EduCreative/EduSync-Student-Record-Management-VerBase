@@ -29,6 +29,7 @@ export interface User {
     status: 'Active' | 'Inactive' | 'Pending Approval' | 'Suspended';
     avatarUrl?: string | null;
     lastLogin?: string;
+    password?: string; // Added for manual authentication
     childStudentIds?: string[]; // Added for Parent role
     disabledNavLinks?: string[]; // For Owner to disable menu items for a user
     notificationPreferences?: NotificationPreferences;
@@ -138,4 +139,14 @@ export interface SchoolEvent {
     category: 'Holiday' | 'Exam' | 'Event' | 'Meeting';
     description?: string;
     schoolId: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  message: string;
+  type: 'fee' | 'event' | 'result' | 'account' | 'general';
+  relatedId?: string; 
+  isRead: boolean;
+  timestamp: string;
 }

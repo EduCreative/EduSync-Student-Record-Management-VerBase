@@ -2,6 +2,19 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 
+// Helper to convert snake_case object keys to camelCase
+const toCamelCase = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(v => toCamelCase(v));
+    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
+        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
+            const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
+            result[camelKey] = toCamelCase(obj[key]);
+            return result;
+        }, {});
+    }
+    return obj;
+};
 
 interface AuthContextType {
     user: User | null;
@@ -12,7 +25,8 @@ interface AuthContextType {
     activeSchoolId: string | null;
     switchSchoolContext: (schoolId: string | null) => void;
     effectiveRole: UserRole | null;
-    profileSetupNeeded: boolean;
+    // This is no longer needed as profile is created on register
+    profileSetupNeeded: boolean; 
     completeProfileSetup: (name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -22,133 +36,102 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
-    const [profileSetupNeeded, setProfileSetupNeeded] = useState(false);
-    const [tempSession, setTempSession] = useState<any | null>(null);
 
-    const fetchUserProfile = async (session: any | null) => {
-        setProfileSetupNeeded(false);
-        setTempSession(null);
-
-        if (session?.user) {
-            try {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                // The error check handles cases where .single() fails because no rows are found
-                if (profile) {
-                    setUser(profile as User);
-                } else {
-                    console.warn("User profile not found. Initiating setup.");
-                    setUser({ id: session.user.id, email: session.user.email } as User); // Set a partial user for context
-                    setProfileSetupNeeded(true);
-                    setTempSession(session);
-                }
-            } catch (error) {
-                console.error("Error fetching user profile:", error);
-                setUser(null);
-            }
-        } else {
-            setUser(null);
-        }
-    };
-
+    // Rehydrate session from localStorage
     useEffect(() => {
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            fetchUserProfile(session);
-            setLoading(false);
-        };
-        checkSession();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            await fetchUserProfile(session);
-        });
-
-        return () => {
-            authListener?.subscription.unsubscribe();
-        };
+        try {
+            const storedUser = localStorage.getItem('edusync_user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (error) {
+            console.error("Failed to parse user from localStorage", error);
+            localStorage.removeItem('edusync_user');
+        }
+        setLoading(false);
     }, []);
     
+    // Dummy function to satisfy type, logic is removed
     const completeProfileSetup = async (name: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        if (!tempSession?.user?.email) {
-            return { success: false, error: 'No active session found.' };
-        }
-        
-        const { error } = await supabase.from('profiles').insert({
-            id: tempSession.user.id,
-            name,
-            email: tempSession.user.email,
-            role,
-            school_id: null,
-            status: 'Active',
-        });
-
-        if (error) {
-            console.error("Failed to create user profile:", error.message);
-            return { success: false, error: "Could not create your user profile. Please try again or contact support." };
-        }
-
-        await fetchUserProfile(tempSession);
-        return { success: true };
+        console.warn("completeProfileSetup is deprecated.");
+        return { success: false, error: 'This feature is no longer available.'};
     };
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-        if (error) {
-            return { success: false, error: error.message };
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', email)
+            .eq('password', pass) // NOTE: Storing plain text passwords is INSECURE. This is for demo purposes only.
+            .single();
+
+        if (error || !data) {
+            return { success: false, error: 'Invalid email or password.' };
         }
+        
+        const userProfile = toCamelCase(data) as User;
+        setUser(userProfile);
+        localStorage.setItem('edusync_user', JSON.stringify(userProfile));
+        
+        // Log last login time
+        await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfile.id);
+
         return { success: true };
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
         setUser(null);
         setActiveSchoolId(null);
+        localStorage.removeItem('edusync_user');
     };
 
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-            email: email,
-            password: pass,
+        // Check if user already exists
+        const { data: existingUser, error: fetchError } = await supabase.from('profiles').select('id').eq('email', email).single();
+
+        if (existingUser) {
+            return { success: false, error: 'A user with this email address already exists.' };
+        }
+
+        // Owners are approved automatically, others require admin approval.
+        const userStatus = role === UserRole.Owner ? 'Active' : 'Pending Approval';
+        const newUserId = crypto.randomUUID();
+
+        const { error: profileError } = await supabase.from('profiles').insert({
+            id: newUserId,
+            name,
+            email,
+            role,
+            password: pass, // Storing plain text password
+            school_id: null,
+            status: userStatus,
         });
 
-        if (signUpError) {
-            return { success: false, error: signUpError.message };
+        if (profileError) {
+            console.error("Failed to create user profile:", profileError.message);
+            return { success: false, error: "Could not create your user profile. Please contact support." };
         }
         
-        const authUser = data.user;
-
-        if (authUser) {
-            // Owners are approved automatically, others require admin approval.
-            const userStatus = role === UserRole.Owner ? 'Active' : 'Pending Approval';
-
-            const { error: profileError } = await supabase.from('profiles').insert({
-                id: authUser.id,
-                name,
-                email,
-                role,
-                school_id: null, // An owner will create their school later.
-                status: userStatus,
-            });
-
-            if (profileError) {
-                console.error("Failed to create user profile:", profileError.message);
-                return { success: false, error: "Could not create your user profile. Please contact support." };
-            }
-            return { success: true };
-        }
-        
-        return { success: false, error: 'An unknown error occurred during registration.' };
+        return { success: true };
     };
 
     const updateUserPassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (!user) return { success: false, error: 'No user is logged in.' };
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ password: newPassword })
+            .eq('id', user.id);
+            
         if (error) {
             return { success: false, error: error.message };
         }
+        
+        // Update password in local state/storage
+        const updatedUser = { ...user, password: newPassword };
+        setUser(updatedUser);
+        localStorage.setItem('edusync_user', JSON.stringify(updatedUser));
+        
         return { success: true };
     };
     
@@ -167,7 +150,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded, completeProfileSetup }}>
+        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded: false, completeProfileSetup }}>
             {children}
         </AuthContext.Provider>
     );

@@ -4,6 +4,7 @@ import { NAV_LINKS, formatDateTime, EduSyncLogo } from '../../constants';
 import { ActiveView } from './Layout';
 import { UserRole } from '../../types';
 import { useSync } from '../../context/SyncContext';
+import { version } from '../../../package.json';
 
 interface SidebarProps {
     sidebarOpen: boolean;
@@ -76,6 +77,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeVi
                     <div className="p-4 rounded-lg bg-primary-700 bg-opacity-50 dark:bg-secondary-800 dark:bg-opacity-50 lg:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <p className="text-sm text-secondary-300">Last Sync: {formatDateTime(lastSyncTime || undefined)}</p>
                         <p className="text-xs text-secondary-400 mt-1">App works offline. Data syncs when online.</p>
+                        <p className="text-center text-xs text-secondary-400 mt-4 border-t border-primary-600 dark:border-secondary-700 pt-2">
+                            Version {version}
+                        </p>
                     </div>
                  </div>
             </div>

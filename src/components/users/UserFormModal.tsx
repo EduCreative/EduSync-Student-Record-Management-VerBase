@@ -5,7 +5,6 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { NAV_LINKS } from '../../constants';
 import ImageUpload from '../common/ImageUpload';
-import { supabase } from '../../lib/supabaseClient';
 import { useToast } from '../../context/ToastContext';
 
 interface UserFormModalProps {
@@ -25,7 +24,7 @@ const isValidEmail = (email: string): boolean => {
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, userToEdit, defaultRole, lockRole = false }) => {
     const { user: currentUser, activeSchoolId } = useAuth();
-    const { schools } = useData();
+    const { schools, resetUserPassword } = useData();
     const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: '',
@@ -36,6 +35,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
         avatarUrl: null as string | null | undefined,
     });
     const [password, setPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [isPasswordSaving, setIsPasswordSaving] = useState(false);
     const [disabledLinks, setDisabledLinks] = useState<Record<string, boolean>>({});
     const [errors, setErrors] = useState<{ name?: string; email?: string; role?: string; schoolId?: string; password?: string; }>({});
 
@@ -73,6 +74,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 setDisabledLinks({});
             }
             setPassword('');
+            setNewPassword('');
             setErrors({});
         }
     }, [userToEdit, isOpen, currentUser, schools, defaultRole, effectiveSchoolId]);
@@ -128,12 +130,22 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     };
 
     const handlePasswordReset = async () => {
-        if (!userToEdit) return;
-        const { error } = await supabase.auth.resetPasswordForEmail(userToEdit.email);
-        if (error) {
-            showToast('Error', error.message, 'error');
-        } else {
-            showToast('Success', `Password reset email sent to ${userToEdit.email}.`, 'success');
+        if (!userToEdit || !newPassword) {
+            showToast('Info', 'Please enter a new password.', 'info');
+            return;
+        }
+        if (newPassword.length < 6) {
+            showToast('Error', 'Password must be at least 6 characters long.', 'error');
+            return;
+        }
+        setIsPasswordSaving(true);
+        try {
+            await resetUserPassword(userToEdit.id, newPassword);
+            setNewPassword('');
+        } catch (e) {
+            // Error toast is handled in context
+        } finally {
+            setIsPasswordSaving(false);
         }
     };
 
@@ -252,13 +264,29 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     <button type="submit" className="btn-primary">Save User</button>
                 </div>
 
-                {userToEdit && currentUser?.role === UserRole.Owner && (
+                {userToEdit && (currentUser?.role === UserRole.Owner || currentUser?.role === UserRole.Admin) && (
                     <div className="border-t dark:border-secondary-700 pt-4 mt-4">
-                        <label className="input-label">Password Management</label>
+                        <label className="input-label">Reset Password</label>
                         <p className="text-sm text-secondary-500 dark:text-secondary-400 mb-2">
-                            Send an email to {userToEdit.email} with instructions to reset their password.
+                            Set a new password for {userToEdit.name}.
                         </p>
-                        <button type="button" onClick={handlePasswordReset} className="btn-secondary">Send Password Reset Email</button>
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="password" 
+                                placeholder="Enter new password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                className="input-field flex-grow" 
+                            />
+                            <button 
+                                type="button" 
+                                onClick={handlePasswordReset} 
+                                className="btn-secondary"
+                                disabled={isPasswordSaving}
+                            >
+                                {isPasswordSaving ? 'Saving...' : 'Reset'}
+                            </button>
+                        </div>
                     </div>
                 )}
             </form>

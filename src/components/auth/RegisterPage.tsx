@@ -95,7 +95,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 text-center">
                     <h1 className="text-2xl font-bold">Registration Successful!</h1>
                     <p className="text-golden-200 mt-4">
-                        Please check your email inbox for a confirmation link to activate your account.
+                        Your account has been created. If you are not a school owner, an administrator will need to approve your account before you can log in.
                     </p>
                     <button onClick={onSwitchToLogin} className="mt-6 w-full bg-white text-golden-800 font-bold py-3 px-4 rounded-lg hover:bg-golden-100 transition-colors">
                         Back to Login

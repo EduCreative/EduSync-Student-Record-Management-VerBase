@@ -48,8 +48,16 @@ const AttendanceMarker: React.FC = () => {
         setAttendanceRecords(newRecords);
     }, [selectedClassId, selectedDate, studentsInClass, attendance]);
 
-    const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
-        setAttendanceRecords(prev => new Map(prev).set(studentId, status));
+    const statuses: AttendanceStatus[] = ['Present', 'Absent', 'Leave'];
+    const handleStatusChange = (studentId: string) => {
+        setAttendanceRecords(prev => {
+            const newRecords = new Map(prev);
+            const currentStatus = newRecords.get(studentId);
+            const currentIndex = currentStatus ? statuses.indexOf(currentStatus) : -1;
+            const nextIndex = (currentIndex + 1) % statuses.length;
+            newRecords.set(studentId, statuses[nextIndex]);
+            return newRecords;
+        });
     };
     
     const markAllAs = (status: AttendanceStatus) => {
@@ -99,9 +107,10 @@ const AttendanceMarker: React.FC = () => {
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="p-4 border-b dark:border-secondary-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <h2 className="font-semibold">Student List ({studentsInClass.length})</h2>
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                             <button onClick={() => markAllAs('Present')} className="btn-secondary px-3 py-1 text-xs">Mark All Present</button>
                             <button onClick={() => markAllAs('Absent')} className="btn-secondary px-3 py-1 text-xs">Mark All Absent</button>
+                            <button onClick={() => markAllAs('Leave')} className="btn-secondary px-3 py-1 text-xs">Mark All Leave</button>
                         </div>
                     </div>
                     <div className="overflow-x-auto">
@@ -114,30 +123,31 @@ const AttendanceMarker: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {studentsInClass.map(student => (
-                                    <tr key={student.id} className="border-b dark:border-secondary-700">
-                                        <td className="px-6 py-3">
-                                            <div className="flex items-center space-x-3">
-                                                <Avatar student={student} className="w-8 h-8"/>
-                                                <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3">{student.rollNumber}</td>
-                                        <td className="px-6 py-3">
-                                            <div className="flex justify-center space-x-1 sm:space-x-2">
-                                                {(['Present', 'Absent', 'Leave'] as AttendanceStatus[]).map(status => (
+                                {studentsInClass.map(student => {
+                                    const status = attendanceRecords.get(student.id);
+                                    const statusClass = status ? `btn-${status.toLowerCase()}` : 'bg-secondary-200 dark:bg-secondary-600';
+                                    return (
+                                        <tr key={student.id} className="border-b dark:border-secondary-700">
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center space-x-3">
+                                                    <Avatar student={student} className="w-8 h-8"/>
+                                                    <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3">{student.rollNumber}</td>
+                                            <td className="px-6 py-3">
+                                                <div className="flex justify-center">
                                                     <button 
-                                                        key={status}
-                                                        onClick={() => handleStatusChange(student.id, status)}
-                                                        className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition-all ${attendanceRecords.get(student.id) === status ? `btn-${status.toLowerCase()}` : 'bg-secondary-200 dark:bg-secondary-600 hover:bg-secondary-300'}`}
+                                                        onClick={() => handleStatusChange(student.id)}
+                                                        className={`px-3 py-1 text-sm rounded-md transition-colors w-24 text-center ${statusClass}`}
                                                     >
-                                                        {status}
+                                                        {status || '...'}
                                                     </button>
-                                                ))}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -149,9 +159,9 @@ const AttendanceMarker: React.FC = () => {
                 </div>
             )}
              <style>{`
-                .btn-present { @apply bg-green-500 text-white; }
-                .btn-absent { @apply bg-red-500 text-white; }
-                .btn-leave { @apply bg-yellow-500 text-white; }
+                .btn-present { @apply bg-green-500 text-white hover:bg-green-600; }
+                .btn-absent { @apply bg-red-500 text-white hover:bg-red-600; }
+                .btn-leave { @apply bg-yellow-500 text-white hover:bg-yellow-600; }
             `}</style>
         </div>
     );

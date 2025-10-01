@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
+import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { useSync } from './SyncContext';
@@ -54,6 +54,7 @@ interface DataContextType {
     getSchoolById: (schoolId: string) => School | undefined;
     addUser: (userData: Omit<User, 'id'>, password?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
+    resetUserPassword: (userId: string, newPassword: string) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
     addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
     updateStudent: (updatedStudent: Student) => Promise<void>;
@@ -217,6 +218,55 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+    
+    const createNotifications = useCallback(async (
+        usersToNotify: User[],
+        messageTemplate: string,
+        itemName: string,
+        type: Notification['type'],
+        relatedId?: string
+    ) => {
+        if (!usersToNotify || usersToNotify.length === 0) return;
+
+        const notificationsToInsert: Omit<Notification, 'id' | 'isRead' | 'timestamp' | 'relatedId'>[] = [];
+        const message = messageTemplate.replace('{itemName}', itemName);
+
+        for (const userToNotify of usersToNotify) {
+            const prefs = userToNotify.notificationPreferences;
+            let shouldNotify = false;
+
+            switch(type) {
+                case 'fee':
+                    shouldNotify = prefs?.feeDeadlines?.inApp ?? true;
+                    break;
+                case 'result':
+                    shouldNotify = prefs?.examResults?.inApp ?? true;
+                    break;
+                case 'event':
+                case 'account':
+                case 'general':
+                    shouldNotify = true;
+                    break;
+            }
+
+            if (shouldNotify) {
+                notificationsToInsert.push({
+                    userId: userToNotify.id,
+                    message,
+                    type,
+                    ...(relatedId && { relatedId }),
+                });
+            }
+        }
+        
+        if (notificationsToInsert.length > 0) {
+            const { error } = await supabase.from('notifications').insert(toSnakeCase(notificationsToInsert));
+            if (error) {
+                console.error("Failed to create notifications:", error);
+            }
+        }
+    }, []);
+
 
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
@@ -242,25 +292,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
     const addUser = async (userData: Omit<User, 'id'>, password?: string) => {
+        // This function is largely superseded by bulkAddUsers but kept for potential direct use.
         if (!password) {
             return showToast('Error', 'A password is required to create a new user.', 'error');
         }
-
-        const { data, error: signUpError } = await supabase.auth.signUp({
-            email: userData.email,
-            password: password,
-        });
         
-        if (signUpError) {
-            return showToast('Error', `Could not create auth user: ${signUpError.message}`, 'error');
+        const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', userData.email).single();
+        if (existingUser) {
+            return showToast('Error', 'User with this email already exists.', 'error');
         }
 
-        const signedUpUser = data.user;
-        if (!signedUpUser) {
-            return showToast('Error', 'User was not created in authentication system. They may already exist.', 'error');
-        }
+        const newUserId = crypto.randomUUID();
+        const profileData = { ...userData, id: newUserId, password };
 
-        const profileData = { ...userData, id: signedUpUser.id };
         const { data: profileInsertData, error: profileError } = await supabase
             .from('profiles')
             .insert(toSnakeCase(profileData))
@@ -269,26 +313,55 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         if (profileError) {
             console.error("Failed to create user profile:", profileError.message);
-            return showToast('Error', 'Auth user created, but profile creation failed. Please contact support.', 'error');
+            return showToast('Error', 'Profile creation failed.', 'error');
         }
         
         if (profileInsertData) {
             const newUser = toCamelCase(profileInsertData) as User;
             setUsers(prev => [...prev, newUser]);
             addLog('User Added', `New user created: ${newUser.name}.`);
-            showToast('Success', `User ${newUser.name} created. They must confirm their email to log in.`);
+            showToast('Success', `User ${newUser.name} created.`);
         }
     };
 
     const updateUser = async (updatedUser: User) => {
-        const { data, error } = await supabase.from('profiles').update(toSnakeCase(updatedUser)).eq('id', updatedUser.id).select().single();
+        const oldUser = users.find(u => u.id === updatedUser.id);
+        
+        // Exclude password from general update unless explicitly provided
+        const { password, ...restOfUser } = updatedUser;
+        let updateData = toSnakeCase(restOfUser);
+        if (password) {
+            updateData.password = password;
+        }
+
+        const { data, error } = await supabase.from('profiles').update(updateData).eq('id', updatedUser.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
             const updatedUserFromDB = toCamelCase(data) as User;
             setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
             addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
             showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
+
+            if (oldUser && oldUser.status === 'Pending Approval' && updatedUserFromDB.status === 'Active') {
+                createNotifications([updatedUserFromDB], "Your account has been approved by an administrator.", 'Account Approval', 'account');
+            }
         }
+    };
+
+    const resetUserPassword = async (userId: string, newPassword: string) => {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ password: newPassword })
+            .eq('id', userId);
+        
+        if (error) {
+            showToast('Error', `Failed to reset password: ${error.message}`, 'error');
+            throw error;
+        }
+        
+        const userToUpdate = users.find(u => u.id === userId);
+        addLog('Password Reset', `Password reset for user ${userToUpdate?.name || userId}.`);
+        showToast('Success', `Password has been reset successfully.`);
     };
 
     const deleteUser = async (userId: string) => {
@@ -309,7 +382,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
         const newStudent = { ...studentData, status: 'Active' as const };
         const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw error;
+        }
         if (data) {
             setStudents(prev => [...prev, toCamelCase(data) as Student]);
             addLog('Student Added', `New student added: ${newStudent.name}.`);
@@ -319,7 +395,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateStudent = async (updatedStudent: Student) => {
         const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw error;
+        }
         if (data) {
             const updatedStudentFromDB = toCamelCase(data) as Student;
             setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudentFromDB : s));
@@ -397,7 +476,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase.from('attendance').upsert(recordsToUpsert, { onConflict: 'student_id, date' }).select();
         
-        if (error) return showToast('Error', `Failed to save attendance: ${error.message}`, 'error');
+        if (error) {
+            showToast('Error', `Failed to save attendance: ${error.message}`, 'error');
+            throw error;
+        }
         
         if (data && data.length > 0) {
             const upsertedRecords = toCamelCase(data) as Attendance[];
@@ -502,6 +584,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setFees(prev => [...prev, ...toCamelCase(data) as FeeChallan[]]);
             addLog('Challans Generated', `${data.length} challans generated for ${month} ${year}.`);
             showToast('Success', `${data.length} fee challans have been generated.`);
+            
+            const studentIdsWithNewChallans = challansToCreate.map(c => c.studentId);
+            const userIdsToNotify = new Set<string>();
+            const affectedStudents = students.filter(s => studentIdsWithNewChallans.includes(s.id));
+            affectedStudents.forEach(student => {
+                if (student.userId) userIdsToNotify.add(student.userId);
+            });
+            users.forEach(u => {
+                if (u.role === UserRole.Parent && u.childStudentIds?.some(childId => studentIdsWithNewChallans.includes(childId))) {
+                    userIdsToNotify.add(u.id);
+                }
+            });
+            const usersToNotify = users.filter(u => userIdsToNotify.has(u.id));
+            createNotifications(usersToNotify, "New fee challan generated for {itemName}.", `${month} ${year}`, 'fee');
+
             return data.length;
         }
         return 0;
@@ -561,7 +658,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         const { data, error } = await supabase.from('results').upsert(recordsToUpsert, { onConflict: 'student_id, exam, subject' }).select();
 
-        if (error) return showToast('Error', `Failed to save results: ${error.message}`, 'error');
+        if (error) {
+            showToast('Error', `Failed to save results: ${error.message}`, 'error');
+            throw error;
+        }
 
         if (data) {
             const upsertedResults: Result[] = toCamelCase(data) as Result[];
@@ -571,6 +671,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setResults([...oldResultsFiltered, ...upsertedResults]);
             addLog('Results Saved', `Results saved.`);
             showToast('Success', 'Results have been saved.');
+            
+            const studentIdsWithNewResults = [...new Set(resultsToSave.map(r => r.studentId))];
+            const userIdsToNotify = new Set<string>();
+            const affectedStudents = students.filter(s => studentIdsWithNewResults.includes(s.id));
+            affectedStudents.forEach(student => {
+                if (student.userId) userIdsToNotify.add(student.userId);
+            });
+            users.forEach(u => {
+                if (u.role === UserRole.Parent && u.childStudentIds?.some(childId => studentIdsWithNewResults.includes(childId))) {
+                    userIdsToNotify.add(u.id);
+                }
+            });
+            const usersToNotify = users.filter(u => userIdsToNotify.has(u.id));
+            createNotifications(usersToNotify, "Results for {itemName} have been published.", resultsToSave[0].exam, 'result');
         }
     };
 
@@ -623,6 +737,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setEvents(prev => [...prev, newEvent]);
             addLog('Event Added', `New event created: ${newEvent.title}.`);
             showToast('Success', `Event "${newEvent.title}" has been created.`);
+
+            const usersInSchool = users.filter(u => u.schoolId === eventData.schoolId && u.id !== user?.id);
+            createNotifications(usersInSchool, "New school event: {itemName}", newEvent.title, 'event', newEvent.id);
         }
     };
 
@@ -668,31 +785,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const bulkAddUsers = async (usersToAdd: (Omit<User, 'id'> & { password?: string })[]) => {
-        let successCount = 0;
-        for (const userData of usersToAdd) {
-            const { password, ...profileData } = userData;
-            if (password) {
-                const { data, error: signUpError } = await supabase.auth.signUp({
-                    email: userData.email, password: password,
-                });
-                const signedUpUser = data.user;
-                if (signUpError || !signedUpUser) {
-                     showToast('Error', `Could not create auth user for ${userData.email}: ${signUpError?.message}`, 'error');
-                     continue;
-                }
-                const { error: profileError } = await supabase.from('profiles').insert(toSnakeCase({ ...profileData, id: signedUpUser.id }));
-                if (profileError) {
-                     showToast('Error', `Auth user created, but profile failed for ${userData.email}.`, 'error');
-                } else {
-                    successCount++;
-                }
-            }
-        }
-        const { data } = await supabase.from('profiles').select('*');
-        if(data) setUsers(toCamelCase(data) as User[]);
+        const usersToInsert = usersToAdd.map(user => ({
+            ...user,
+            id: crypto.randomUUID(), // Generate ID client-side
+        }));
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert(usersToInsert.map(toSnakeCase));
         
-        addLog('Bulk User Import', `${successCount} new users imported.`);
-        showToast('Success', `${successCount} out of ${usersToAdd.length} users imported. Check for individual errors.`);
+        if (error) {
+            showToast('Error', `Bulk user import failed: ${error.message}`, 'error');
+            return;
+        }
+        
+        // Refetch users to update the state
+        const { data: allUsers } = await supabase.from('profiles').select('*');
+        if(allUsers) setUsers(toCamelCase(allUsers) as User[]);
+        
+        addLog('Bulk User Import', `${usersToInsert.length} new users imported.`);
+        showToast('Success', `${usersToInsert.length} users imported successfully.`);
     };
 
     const bulkAddClasses = async (classesToAdd: Omit<Class, 'id'>[]) => {
@@ -782,7 +894,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value: DataContextType = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
-        getSchoolById, addUser, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
+        getSchoolById, addUser, updateUser, resetUserPassword, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults,
         addSchool, updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent,
