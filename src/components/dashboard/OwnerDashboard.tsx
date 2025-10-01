@@ -1,14 +1,26 @@
 
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { UserRole } from '../../types';
+import { School, UserRole } from '../../types';
 import DoughnutChart from '../charts/DoughnutChart';
-import BarChart from '../charts/BarChart';
+// FIX: Import BarChartData to fix type error on onClick handler
+import BarChart, { BarChartData } from '../charts/BarChart';
 import StatCard from '../common/StatCard';
+import { ActiveView } from '../layout/Layout';
+import Modal from '../common/Modal';
+import Avatar from '../common/Avatar';
+import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
+import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 
-const OwnerDashboard: React.FC = () => {
-    const { schools, users, students, fees } = useData();
+interface OwnerDashboardProps {
+    setActiveView: (view: ActiveView) => void;
+}
+
+
+const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ setActiveView }) => {
+    const { schools, users, students, fees, loading } = useData();
+    const [viewingSchool, setViewingSchool] = useState<School | null>(null);
 
     const stats = useMemo(() => {
         const totalCollection = fees.reduce((sum, fee) => sum + fee.paidAmount, 0);
@@ -18,6 +30,7 @@ const OwnerDashboard: React.FC = () => {
 
     const studentDistributionData = useMemo(() => {
         return schools.map(school => ({
+            id: school.id,
             label: school.name.split(' ')[0], // Shorten name for chart
             value: students.filter(s => s.schoolId === school.id).length
         }));
@@ -45,33 +58,89 @@ const OwnerDashboard: React.FC = () => {
         }));
     }, [users]);
 
+    const studentsInViewingSchool = useMemo(() => {
+        if (!viewingSchool) return [];
+        return students.filter(s => s.schoolId === viewingSchool.id);
+    }, [students, viewingSchool]);
+
+    const handleBarClick = (item: BarChartData) => {
+        const clickedSchool = schools.find(s => s.id === item.id);
+        if (clickedSchool) {
+            setViewingSchool(clickedSchool);
+        }
+    };
+
+    const handleDoughnutClick = (item: { label: string; value: number }) => {
+        setActiveView({ view: 'users', payload: { roleFilter: item.label as UserRole }});
+    };
+
+    if (loading) {
+        return (
+            <div className="space-y-8">
+                <div className="skeleton-bg h-9 w-64 rounded"></div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[...Array(5)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+    
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <ChartSkeleton />
+                    <ChartSkeleton />
+                </div>
+            </div>
+        );
+    }
+
 
     return (
-        <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Owner's Overview</h1>
-            
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <StatCard title="Total Schools" value={schools.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<SchoolIcon />} />
-                <StatCard title="Total Users" value={users.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<UserCheckIcon />} />
-                <StatCard title="Total Students" value={students.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} />
-                <StatCard title="Total Fee Collection" value={`Rs. ${stats.totalCollection.toLocaleString()}`} color="bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300" icon={<CreditCardIcon />} />
-                <StatCard title="Pending Approvals" value={stats.pendingApprovals.toString()} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon />} />
-            </div>
+        <>
+            <Modal isOpen={!!viewingSchool} onClose={() => setViewingSchool(null)} title={`Students in ${viewingSchool?.name}`}>
+                <div className="max-h-[60vh] overflow-y-auto">
+                    <ul className="divide-y dark:divide-secondary-700">
+                        {studentsInViewingSchool.length > 0 ? (
+                            studentsInViewingSchool.map(student => (
+                                <li key={student.id} className="py-3 flex items-center space-x-4">
+                                    <Avatar student={student} className="w-10 h-10" />
+                                    <div>
+                                        <p className="font-medium text-secondary-800 dark:text-secondary-100">{student.name}</p>
+                                        <p className="text-sm text-secondary-500">Roll No: {student.rollNumber}</p>
+                                    </div>
+                                </li>
+                            ))
+                        ) : (
+                            <p className="text-secondary-500 text-center py-4">No students found in this school.</p>
+                        )}
+                    </ul>
+                </div>
+            </Modal>
+            <div className="space-y-8">
+                <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Owner's Overview</h1>
+                
+                {/* Stat Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <StatCard title="Total Schools" value={schools.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<SchoolIcon />} />
+                    <StatCard title="Total Users" value={users.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<UserCheckIcon />} />
+                    <StatCard title="Total Students" value={students.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} />
+                    <StatCard title="Total Fee Collection" value={`Rs. ${stats.totalCollection.toLocaleString()}`} color="bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300" icon={<CreditCardIcon />} />
+                    <StatCard title="Pending Approvals" value={stats.pendingApprovals.toString()} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon />} />
+                </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BarChart
-                    title="Student Distribution by School"
-                    data={studentDistributionData}
-                    color="#3b82f6"
-                />
-                <DoughnutChart
-                    title="User Roles Overview"
-                    data={userRoleData}
-                />
+                {/* Charts */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <BarChart
+                        title="Student Distribution by School"
+                        data={studentDistributionData}
+                        color="#3b82f6"
+                        onClick={handleBarClick}
+                    />
+                    <DoughnutChart
+                        title="User Roles Overview"
+                        data={userRoleData}
+                        onClick={handleDoughnutClick}
+                    />
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

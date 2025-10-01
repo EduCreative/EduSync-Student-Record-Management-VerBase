@@ -1,10 +1,11 @@
+import React, { useState } from 'react';
+import ReportCardModal from './ReportCardModal';
+import BulkChallanReportModal from './BulkChallanReportModal';
+import ClassListReportModal from './ClassListReportModal';
+import DefaulterReportModal from './DefaulterReportModal';
+import FeeCollectionReportModal from './FeeCollectionReportModal';
 
-
-
-
-import React from 'react';
-import { usePrint } from '../../context/PrintContext';
-import { useData } from '../../context/DataContext';
+type ReportType = 'feeCollection' | 'defaulter' | 'classList' | 'bulkChallan' | 'reportCard';
 
 interface ReportsPageProps {}
 
@@ -27,94 +28,66 @@ const ReportCard: React.FC<{ title: string; description: string; icon: React.Rea
 
 
 const ReportsPage: React.FC<ReportsPageProps> = () => {
-    const { showPrintPreview } = usePrint();
-    const { fees, students } = useData();
+    const [activeReport, setActiveReport] = useState<ReportType | null>(null);
     
-    const generateFeeCollectionReport = () => {
-        const content = (
-            <div className="printable-report">
-                <h1 className="text-2xl font-bold mb-4">Fee Collection Report (Sample)</h1>
-                <table className="w-full">
-                    <thead>
-                        <tr><th>Challan #</th><th>Student</th><th>Amount Paid</th><th>Date</th></tr>
-                    </thead>
-                    <tbody>
-                    {fees.filter(f => f.status === 'Paid').slice(0, 20).map(fee => {
-                        const student = students.find(s => s.id === fee.studentId);
-                        return <tr key={fee.id}><td>{fee.challanNumber}</td><td>{student?.name}</td><td>{fee.paidAmount}</td><td>{fee.paidDate}</td></tr>
-                    })}
-                    </tbody>
-                </table>
-            </div>
-        );
-        showPrintPreview(content, "Fee Collection Report");
-    };
-    
-    const generateDefaulterReport = () => {
-        const content = (
-            <div className="printable-report">
-                <h1 className="text-2xl font-bold mb-4">Fee Defaulter Report (Sample)</h1>
-                 <table className="w-full">
-                    <thead>
-                        <tr><th>Student</th><th>Class</th><th>Amount Due</th><th>Due Date</th></tr>
-                    </thead>
-                    <tbody>
-                     {fees.filter(f => f.status === 'Unpaid').slice(0, 20).map(fee => {
-                        const student = students.find(s => s.id === fee.studentId);
-                        return <tr key={fee.id}><td>{student?.name}</td><td>Class</td><td>{fee.totalAmount}</td><td>{fee.dueDate}</td></tr>
-                    })}
-                    </tbody>
-                </table>
-            </div>
-        );
-        showPrintPreview(content, "Fee Defaulter Report");
-    };
-
     const reports = [
         { 
+            id: 'feeCollection' as ReportType,
             title: "Fee Collection Report", 
             description: "View total fees collected within a specific date range.", 
             icon: <DollarSignIcon />,
-            onGenerate: generateFeeCollectionReport,
+            onGenerate: () => setActiveReport('feeCollection'),
         },
         { 
+            id: 'defaulter' as ReportType,
             title: "Fee Defaulter Report", 
             description: "List all students with unpaid or partially paid fees.", 
             icon: <AlertTriangleIcon />,
-            onGenerate: generateDefaulterReport,
+            onGenerate: () => setActiveReport('defaulter'),
         },
         { 
+            id: 'classList' as ReportType,
             title: "Printable Class Lists", 
             description: "Generate and print lists of students for any class.", 
             icon: <UsersIcon />,
-            onGenerate: () => alert('Class List generation coming soon!'),
+            onGenerate: () => setActiveReport('classList'),
         },
          { 
+            id: 'bulkChallan' as ReportType,
             title: "Bulk Fee Challans", 
             description: "Print three-part fee challans for an entire class.", 
             icon: <FileTextIcon />,
-            onGenerate: () => alert('Bulk challan printing coming soon!'),
+            onGenerate: () => setActiveReport('bulkChallan'),
         },
          { 
+            id: 'reportCard' as ReportType,
             title: "Student Report Cards", 
             description: "Generate and print detailed report cards for students.", 
             icon: <AwardIcon />,
-            onGenerate: () => alert('Report card generation coming soon!'),
+            onGenerate: () => setActiveReport('reportCard'),
         },
     ];
 
     return (
-        <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Reports Center</h1>
-            <p className="text-secondary-600 dark:text-secondary-400">
-                Generate, view, and print important school documents from one place.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {reports.map(report => (
-                    <ReportCard key={report.title} {...report} />
-                ))}
+        <>
+            <FeeCollectionReportModal isOpen={activeReport === 'feeCollection'} onClose={() => setActiveReport(null)} />
+            <DefaulterReportModal isOpen={activeReport === 'defaulter'} onClose={() => setActiveReport(null)} />
+            <ClassListReportModal isOpen={activeReport === 'classList'} onClose={() => setActiveReport(null)} />
+            <BulkChallanReportModal isOpen={activeReport === 'bulkChallan'} onClose={() => setActiveReport(null)} />
+            <ReportCardModal isOpen={activeReport === 'reportCard'} onClose={() => setActiveReport(null)} />
+
+            <div className="space-y-6">
+                <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Reports Center</h1>
+                <p className="text-secondary-600 dark:text-secondary-400">
+                    Generate, view, and print important school documents from one place.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {reports.map(report => (
+                        <ReportCard key={report.title} {...report} onGenerate={() => setActiveReport(report.id)} />
+                    ))}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 

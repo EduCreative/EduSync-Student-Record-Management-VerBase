@@ -26,7 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
 
     switch (effectiveRole) {
         case UserRole.Owner:
-            return <OwnerDashboard />;
+            return <OwnerDashboard setActiveView={setActiveView} />;
         case UserRole.Admin:
             return <AdminDashboard setActiveView={setActiveView} />;
         case UserRole.Accountant:

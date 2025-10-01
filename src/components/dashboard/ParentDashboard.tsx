@@ -11,12 +11,39 @@ import StatCard from '../common/StatCard';
 
 const ParentDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { students } = useData();
+    const { students, loading } = useData();
 
     const myChildren = useMemo(() => {
         if (!user || !user.childStudentIds) return [];
         return students.filter(s => user.childStudentIds!.includes(s.id));
     }, [user, students]);
+    
+    if (loading) {
+        return (
+            <div className="space-y-8">
+                <div className="skeleton-bg h-9 w-64 rounded"></div>
+                <div className="space-y-6">
+                    {[...Array(2)].map((_, i) => (
+                        <div key={i} className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                            <div className="flex items-center space-x-4 mb-4">
+                                <div className="skeleton-bg w-16 h-16 rounded-full"></div>
+                                <div className="space-y-2">
+                                    <div className="skeleton-bg h-7 w-40 rounded"></div>
+                                    <div className="skeleton-bg h-5 w-52 rounded"></div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="skeleton-bg h-20 rounded-lg"></div>
+                                <div className="skeleton-bg h-20 rounded-lg"></div>
+                                <div className="skeleton-bg h-20 rounded-lg"></div>
+                                <div className="skeleton-bg h-20 rounded-lg"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )
+    }
     
     if (!user) return null;
 

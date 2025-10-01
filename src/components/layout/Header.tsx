@@ -1,6 +1,6 @@
 
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
@@ -16,8 +16,26 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
     const { user, logout, activeSchoolId, switchSchoolContext } = useAuth();
     const { theme, toggleTheme } = useTheme();
-    const { getSchoolById } = useData();
+    const { schools, getSchoolById } = useData();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [schoolSwitcherOpen, setSchoolSwitcherOpen] = useState(false);
+
+    const profileDropdownRef = useRef<HTMLDivElement>(null);
+    const schoolSwitcherRef = useRef<HTMLDivElement>(null);
+
+    // Close on click outside
+    useEffect(() => {
+        const clickHandler = ({ target }: MouseEvent) => {
+            if (profileDropdownRef.current && profileOpen && !profileDropdownRef.current.contains(target as Node)) {
+                setProfileOpen(false);
+            }
+            if (schoolSwitcherRef.current && schoolSwitcherOpen && !schoolSwitcherRef.current.contains(target as Node)) {
+                setSchoolSwitcherOpen(false);
+            }
+        };
+        document.addEventListener('click', clickHandler);
+        return () => document.removeEventListener('click', clickHandler);
+    }, [profileOpen, schoolSwitcherOpen]);
 
     const displaySchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = user ? getSchoolById(displaySchoolId as string) : null;
@@ -25,6 +43,12 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
     const handleReturnToOwnerView = () => {
         switchSchoolContext(null);
         setActiveView({ view: 'overview' });
+    };
+
+    const handleSchoolSelect = (schoolId: string) => {
+        switchSchoolContext(schoolId);
+        setActiveView({ view: 'dashboard' });
+        setSchoolSwitcherOpen(false);
     };
 
     return (
@@ -50,14 +74,50 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                             </svg>
                         </button>
                         <div className="hidden lg:flex items-center ml-4 space-x-3">
-                            {school?.logoUrl && (
-                                <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
-                            )}
-                            <h1 className="text-xl font-semibold">{school?.name || 'EduSync'}</h1>
-                            {user?.role === UserRole.Owner && activeSchoolId && (
-                                <button onClick={handleReturnToOwnerView} className="text-sm text-primary-600 hover:underline">
-                                    &larr; Back to Owner View
-                                </button>
+                           {user?.role === UserRole.Owner ? (
+                                activeSchoolId ? (
+                                    <>
+                                        {school?.logoUrl && (
+                                            <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                        )}
+                                        <h1 className="text-xl font-semibold">{school?.name}</h1>
+                                        <button onClick={handleReturnToOwnerView} className="text-sm text-primary-600 hover:underline">
+                                            &larr; Back to Owner View
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="relative" ref={schoolSwitcherRef}>
+                                        <button 
+                                            className="flex items-center space-x-2 text-xl font-semibold text-secondary-800 dark:text-secondary-200"
+                                            onClick={() => setSchoolSwitcherOpen(prev => !prev)}
+                                        >
+                                            <span>Owner Overview</span>
+                                            <ChevronDownIcon className={`w-5 h-5 transition-transform ${schoolSwitcherOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {schoolSwitcherOpen && (
+                                            <div className="origin-top-left absolute left-0 mt-2 w-64 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                <div className="px-4 py-2 text-xs text-secondary-500 uppercase font-semibold">Switch School View</div>
+                                                {schools.map(s => (
+                                                    <button
+                                                        key={s.id}
+                                                        onClick={() => handleSchoolSelect(s.id)}
+                                                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                                                    >
+                                                        {s.logoUrl ? <img src={s.logoUrl} alt={`${s.name} logo`} className="w-6 h-6 object-contain rounded-sm bg-white" /> : <div className="w-6 h-6 bg-secondary-200 dark:bg-secondary-700 rounded-sm flex items-center justify-center text-xs">?</div>}
+                                                        <span>{s.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            ) : (
+                                <>
+                                    {school?.logoUrl && (
+                                        <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                    )}
+                                    <h1 className="text-xl font-semibold">{school?.name || 'EduSync'}</h1>
+                                </>
                             )}
                         </div>
                     </div>
@@ -68,10 +128,10 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                            {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}
                         </button>
                         
-                        <div className="relative">
+                        <div className="relative" ref={profileDropdownRef}>
                              <button
                                 className="flex items-center space-x-2"
-                                onClick={() => setProfileOpen(!profileOpen)}
+                                onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }}
                             >
                                 <Avatar user={user} className="h-9 w-9" />
                                 <div className="hidden md:block text-left">
@@ -81,10 +141,29 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                             </button>
                             {profileOpen && (
                                 <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                    <a href="#" className="block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700">Profile</a>
-                                    <a href="#" className="block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700">Settings</a>
                                     <button
-                                        onClick={logout}
+                                        onClick={() => {
+                                            setActiveView({ view: 'settings' });
+                                            setProfileOpen(false);
+                                        }}
+                                        className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                    >
+                                        Profile
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setActiveView({ view: 'settings' });
+                                            setProfileOpen(false);
+                                        }}
+                                        className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                    >
+                                        Settings
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            setProfileOpen(false);
+                                        }}
                                         className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-secondary-100 dark:hover:bg-secondary-700"
                                     >
                                         Logout
@@ -105,6 +184,10 @@ const SunIcon = () => (
 
 const MoonIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+);
+
+const ChevronDownIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
 );
 
 

@@ -6,16 +6,21 @@ import Badge from '../common/Badge';
 import UserFormModal from '../users/UserFormModal';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
+import TableSkeleton from '../common/skeletons/TableSkeleton';
+import { DownloadIcon, UploadIcon } from '../../constants';
+import { exportToCsv } from '../../utils/csvHelper';
+import ImportModal from '../common/ImportModal';
 
 const TeacherManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();
-    const { users, classes, addUser, updateUser, deleteUser } = useData();
+    const { users, classes, bulkAddUsers, updateUser, deleteUser, loading } = useData();
     
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'Active' | 'Inactive'>('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -72,15 +77,43 @@ const TeacherManagementPage: React.FC = () => {
             updateUser(userData as User);
         } else {
             const { password, ...profileData } = userData;
-            addUser(profileData as Omit<User, 'id'>, password);
+            bulkAddUsers([{...profileData, password} as (Omit<User, 'id'> & { password?: string })]);
         }
     };
+    
+    const handleImportTeachers = async (data: any[]) => {
+        const teachersToImport = data.map(item => ({
+            ...item,
+            role: UserRole.Teacher,
+            status: 'Active',
+            schoolId: effectiveSchoolId,
+        }));
+        await bulkAddUsers(teachersToImport);
+    };
+
+    const sampleDataForImport = [{
+        name: "Jane Doe",
+        email: "teacher.jane@example.com",
+        password: "securePassword123"
+    }];
+
+    const requiredHeaders = ['name', 'email', 'password'];
 
     const handleDeleteUser = () => {
         if (userToDelete) {
             deleteUser(userToDelete.id);
             setUserToDelete(null);
         }
+    };
+
+    const handleExport = () => {
+        const dataToExport = filteredTeachers.map(t => ({
+            name: t.name,
+            email: t.email,
+            status: t.status,
+            assignedClasses: classAssignments.get(t.id)?.join('; ') || 'N/A',
+        }));
+        exportToCsv(dataToExport, 'teachers_export');
     };
 
     const showingFrom = filteredTeachers.length > 0 ? (currentPage - 1) * USERS_PER_PAGE + 1 : 0;
@@ -95,6 +128,14 @@ const TeacherManagementPage: React.FC = () => {
                 userToEdit={userToEdit}
                 defaultRole={UserRole.Teacher}
                 lockRole={true}
+            />
+             <ImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImport={handleImportTeachers}
+                sampleData={sampleDataForImport}
+                fileName="Teachers"
+                requiredHeaders={requiredHeaders}
             />
             <Modal isOpen={!!userToDelete} onClose={() => setUserToDelete(null)} title="Confirm Teacher Deletion">
                 <div>
@@ -112,9 +153,17 @@ const TeacherManagementPage: React.FC = () => {
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Teacher Management</h1>
-                    <button onClick={() => handleOpenModal()} className="btn-primary">
-                        + Add Teacher
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
+                            <UploadIcon className="w-4 h-4" /> Import CSV
+                        </button>
+                        <button onClick={handleExport} className="btn-secondary">
+                            <DownloadIcon className="w-4 h-4" /> Export CSV
+                        </button>
+                        <button onClick={() => handleOpenModal()} className="btn-primary">
+                            + Add Teacher
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
@@ -142,72 +191,78 @@ const TeacherManagementPage: React.FC = () => {
                 </div>
                 
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
-                                <tr>
-                                    <th className="px-6 py-3">Teacher</th>
-                                    <th className="px-6 py-3">Assigned Classes</th>
-                                    <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedTeachers.map(teacher => (
-                                    <tr key={teacher.id} className="border-b dark:border-secondary-700">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-3">
-                                                <Avatar user={teacher} className="h-10 w-10" />
-                                                <div>
-                                                    <div className="font-semibold text-secondary-900 dark:text-white">{teacher.name}</div>
-                                                    <div className="text-xs text-secondary-500">{teacher.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">{classAssignments.get(teacher.id)?.join(', ') || 'N/A'}</td>
-                                        <td className="px-6 py-4"><Badge color={teacher.status === 'Active' ? 'green' : 'red'}>{teacher.status}</Badge></td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center space-x-4">
-                                                <button onClick={() => handleOpenModal(teacher)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                                <button onClick={() => setUserToDelete(teacher)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {totalPages > 0 && (
-                        <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
-                            <span className="text-sm text-secondary-700 dark:text-secondary-400">
-                                Showing {showingFrom} - {showingTo} of {filteredTeachers.length} teachers
-                            </span>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="pagination-btn"
-                                >
-                                    Previous
-                                </button>
-                                <span className="text-sm px-2">{currentPage} of {totalPages}</span>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="pagination-btn"
-                                >
-                                    Next
-                                </button>
+                    {loading ? (
+                        <TableSkeleton columns={[{width: '35%'}, {width: '35%'}, {width: '15%'}, {width: '15%'}]} rows={USERS_PER_PAGE} />
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
+                                        <tr>
+                                            <th className="px-6 py-3">Teacher</th>
+                                            <th className="px-6 py-3">Assigned Classes</th>
+                                            <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {paginatedTeachers.map(teacher => (
+                                            <tr key={teacher.id} className="border-b dark:border-secondary-700">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <Avatar user={teacher} className="h-10 w-10" />
+                                                        <div>
+                                                            <div className="font-semibold text-secondary-900 dark:text-white">{teacher.name}</div>
+                                                            <div className="text-xs text-secondary-500">{teacher.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">{classAssignments.get(teacher.id)?.join(', ') || 'N/A'}</td>
+                                                <td className="px-6 py-4"><Badge color={teacher.status === 'Active' ? 'green' : 'red'}>{teacher.status}</Badge></td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center space-x-4">
+                                                        <button onClick={() => handleOpenModal(teacher)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
+                                                        <button onClick={() => setUserToDelete(teacher)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
+                            {totalPages > 0 && (
+                                <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
+                                    <span className="text-sm text-secondary-700 dark:text-secondary-400">
+                                        Showing {showingFrom} - {showingTo} of {filteredTeachers.length} teachers
+                                    </span>
+                                    <div className="flex items-center space-x-2">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="pagination-btn"
+                                        >
+                                            Previous
+                                        </button>
+                                        <span className="text-sm px-2">{currentPage} of {totalPages}</span>
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="pagination-btn"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
             <style>{`
                 .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
                 .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
+                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2; }
+                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg flex items-center gap-2; }
                 .btn-danger { @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg; }
                 .pagination-btn { @apply px-3 py-1 text-sm rounded-md border dark:border-secondary-600 disabled:opacity-50; }
             `}</style>

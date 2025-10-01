@@ -5,10 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import Avatar from '../common/Avatar';
 import StatCard from '../common/StatCard';
+import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
 
 const StudentDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { students, classes } = useData();
+    const { students, classes, loading } = useData();
 
     // Find the student profile that matches the logged-in user.
     const studentProfile = useMemo(() => {
@@ -19,6 +20,33 @@ const StudentDashboard: React.FC = () => {
     }, [students, user]);
     
     const studentClass = studentProfile ? classes.find(c => c.id === studentProfile.classId) : null;
+
+    if (loading) {
+        return (
+            <div className="space-y-8">
+                <div className="flex items-center space-x-4">
+                     <div className="skeleton-bg w-20 h-20 rounded-full"></div>
+                     <div className="space-y-2">
+                        <div className="skeleton-bg h-9 w-48 rounded"></div>
+                        <div className="skeleton-bg h-5 w-64 rounded"></div>
+                     </div>
+                </div>
+    
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                     {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+    
+                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="skeleton-bg h-6 w-48 mb-4 rounded"></div>
+                    <div className="space-y-3">
+                        <div className="skeleton-bg h-4 w-full rounded"></div>
+                        <div className="skeleton-bg h-4 w-5/6 rounded"></div>
+                        <div className="skeleton-bg h-4 w-full rounded"></div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     if (!user || !studentProfile) return null;
 

@@ -1,12 +1,19 @@
 
 import React from 'react';
 
-interface DoughnutChartProps {
-    title: string;
-    data: { label: string; value: number; color?: string }[];
+interface ChartDataItem {
+    label: string;
+    value: number;
+    color?: string;
 }
 
-const DoughnutChart: React.FC<DoughnutChartProps> = ({ title, data }) => {
+interface DoughnutChartProps {
+    title: string;
+    data: ChartDataItem[];
+    onClick?: (item: ChartDataItem) => void;
+}
+
+const DoughnutChart: React.FC<DoughnutChartProps> = ({ title, data, onClick }) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) {
         return (
@@ -60,7 +67,15 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({ title, data }) => {
                 <div className="relative w-48 h-48 mx-auto">
                     <svg viewBox="0 0 100 100">
                         {segments.map((segment, index) => (
-                            <path key={index} d={segment.d} fill="none" stroke={segment.color} strokeWidth="20" />
+                            <path
+                                key={index}
+                                d={segment.d}
+                                fill="none"
+                                stroke={segment.color}
+                                strokeWidth="20"
+                                onClick={() => onClick && onClick(data[index])}
+                                className={onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}
+                            />
                         ))}
                     </svg>
                      <div className="absolute inset-0 flex flex-col items-center justify-center">

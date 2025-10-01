@@ -73,6 +73,9 @@ interface DataContextType {
     addEvent: (eventData: Omit<SchoolEvent, 'id'>) => Promise<void>;
     updateEvent: (updatedEvent: SchoolEvent) => Promise<void>;
     deleteEvent: (eventId: string) => Promise<void>;
+    bulkAddStudents: (students: Omit<Student, 'id' | 'status'>[]) => Promise<void>;
+    bulkAddUsers: (users: (Omit<User, 'id'> & { password?: string })[]) => Promise<void>;
+    bulkAddClasses: (classes: Omit<Class, 'id'>[]) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -644,6 +647,71 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const bulkAddStudents = async (studentsToAdd: Omit<Student, 'id' | 'status'>[]) => {
+        const newStudents = studentsToAdd.map(s => ({ ...s, status: 'Active' as const }));
+        const { data, error } = await supabase.from('students').insert(newStudents.map(toSnakeCase)).select();
+        
+        if (error) {
+            return showToast('Error', `Bulk import failed: ${error.message}`, 'error');
+        }
+
+        if (data) {
+            const addedStudents = toCamelCase(data) as Student[];
+            setStudents(prev => [...prev, ...addedStudents]);
+            addLog('Bulk Student Import', `${addedStudents.length} new students imported.`);
+            showToast('Success', `${addedStudents.length} students imported successfully.`);
+        }
+    };
+    
+    // NOTE: Supabase bulk user creation via API is more complex due to auth. This is a simplified version.
+    // For a real-world scenario, you would likely use a server-side function.
+    const bulkAddUsers = async (usersToAdd: (Omit<User, 'id'> & { password?: string })[]) => {
+        let successCount = 0;
+        for (const userData of usersToAdd) {
+            const { password, ...profileData } = userData;
+            if (password) {
+                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                    email: userData.email, password: password,
+                });
+                if (signUpError || !signUpData.user) {
+                     showToast('Error', `Could not create auth user for ${userData.email}: ${signUpError?.message}`, 'error');
+                     continue;
+                }
+                const { error: profileError } = await supabase.from('profiles').insert(toSnakeCase({ ...profileData, id: signUpData.user.id }));
+                if (profileError) {
+                     showToast('Error', `Auth user created, but profile failed for ${userData.email}.`, 'error');
+                } else {
+                    successCount++;
+                }
+            }
+        }
+        // Re-fetch users to update the list, as individual inserts happened.
+        const { data } = await supabase.from('profiles').select('*');
+        if(data) setUsers(toCamelCase(data) as User[]);
+        
+        addLog('Bulk User Import', `${successCount} new users imported.`);
+        showToast('Success', `${successCount} out of ${usersToAdd.length} users imported. Check for individual errors.`);
+    };
+
+    const bulkAddClasses = async (classesToAdd: Omit<Class, 'id'>[]) => {
+        if (!user) return;
+        const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+
+        const newClasses = classesToAdd.map(c => ({ ...c, schoolId: effectiveSchoolId }));
+        const { data, error } = await supabase.from('classes').insert(newClasses.map(toSnakeCase)).select();
+        
+        if (error) {
+            return showToast('Error', `Bulk import failed: ${error.message}`, 'error');
+        }
+
+        if (data) {
+            const addedClasses = toCamelCase(data) as Class[];
+            setClasses(prev => [...prev, ...addedClasses]);
+            addLog('Bulk Class Import', `${addedClasses.length} new classes imported.`);
+            showToast('Success', `${addedClasses.length} classes imported successfully.`);
+        }
+    };
+
 
     const value: DataContextType = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
@@ -651,6 +719,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults,
         addSchool, updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent,
+        bulkAddStudents, bulkAddUsers, bulkAddClasses,
     };
 
     return (

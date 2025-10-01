@@ -9,6 +9,8 @@ import DoughnutChart from '../charts/DoughnutChart';
 import BarChart from '../charts/BarChart';
 import StatCard from '../common/StatCard';
 import { ActiveView } from '../layout/Layout';
+import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
+import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -27,7 +29,7 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
-    const { users, students, getSchoolById, fees, attendance } = useData();
+    const { users, students, getSchoolById, fees, attendance, loading } = useData();
     
     if (!user) return null;
     
@@ -98,6 +100,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             { label: 'Leave', value: statusCounts.Leave || 0 },
         ];
     }, [attendance, schoolStudents]);
+
+    if (loading) {
+        return (
+            <div className="space-y-8">
+                <div>
+                    <div className="skeleton-bg h-9 w-64 mb-2 rounded"></div>
+                    <div className="skeleton-bg h-5 w-80 rounded"></div>
+                </div>
+               
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <ChartSkeleton />
+                    <ChartSkeleton />
+                </div>
+    
+                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="skeleton-bg h-6 w-48 mb-4 rounded"></div>
+                    <div className="skeleton-bg h-48 w-full rounded"></div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">

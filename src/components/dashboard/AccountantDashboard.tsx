@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import StatCard from '../common/StatCard';
+import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; }> = ({ title, icon }) => (
      <button className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center">
@@ -15,7 +16,7 @@ const QuickAction: React.FC<{ title: string; icon: React.ReactElement; }> = ({ t
 
 const AccountantDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { getSchoolById, fees, students } = useData();
+    const { getSchoolById, fees, students, loading } = useData();
 
     if (!user) return null;
     const school = getSchoolById(user.schoolId);
@@ -47,6 +48,29 @@ const AccountantDashboard: React.FC = () => {
             totalStudentsInSchool: totalStudentsInSchool.toString(),
         };
     }, [fees, students, user.schoolId]);
+
+    if (loading) {
+        return (
+            <div className="space-y-8">
+                <div>
+                    <div className="skeleton-bg h-9 w-64 mb-2 rounded"></div>
+                    <div className="skeleton-bg h-5 w-80 rounded"></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="skeleton-bg h-6 w-48 mb-4 rounded"></div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="skeleton-bg h-24 rounded-lg"></div>
+                        <div className="skeleton-bg h-24 rounded-lg"></div>
+                        <div className="skeleton-bg h-24 rounded-lg"></div>
+                        <div className="skeleton-bg h-24 rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
 
     return (

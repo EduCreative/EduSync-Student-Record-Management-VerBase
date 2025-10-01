@@ -6,17 +6,21 @@ import Badge from '../common/Badge';
 import UserFormModal from '../users/UserFormModal';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
-import { formatDateTime } from '../../constants';
+import { formatDateTime, DownloadIcon, UploadIcon } from '../../constants';
+import TableSkeleton from '../common/skeletons/TableSkeleton';
+import { exportToCsv } from '../../utils/csvHelper';
+import ImportModal from '../common/ImportModal';
 
 const AccountantManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId } = useAuth();
-    const { users, addUser, updateUser, deleteUser } = useData();
+    const { users, bulkAddUsers, updateUser, deleteUser, loading } = useData();
     
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'Active' | 'Inactive'>('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +65,7 @@ const AccountantManagementPage: React.FC = () => {
             updateUser(userData as User);
         } else {
             const { password, ...profileData } = userData;
-            addUser(profileData as Omit<User, 'id'>, password);
+            bulkAddUsers([{...profileData, password} as (Omit<User, 'id'> & { password?: string })]);
         }
     };
 
@@ -71,7 +75,35 @@ const AccountantManagementPage: React.FC = () => {
             setUserToDelete(null);
         }
     };
+    
+    const handleImportAccountants = async (data: any[]) => {
+        const accountantsToImport = data.map(item => ({
+            ...item,
+            role: UserRole.Accountant,
+            status: 'Active',
+            schoolId: effectiveSchoolId,
+        }));
+        await bulkAddUsers(accountantsToImport);
+    };
 
+    const sampleDataForImport = [{
+        name: "Adam Smith",
+        email: "accountant.adam@example.com",
+        password: "securePassword123"
+    }];
+
+    const requiredHeaders = ['name', 'email', 'password'];
+
+    const handleExport = () => {
+        const dataToExport = filteredAccountants.map(a => ({
+            name: a.name,
+            email: a.email,
+            status: a.status,
+            last_login: formatDateTime(a.lastLogin),
+        }));
+        exportToCsv(dataToExport, 'accountants_export');
+    };
+    
     const showingFrom = filteredAccountants.length > 0 ? (currentPage - 1) * USERS_PER_PAGE + 1 : 0;
     const showingTo = Math.min(currentPage * USERS_PER_PAGE, filteredAccountants.length);
 
@@ -84,6 +116,14 @@ const AccountantManagementPage: React.FC = () => {
                 userToEdit={userToEdit}
                 defaultRole={UserRole.Accountant}
                 lockRole={true}
+            />
+             <ImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImport={handleImportAccountants}
+                sampleData={sampleDataForImport}
+                fileName="Accountants"
+                requiredHeaders={requiredHeaders}
             />
             <Modal isOpen={!!userToDelete} onClose={() => setUserToDelete(null)} title="Confirm Accountant Deletion">
                 <div>
@@ -101,9 +141,17 @@ const AccountantManagementPage: React.FC = () => {
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Accountant Management</h1>
-                    <button onClick={() => handleOpenModal()} className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition">
-                        + Add Accountant
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
+                            <UploadIcon className="w-4 h-4" /> Import CSV
+                        </button>
+                        <button onClick={handleExport} className="btn-secondary">
+                            <DownloadIcon className="w-4 h-4" /> Export CSV
+                        </button>
+                        <button onClick={() => handleOpenModal()} className="btn-primary">
+                            + Add Accountant
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters */}
@@ -133,69 +181,79 @@ const AccountantManagementPage: React.FC = () => {
                 
                 {/* Accountants Table */}
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
-                            <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
-                                <tr>
-                                    <th scope="col" className="px-6 py-3">Accountant</th>
-                                    <th scope="col" className="px-6 py-3">Status</th>
-                                    <th scope="col" className="px-6 py-3">Last Login</th>
-                                    <th scope="col" className="px-6 py-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedAccountants.map(accountant => (
-                                    <tr key={accountant.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center space-x-3">
-                                                <Avatar user={accountant} className="h-10 w-10" />
-                                                <div>
-                                                    <div className="font-semibold text-secondary-900 dark:text-white">{accountant.name}</div>
-                                                    <div className="text-xs text-secondary-500">{accountant.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4"><Badge color={accountant.status === 'Active' ? 'green' : 'red'}>{accountant.status}</Badge></td>
-                                        <td className="px-6 py-4">{formatDateTime(accountant.lastLogin)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center space-x-4">
-                                                <button onClick={() => handleOpenModal(accountant)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                                <button onClick={() => setUserToDelete(accountant)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {totalPages > 0 && (
-                         <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
-                            <span className="text-sm text-secondary-700 dark:text-secondary-400">
-                                Showing {showingFrom} - {showingTo} of {filteredAccountants.length} accountants
-                            </span>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Previous
-                                </button>
-                                <span className="text-sm text-secondary-700 dark:text-secondary-400">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Next
-                                </button>
+                    {loading ? (
+                        <TableSkeleton columns={[{width: '40%'}, {width: '20%'}, {width: '20%'}, {width: '20%'}]} rows={USERS_PER_PAGE} />
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
+                                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3">Accountant</th>
+                                            <th scope="col" className="px-6 py-3">Status</th>
+                                            <th scope="col" className="px-6 py-3">Last Login</th>
+                                            <th scope="col" className="px-6 py-3">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {paginatedAccountants.map(accountant => (
+                                            <tr key={accountant.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <Avatar user={accountant} className="h-10 w-10" />
+                                                        <div>
+                                                            <div className="font-semibold text-secondary-900 dark:text-white">{accountant.name}</div>
+                                                            <div className="text-xs text-secondary-500">{accountant.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4"><Badge color={accountant.status === 'Active' ? 'green' : 'red'}>{accountant.status}</Badge></td>
+                                                <td className="px-6 py-4">{formatDateTime(accountant.lastLogin)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center space-x-4">
+                                                        <button onClick={() => handleOpenModal(accountant)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
+                                                        <button onClick={() => setUserToDelete(accountant)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
+                            {totalPages > 0 && (
+                                <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
+                                    <span className="text-sm text-secondary-700 dark:text-secondary-400">
+                                        Showing {showingFrom} - {showingTo} of {filteredAccountants.length} accountants
+                                    </span>
+                                    <div className="flex items-center space-x-2">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Previous
+                                        </button>
+                                        <span className="text-sm text-secondary-700 dark:text-secondary-400">
+                                            Page {currentPage} of {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
+            <style>{`
+                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2; }
+                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg flex items-center gap-2; }
+            `}</style>
         </>
     );
 };

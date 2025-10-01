@@ -4,10 +4,11 @@ import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import StatCard from '../common/StatCard';
+import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
 
 const TeacherDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { classes, students, attendance, results } = useData();
+    const { classes, students, attendance, results, loading } = useData();
 
     if (!user) return null;
 
@@ -37,6 +38,27 @@ const TeacherDashboard: React.FC = () => {
             subjectsTaught: subjectsTaught.toString(),
         };
     }, [studentsInMyClasses, attendance, results]);
+
+    if (loading) {
+        return (
+            <div className="space-y-8">
+                <div>
+                    <div className="skeleton-bg h-9 w-64 mb-2 rounded"></div>
+                    <div className="skeleton-bg h-5 w-80 rounded"></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="skeleton-bg h-6 w-32 mb-4 rounded"></div>
+                    <div className="space-y-4">
+                        <div className="skeleton-bg h-16 w-full rounded-lg"></div>
+                        <div className="skeleton-bg h-16 w-full rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">

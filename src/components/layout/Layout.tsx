@@ -42,7 +42,7 @@ const Layout: React.FC = () => {
                 return <Dashboard setActiveView={setActiveView} />;
             case 'users':
                  if ([UserRole.Owner, UserRole.Admin].includes(effectiveRole as UserRole)) {
-                    return <UserManagementPage />;
+                    return <UserManagementPage payload={activeView.payload} />;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
             case 'teachers':
