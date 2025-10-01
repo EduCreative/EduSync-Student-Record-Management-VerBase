@@ -9,6 +9,17 @@ export enum UserRole {
     Student = 'Student',
 }
 
+export interface NotificationPreferences {
+  feeDeadlines: {
+    email: boolean;
+    inApp: boolean;
+  };
+  examResults: {
+    email: boolean;
+    inApp: boolean;
+  };
+}
+
 export interface User {
     id: string;
     name: string;
@@ -20,6 +31,7 @@ export interface User {
     lastLogin?: string;
     childStudentIds?: string[]; // Added for Parent role
     disabledNavLinks?: string[]; // For Owner to disable menu items for a user
+    notificationPreferences?: NotificationPreferences;
 }
 
 export interface School {

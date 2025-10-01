@@ -1,16 +1,82 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { DownloadIcon, UploadIcon } from '../../constants';
 import Modal from '../common/Modal';
+import { UserRole } from '../../types';
+import { useToast } from '../../context/ToastContext';
+
+// A simple toggle switch component
+const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void }> = ({ enabled, onChange }) => (
+    <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        className={`${
+            enabled ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-secondary-600'
+        } relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-secondary-800`}
+    >
+        <span
+            className={`${
+                enabled ? 'translate-x-6' : 'translate-x-1'
+            } inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}
+        />
+    </button>
+);
+
 
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
-    const { user } = useAuth();
-    const { backupData, restoreData } = useData();
+    const { user, effectiveRole } = useAuth();
+    const { backupData, restoreData, updateUser } = useData();
+    const { showToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
+
+    // Default preferences structure
+    const defaultPrefs = {
+        feeDeadlines: { email: true, inApp: true },
+        examResults: { email: true, inApp: true },
+    };
+
+    const [prefs, setPrefs] = useState(defaultPrefs);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Initialize preferences from user data
+    useEffect(() => {
+        if (user?.notificationPreferences) {
+            setPrefs({
+                feeDeadlines: { ...defaultPrefs.feeDeadlines, ...user.notificationPreferences.feeDeadlines },
+                examResults: { ...defaultPrefs.examResults, ...user.notificationPreferences.examResults },
+            });
+        } else {
+            setPrefs(defaultPrefs);
+        }
+    }, [user]);
+
+    const handleToggle = (category: 'feeDeadlines' | 'examResults', type: 'email' | 'inApp') => {
+        setPrefs(currentPrefs => ({
+            ...currentPrefs,
+            [category]: {
+                ...currentPrefs[category],
+                [type]: !currentPrefs[category][type],
+            },
+        }));
+    };
+
+    const handleSaveChanges = async () => {
+        if (!user) return;
+        setIsSaving(true);
+        try {
+            await updateUser({ ...user, notificationPreferences: prefs });
+            showToast('Success', 'Notification preferences saved!', 'success');
+        } catch (error) {
+            showToast('Error', 'Could not save preferences.', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
 
     const handleRestoreInitiate = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
@@ -26,6 +92,8 @@ const SettingsPage: React.FC = () => {
             setRestoreFile(null);
         }
     };
+    
+    const canSeeNotifications = [UserRole.Parent, UserRole.Student].includes(effectiveRole as UserRole);
 
     return (
         <>
@@ -77,6 +145,55 @@ const SettingsPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+                
+                {/* Notification Preferences (New Section) */}
+                {canSeeNotifications && (
+                    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Notification Preferences</h2>
+                        <div className="py-4 space-y-4">
+                            {/* Fee Deadlines */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                <div className="md:col-span-1">
+                                    <p className="font-medium">Fee Deadlines</p>
+                                    <p className="text-sm text-secondary-500 dark:text-secondary-400">Reminders for upcoming fee payments.</p>
+                                </div>
+                                <div className="md:col-span-2 flex items-center justify-between md:justify-end gap-x-8 gap-y-2 flex-wrap">
+                                    <label className="flex items-center space-x-2">
+                                        <ToggleSwitch enabled={prefs.feeDeadlines.email} onChange={() => handleToggle('feeDeadlines', 'email')} />
+                                        <span>Email</span>
+                                    </label>
+                                    <label className="flex items-center space-x-2">
+                                        <ToggleSwitch enabled={prefs.feeDeadlines.inApp} onChange={() => handleToggle('feeDeadlines', 'inApp')} />
+                                        <span>In-App</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Exam Results */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center pt-4 border-t dark:border-secondary-700">
+                                <div className="md:col-span-1">
+                                    <p className="font-medium">Exam Results</p>
+                                    <p className="text-sm text-secondary-500 dark:text-secondary-400">Alerts when new results are published.</p>
+                                </div>
+                                <div className="md:col-span-2 flex items-center justify-between md:justify-end gap-x-8 gap-y-2 flex-wrap">
+                                    <label className="flex items-center space-x-2">
+                                        <ToggleSwitch enabled={prefs.examResults.email} onChange={() => handleToggle('examResults', 'email')} />
+                                        <span>Email</span>
+                                    </label>
+                                    <label className="flex items-center space-x-2">
+                                        <ToggleSwitch enabled={prefs.examResults.inApp} onChange={() => handleToggle('examResults', 'inApp')} />
+                                        <span>In-App</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-4 border-t dark:border-secondary-700">
+                            <button onClick={handleSaveChanges} disabled={isSaving} className="btn-primary">
+                                {isSaving ? 'Saving...' : 'Save Preferences'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Account Settings */}
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">

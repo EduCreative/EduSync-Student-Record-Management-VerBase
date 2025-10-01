@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { FeeHead, UserRole } from '../../types';
+import { UserRole } from '../../types';
 import { useToast } from '../../context/ToastContext';
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];

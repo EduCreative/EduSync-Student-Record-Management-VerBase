@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
 import { useData } from '../../context/DataContext';
-import { formatDate } from '../../constants';
 
 interface FeePaymentModalProps {
     isOpen: boolean;

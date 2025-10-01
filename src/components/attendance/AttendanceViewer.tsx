@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 // FIX: Import UserRole to resolve 'Cannot find name' error.
-import { Student, UserRole } from '../../types';
+import { UserRole } from '../../types';
 
 const AttendanceViewer: React.FC = () => {
     const { user } = useAuth();
