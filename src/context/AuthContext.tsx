@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { Permission, ROLE_PERMISSIONS } from '../permissions';
+import { Session } from '@supabase/supabase-js';
 
 // Helper to convert snake_case object keys to camelCase
 const toCamelCase = (obj: any): any => {
@@ -26,8 +27,7 @@ interface AuthContextType {
     activeSchoolId: string | null;
     switchSchoolContext: (schoolId: string | null) => void;
     effectiveRole: UserRole | null;
-    // This is no longer needed as profile is created on register
-    profileSetupNeeded: boolean; 
+    profileSetupNeeded: boolean;
     completeProfileSetup: (name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
     hasPermission: (permission: Permission) => boolean;
 }
@@ -39,163 +39,97 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
 
-    // Rehydrate session from localStorage
     useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem('edusync_user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
-            }
-        } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-            localStorage.removeItem('edusync_user');
-        }
-        setLoading(false);
-    }, []);
-    
-    // Dummy function to satisfy type, logic is removed
-    const completeProfileSetup = async (_name: string, _role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        console.warn("completeProfileSetup is deprecated.");
-        return { success: false, error: 'This feature is no longer available.'};
-    };
-
-    const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        // Special handling for the owner account to ensure access and creation.
-        if (email.toLowerCase() === 'kmasroor50@gmail.com') {
-            const { data: existingOwner, error: findError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('email', email.toLowerCase())
-                .single();
-    
-            // Handle unexpected database errors, but ignore "row not found" which is expected.
-            if (findError && findError.code !== 'PGRST116') {
-                return { success: false, error: findError.message };
-            }
-    
-            let userProfile: User;
-    
-            if (existingOwner) {
-                // Case 1: Owner account exists. Validate the password.
-                if (existingOwner.password !== pass) {
-                    return { success: false, error: 'Invalid password for owner account.' };
-                }
-                userProfile = toCamelCase(existingOwner) as User;
-    
-            } else {
-                // Case 2: Owner account does not exist. Create it only if the correct initial password is used.
-                if (pass !== 'password') {
-                    return { success: false, error: 'Invalid credentials to create owner account.' };
-                }
-                
-                console.warn("Owner profile not found for kmasroor50@gmail.com. Creating a new one with the default password.");
-                const newOwnerData = {
-                    id: crypto.randomUUID(),
-                    name: 'Khurram Masroor (Owner)',
-                    email: email.toLowerCase(),
-                    role: UserRole.Owner,
-                    school_id: null,
-                    status: 'Active' as const,
-                    password: 'password' // Set the specified default password
-                };
-    
-                const { error: createError } = await supabase
+        const fetchUserProfile = async (session: Session | null) => {
+            if (session?.user) {
+                const { data: profile, error } = await supabase
                     .from('profiles')
-                    .insert(newOwnerData);
-    
-                if (createError) {
-                    console.error("Error creating owner profile:", createError);
-                    return { success: false, error: "Failed to automatically create owner profile. Please contact support." };
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (error) {
+                    console.error('Error fetching user profile:', error);
+                    setUser(null);
+                } else if (profile) {
+                    const userProfile = toCamelCase(profile) as User;
+                    setUser(userProfile);
+                    // Set initial school context for non-owners
+                    if (userProfile.role !== UserRole.Owner) {
+                        setActiveSchoolId(userProfile.schoolId);
+                    }
                 }
-                userProfile = toCamelCase(newOwnerData) as User;
+            } else {
+                setUser(null);
             }
-            
-            // If we reach here, authentication/creation was successful.
-            setUser(userProfile);
-            localStorage.setItem('edusync_user', JSON.stringify(userProfile));
-            
-            await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfile.id);
-            
-            return { success: true };
-        }
-    
-        // Original login logic for all other users
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', email)
-            .eq('password', pass)
-            .single();
-    
-        if (error || !data) {
-            return { success: false, error: 'Invalid email or password.' };
-        }
-        
-        const userProfileData = toCamelCase(data) as User;
-        setUser(userProfileData);
-        localStorage.setItem('edusync_user', JSON.stringify(userProfileData));
-        
-        await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfileData.id);
-    
-        return { success: true };
-    };
+            setLoading(false);
+        };
 
-    const logout = async () => {
-        setUser(null);
-        setActiveSchoolId(null);
-        localStorage.removeItem('edusync_user');
-    };
-
-    const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        // Check if user already exists
-        const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', email).single();
-
-        if (existingUser) {
-            return { success: false, error: 'A user with this email address already exists.' };
-        }
-
-        // Owners are approved automatically, others require admin approval.
-        const userStatus = role === UserRole.Owner ? 'Active' : 'Pending Approval';
-        const newUserId = crypto.randomUUID();
-
-        const { error: profileError } = await supabase.from('profiles').insert({
-            id: newUserId,
-            name,
-            email,
-            role,
-            password: pass, // Storing plain text password
-            school_id: null,
-            status: userStatus,
+        // Check for initial session on app load
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            fetchUserProfile(session);
         });
 
-        if (profileError) {
-            console.error("Failed to create user profile:", profileError.message);
-            return { success: false, error: "Could not create your user profile. Please contact support." };
+        // Listen for auth state changes (login, logout)
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            fetchUserProfile(session);
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
+    }, []);
+
+    const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password: pass,
+        });
+
+        if (error) {
+            return { success: false, error: error.message };
         }
-        
+
+        // The onAuthStateChange listener will handle setting the user state.
         return { success: true };
     };
+    
+    const logout = async () => {
+        await supabase.auth.signOut();
+        setActiveSchoolId(null);
+        setUser(null); // Immediately clear user state
+    };
+    
+    const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+        const { error } = await supabase.auth.signUp({
+            email,
+            password: pass,
+            options: {
+                // Pass metadata to be used by the database trigger
+                data: {
+                    name,
+                    role,
+                }
+            }
+        });
 
-    const updateUserPassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
-        if (!user) return { success: false, error: 'No user is logged in.' };
-
-        const { error } = await supabase
-            .from('profiles')
-            .update({ password: newPassword })
-            .eq('id', user.id);
-            
         if (error) {
             return { success: false, error: error.message };
         }
         
-        // Update password in local state/storage
-        const updatedUser = { ...user, password: newPassword };
-        setUser(updatedUser);
-        localStorage.setItem('edusync_user', JSON.stringify(updatedUser));
-        
+        // The DB trigger (handle_new_user) will create the profile.
+        // A success message is shown to the user, who then can log in.
         return { success: true };
     };
-    
+
+    const updateUserPassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) {
+            return { success: false, error: error.message };
+        }
+        return { success: true };
+    };
+
     const switchSchoolContext = (schoolId: string | null) => {
         if (user?.role === UserRole.Owner) {
             setActiveSchoolId(schoolId);
@@ -204,11 +138,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    // This is no longer needed
+    const completeProfileSetup = async (): Promise<{ success: boolean; error?: string }> => {
+        return { success: false, error: "This feature is deprecated." };
+    }
+
     const effectiveRole = user?.role === UserRole.Owner && activeSchoolId ? UserRole.Admin : user?.role || null;
 
     const hasPermission = (permission: Permission): boolean => {
         if (!effectiveRole) return false;
-        // Owner in global view (effectiveRole is Owner) has all permissions
         if (effectiveRole === UserRole.Owner) return true;
         
         const userPermissions = ROLE_PERMISSIONS[effectiveRole];
