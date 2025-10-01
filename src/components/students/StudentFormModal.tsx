@@ -9,7 +9,7 @@ import ImageUpload from '../common/ImageUpload';
 interface StudentFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => void;
+    onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => Promise<boolean>;
     studentToEdit?: Student | null;
 }
 
@@ -43,6 +43,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
 
     const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isSaving, setIsSaving] = useState(false);
     
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
     const parentUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Parent), [users, effectiveSchoolId]);
@@ -77,6 +78,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 setFormData(getInitialFormData());
             }
             setErrors({});
+            setIsSaving(false);
         }
     }, [studentToEdit, isOpen]);
 
@@ -105,23 +107,30 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         }
     };
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) return;
         
+        setIsSaving(true);
+
         const saveData = {
             ...formData,
             userId: formData.userId || null, // Convert empty string back to null for DB
         };
 
+        let success = false;
         if (studentToEdit) {
-            onSave({ ...studentToEdit, ...saveData });
+            success = await onSave({ ...studentToEdit, ...saveData });
         } else {
             // Remove the 'status' for new students as it's set by the backend/data context
             const { status, ...rest } = saveData;
-            onSave(rest);
+            success = await onSave(rest);
         }
-        onClose();
+
+        setIsSaving(false);
+        if (success) {
+            onClose();
+        }
     };
 
     return (
@@ -211,7 +220,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button type="submit" className="btn-primary">Save Student</button>
+                    <button type="submit" className="btn-primary" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Student'}
+                    </button>
                 </div>
             </form>
         </Modal>

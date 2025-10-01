@@ -55,8 +55,8 @@ interface DataContextType {
     addUser: (userData: Omit<User, 'id'>, password?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
-    addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
-    updateStudent: (updatedStudent: Student) => Promise<void>;
+    addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<boolean>;
+    updateStudent: (updatedStudent: Student) => Promise<boolean>;
     deleteStudent: (studentId: string) => Promise<void>;
     addClass: (classData: Omit<Class, 'id'>) => Promise<void>;
     updateClass: (updatedClass: Class) => Promise<void>;
@@ -305,26 +305,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `${userToDelete.name}'s profile has been deleted.`);
     };
     
-    const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
+    const addStudent = async (studentData: Omit<Student, 'id' | 'status'>): Promise<boolean> => {
         const newStudent = { ...studentData, status: 'Active' as const };
-        const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
-        if (error) return showToast('Error', error.message, 'error');
-        if (data) {
-            setStudents(prev => [...prev, toCamelCase(data) as Student]);
+        const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select();
+        
+        if (error) {
+            showToast('Error', error.message, 'error');
+            return false;
+        }
+    
+        if (data && data.length > 0) {
+            setStudents(prev => [...prev, toCamelCase(data[0]) as Student]);
             addLog('Student Added', `New student added: ${newStudent.name}.`);
             showToast('Success', `${newStudent.name} has been added.`);
+            return true;
         }
+        
+        showToast('Error', 'Failed to add student. Please check your permissions or network.', 'error');
+        return false;
     };
     
-    const updateStudent = async (updatedStudent: Student) => {
+    const updateStudent = async (updatedStudent: Student): Promise<boolean> => {
         const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        
+        if (error) {
+            showToast('Error', error.message, 'error');
+            return false;
+        }
+
         if (data) {
             const updatedStudentFromDB = toCamelCase(data) as Student;
             setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudentFromDB : s));
             addLog('Student Updated', `Profile updated for ${updatedStudentFromDB.name}.`);
             showToast('Success', `${updatedStudentFromDB.name}'s profile has been updated.`);
+            return true;
         }
+
+        showToast('Error', 'Failed to update student.', 'error');
+        return false;
     };
     
     const deleteStudent = async (studentId: string) => {

@@ -65,11 +65,11 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         setIsFormModalOpen(false);
     };
 
-    const handleSaveStudent = (studentData: Student | Omit<Student, 'id' | 'status'>) => {
+    const handleSaveStudent = async (studentData: Student | Omit<Student, 'id' | 'status'>): Promise<boolean> => {
         if ('id' in studentData) {
-            updateStudent(studentData);
+            return await updateStudent(studentData as Student);
         } else {
-            addStudent(studentData);
+            return await addStudent(studentData);
         }
     };
 
