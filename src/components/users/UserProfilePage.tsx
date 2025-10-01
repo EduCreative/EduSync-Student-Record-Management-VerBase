@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import ImageUpload from '../common/ImageUpload';
-import { ActiveView } from '../layout/Layout';
 
 interface UserProfilePageProps {
     // setActiveView: (view: ActiveView) => void;

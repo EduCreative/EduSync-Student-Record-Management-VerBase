@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
     
     // Dummy function to satisfy type, logic is removed
-    const completeProfileSetup = async (name: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const completeProfileSetup = async (_name: string, _role: UserRole): Promise<{ success: boolean; error?: string }> => {
         console.warn("completeProfileSetup is deprecated.");
         return { success: false, error: 'This feature is no longer available.'};
     };
@@ -87,7 +87,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
         // Check if user already exists
-        const { data: existingUser, error: fetchError } = await supabase.from('profiles').select('id').eq('email', email).single();
+        const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', email).single();
 
         if (existingUser) {
             return { success: false, error: 'A user with this email address already exists.' };

@@ -790,7 +790,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: crypto.randomUUID(), // Generate ID client-side
         }));
 
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('profiles')
             .insert(usersToInsert.map(toSnakeCase));
         

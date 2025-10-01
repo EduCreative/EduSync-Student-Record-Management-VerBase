@@ -36,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeVi
     const handleLinkClick = (path: string) => {
         const viewName = path.substring(1); // remove leading '/'
         setActiveView({ view: viewName });
+        setSidebarOpen(false);
     };
 
     return (

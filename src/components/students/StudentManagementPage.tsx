@@ -52,7 +52,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const totalPages = Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE);
     const paginatedStudents = useMemo(() => {
         const startIndex = (currentPage - 1) * STUDENTS_PER_PAGE;
-        return filteredStudents.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
+        const endIndex = startIndex + STUDENTS_PER_PAGE;
+        return filteredStudents.slice(startIndex, endIndex);
     }, [filteredStudents, currentPage]);
 
     const handleOpenModal = (student: Student | null = null) => {
@@ -218,30 +219,32 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                     </tbody>
                                 </table>
                             </div>
-                            {totalPages > 0 && (
+                            {filteredStudents.length > 0 && (
                                 <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
                                     <span className="text-sm text-secondary-700 dark:text-secondary-400">
                                         Showing {showingFrom} - {showingTo} of {filteredStudents.length} students
                                     </span>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            disabled={currentPage === 1}
-                                            className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Previous
-                                        </button>
-                                        <span className="text-sm text-secondary-700 dark:text-secondary-400">
-                                            Page {currentPage} of {totalPages}
-                                        </span>
-                                        <button
-                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            disabled={currentPage === totalPages}
-                                            className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Next
-                                        </button>
-                                    </div>
+                                    {totalPages > 1 && (
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                disabled={currentPage === 1}
+                                                className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Previous
+                                            </button>
+                                            <span className="text-sm text-secondary-700 dark:text-secondary-400">
+                                                Page {currentPage} of {totalPages}
+                                            </span>
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={currentPage === totalPages}
+                                                className="px-3 py-1 text-sm font-medium text-secondary-600 bg-white dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600 rounded-md hover:bg-secondary-50 dark:hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>
