@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2024-07-19
+
+### Fixed
+- **Critical Auth Failure:** Migrated all Supabase authentication calls to the modern v2 API, resolving a version mismatch that caused login, registration, and password reset to fail at runtime.
+- **TypeScript Errors:** Resolved TypeScript errors related to environment variables by adding the necessary Vite client type references.
+
+### Security
+- **Removed Hardcoded Credentials:** Migrated Supabase URL and anon key from the source code to environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) to prevent exposing sensitive keys in the repository, following security best practices for deployment.
+
 ## [1.4.0] - 2024-07-18
 
 ### Added
