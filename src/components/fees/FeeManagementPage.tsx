@@ -1,12 +1,8 @@
-
-
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import FeeHeadsManagement from './FeeHeadsManagement';
-
-// Placeholder components for tabs
-const FeeCollectionTab = () => <div className="p-4">Fee collection functionality will be here.</div>;
-const ChallanGenerationTab = () => <div className="p-4">Challan generation functionality will be here.</div>;
+import FeeCollectionPage from './FeeCollectionPage';
+import ChallanGenerationPage from './ChallanGenerationPage';
 
 
 const FeeManagementPage: React.FC = () => {
@@ -44,8 +40,8 @@ const FeeManagementPage: React.FC = () => {
                     </nav>
                 </div>
                 <div>
-                    {activeTab === 'collection' && <FeeCollectionTab />}
-                    {activeTab === 'generation' && <ChallanGenerationTab />}
+                    {activeTab === 'collection' && <FeeCollectionPage />}
+                    {activeTab === 'generation' && <ChallanGenerationPage />}
                     {activeTab === 'heads' && <FeeHeadsManagement />}
                 </div>
             </div>

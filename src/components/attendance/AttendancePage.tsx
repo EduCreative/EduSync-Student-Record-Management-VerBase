@@ -3,24 +3,28 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import Avatar from '../common/Avatar';
+import AttendanceViewer from './AttendanceViewer';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
-const AttendancePage: React.FC = () => {
-    const { user, effectiveRole } = useAuth();
+const AttendanceMarker: React.FC = () => {
+    const { user, effectiveRole, activeSchoolId } = useAuth();
     const { classes, students, attendance, setAttendance } = useData();
+    const [isSaving, setIsSaving] = useState(false);
 
     const [selectedClassId, setSelectedClassId] = useState('');
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [attendanceRecords, setAttendanceRecords] = useState<Map<string, AttendanceStatus>>(new Map());
 
+    const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+
     const userClasses = useMemo(() => {
         if (!user) return [];
         if (effectiveRole === UserRole.Teacher) {
-            return classes.filter(c => c.teacherId === user.id);
+            return classes.filter(c => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
         }
-        return classes.filter(c => c.schoolId === user.schoolId);
-    }, [classes, user, effectiveRole]);
+        return classes.filter(c => c.schoolId === effectiveSchoolId);
+    }, [classes, user, effectiveRole, effectiveSchoolId]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
@@ -28,7 +32,6 @@ const AttendancePage: React.FC = () => {
     }, [students, selectedClassId]);
     
     useEffect(() => {
-        // Set a default selected class if available
         if (userClasses.length > 0 && !selectedClassId) {
             setSelectedClassId(userClasses[0].id);
         }
@@ -57,12 +60,14 @@ const AttendancePage: React.FC = () => {
         setAttendanceRecords(newRecords);
     };
 
-    const handleSaveAttendance = () => {
+    const handleSaveAttendance = async () => {
+        setIsSaving(true);
         const recordsToSave = Array.from(attendanceRecords.entries()).map(([studentId, status]) => ({
             studentId,
             status,
         }));
-        setAttendance(selectedDate, recordsToSave);
+        await setAttendance(selectedDate, recordsToSave);
+        setIsSaving(false);
     };
 
     return (
@@ -74,6 +79,7 @@ const AttendancePage: React.FC = () => {
                     <div>
                         <label htmlFor="class-select" className="input-label">Select Class</label>
                         <select id="class-select" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
+                            <option value="">-- Choose a class --</option>
                             {userClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
@@ -86,7 +92,7 @@ const AttendancePage: React.FC = () => {
 
             {selectedClassId && (
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
-                    <div className="p-4 border-b dark:border-secondary-700 flex justify-between items-center">
+                    <div className="p-4 border-b dark:border-secondary-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <h2 className="font-semibold">Student List ({studentsInClass.length})</h2>
                         <div className="flex space-x-2">
                             <button onClick={() => markAllAs('Present')} className="btn-secondary px-3 py-1 text-xs">Mark All Present</button>
@@ -97,8 +103,8 @@ const AttendancePage: React.FC = () => {
                         <table className="w-full text-sm">
                             <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                 <tr>
-                                    <th className="px-6 py-3">Student</th>
-                                    <th className="px-6 py-3">Roll No</th>
+                                    <th className="px-6 py-3 text-left">Student</th>
+                                    <th className="px-6 py-3 text-left">Roll No</th>
                                     <th className="px-6 py-3 text-center">Status</th>
                                 </tr>
                             </thead>
@@ -131,7 +137,9 @@ const AttendancePage: React.FC = () => {
                         </table>
                     </div>
                     <div className="p-4 flex justify-end">
-                        <button onClick={handleSaveAttendance} className="btn-primary">Save Attendance</button>
+                        <button onClick={handleSaveAttendance} disabled={isSaving} className="btn-primary">
+                            {isSaving ? 'Saving...' : 'Save Attendance'}
+                        </button>
                     </div>
                 </div>
             )}
@@ -142,6 +150,19 @@ const AttendancePage: React.FC = () => {
             `}</style>
         </div>
     );
+};
+
+
+const AttendancePage: React.FC = () => {
+    const { effectiveRole } = useAuth();
+    
+    const isMarker = effectiveRole === UserRole.Admin || effectiveRole === UserRole.Teacher;
+
+    if (isMarker) {
+        return <AttendanceMarker />;
+    } else {
+        return <AttendanceViewer />;
+    }
 };
 
 export default AttendancePage;

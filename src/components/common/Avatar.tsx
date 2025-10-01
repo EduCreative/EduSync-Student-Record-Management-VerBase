@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { User, Student } from '../../types';
 
@@ -11,8 +9,19 @@ interface AvatarProps {
 
 const Avatar: React.FC<AvatarProps> = ({ user, student, className = 'h-10 w-10' }) => {
     const target = user || student;
-    const name = target?.name || 'User';
-    const avatarUrl = target?.avatarUrl;
+
+    if (!target) {
+        return (
+            <div className={`relative rounded-full flex items-center justify-center shrink-0 bg-secondary-200 dark:bg-secondary-700 ${className}`}>
+                <svg className="w-full h-full text-secondary-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            </div>
+        );
+    }
+
+    const name = target.name || 'User';
+    const avatarUrl = target.avatarUrl;
 
     const getInitials = (name: string) => {
         const nameParts = name.split(' ');

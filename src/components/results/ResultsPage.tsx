@@ -3,23 +3,27 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole, Result } from '../../types';
 import Avatar from '../common/Avatar';
+import ResultsViewer from './ResultsViewer';
 
-const ResultsPage: React.FC = () => {
-    const { user, effectiveRole } = useAuth();
+const ResultsEntry: React.FC = () => {
+    const { user, effectiveRole, activeSchoolId } = useAuth();
     const { classes, students, results, saveResults } = useData();
+    const [isSaving, setIsSaving] = useState(false);
 
     const [selectedClassId, setSelectedClassId] = useState('');
     const [selectedExam, setSelectedExam] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
     const [marks, setMarks] = useState<Map<string, { marks: number, totalMarks: number }>>(new Map());
 
+    const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+
     const userClasses = useMemo(() => {
         if (!user) return [];
         if (effectiveRole === UserRole.Teacher) {
-            return classes.filter(c => c.teacherId === user.id);
+            return classes.filter(c => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
         }
-        return classes.filter(c => c.schoolId === user.schoolId);
-    }, [classes, user, effectiveRole]);
+        return classes.filter(c => c.schoolId === effectiveSchoolId);
+    }, [classes, user, effectiveRole, effectiveSchoolId]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
@@ -39,7 +43,7 @@ const ResultsPage: React.FC = () => {
         studentsInClass.forEach(student => {
             const existingRecord = recordsForExamAndSubject.find(r => r.studentId === student.id);
             newMarks.set(student.id, {
-                marks: existingRecord?.marks || 0,
+                marks: existingRecord?.marks ?? 0,
                 totalMarks: existingRecord?.totalMarks || 100,
             });
         });
@@ -52,12 +56,8 @@ const ResultsPage: React.FC = () => {
 
         setMarks(prev => {
             const newMarks = new Map(prev);
-            // FIX: Explicitly cast the result of `get` to ensure TS knows the type.
-            const current = newMarks.get(studentId) as { marks: number, totalMarks: number } | undefined;
+            const current = newMarks.get(studentId);
             
-            // FIX: Spread types may only be created from object types.
-            // Create a new entry safely by checking for an existing record and providing defaults,
-            // which avoids spreading a potentially non-object type.
             const updatedEntry = {
                 marks: current?.marks ?? 0,
                 totalMarks: current?.totalMarks ?? 100,
@@ -69,12 +69,12 @@ const ResultsPage: React.FC = () => {
         });
     };
     
-    const handleSaveResults = () => {
+    const handleSaveResults = async () => {
         if (!selectedClassId || !selectedExam || !selectedSubject) {
             alert("Please select class, exam, and subject.");
             return;
         }
-
+        setIsSaving(true);
         const resultsToSave: Omit<Result, 'id'>[] = Array.from(marks.entries())
             .map(([studentId, { marks: studentMarks, totalMarks }]) => ({
                 studentId,
@@ -84,11 +84,12 @@ const ResultsPage: React.FC = () => {
                 marks: studentMarks,
                 totalMarks: totalMarks,
             }));
-        saveResults(resultsToSave);
+        await saveResults(resultsToSave);
+        setIsSaving(false);
     };
 
-    const exams = ["Quiz 1", "Mid-Term", "Quiz 2", "Final Exam"];
-    const subjects = ["English", "Mathematics", "Science", "History", "Geography", "Art"];
+    const exams = useMemo(() => ["Quiz 1", "Mid-Term", "Quiz 2", "Final Exam", ...[...new Set(results.map(r => r.exam))] ], [results]);
+    const subjects = useMemo(() => ["English", "Mathematics", "Science", "History", "Geography", "Art", ...[...new Set(results.map(r => r.subject))] ], [results]);
 
     return (
         <div className="space-y-6">
@@ -117,9 +118,9 @@ const ResultsPage: React.FC = () => {
                         <table className="w-full text-sm">
                             <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                 <tr>
-                                    <th className="px-6 py-3">Student</th>
-                                    <th className="px-6 py-3">Obtained Marks</th>
-                                    <th className="px-6 py-3">Total Marks</th>
+                                    <th className="px-6 py-3 text-left">Student</th>
+                                    <th className="px-6 py-3 text-left">Obtained Marks</th>
+                                    <th className="px-6 py-3 text-left">Total Marks</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,12 +142,26 @@ const ResultsPage: React.FC = () => {
                         </table>
                     </div>
                      <div className="p-4 flex justify-end">
-                        <button onClick={handleSaveResults} className="btn-primary">Save Results</button>
+                        <button onClick={handleSaveResults} disabled={isSaving} className="btn-primary">
+                            {isSaving ? 'Saving...' : 'Save Results'}
+                        </button>
                     </div>
                  </div>
             )}
         </div>
     );
+};
+
+const ResultsPage: React.FC = () => {
+    const { effectiveRole } = useAuth();
+    
+    const canEnterResults = effectiveRole === UserRole.Admin || effectiveRole === UserRole.Teacher;
+
+    if (canEnterResults) {
+        return <ResultsEntry />;
+    } else {
+        return <ResultsViewer />;
+    }
 };
 
 export default ResultsPage;

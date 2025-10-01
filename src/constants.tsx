@@ -4,10 +4,10 @@ import { UserRole } from './types';
 export function EduSyncLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <path d="M4 18.5V14.5C4 13.9477 4.44772 13.5 5 13.5H13C13.5523 13.5 14 13.9477 14 14.5V18.5C14 19.0523 13.5523 19.5 13 19.5H5C4.44772 19.5 4 19.0523 4 18.5Z" stroke="currentColor" strokeWidth="2"/>
-      <path d="M4 10.5V6.5C4 5.94772 4.44772 5.5 5 5.5H13C13.5523 5.5 14 5.94772 14 6.5V10.5C14 11.0523 13.5523 11.5 13 11.5H5C4.44772 11.5 4 10.5V6.5Z" stroke="currentColor" strokeWidth="2"/>
-      <path d="M17 5.5L20 8.5L17 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M20 8.5H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M4 19.5V4.5C4 3.94772 4.44772 3.5 5 3.5H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M8 3.5H19C19.5523 3.5 20 3.94772 20 4.5V19.5C20 20.0523 19.5523 20.5 19 20.5H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M16 8.5L20 11.5L16 14.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M20 11.5H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -50,6 +50,10 @@ function BellIcon(props: React.SVGProps<SVGSVGElement>) {
     return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
 }
 
+function FileTextIcon(props: React.SVGProps<SVGSVGElement>) {
+    return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>;
+}
+
 function FileCheckIcon(props: React.SVGProps<SVGSVGElement>) {
     return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="m9 15 2 2 4-4" /></svg>
 }
@@ -84,7 +88,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
         { name: 'Attendance', path: '/attendance', icon: <CheckCircleIcon /> },
         { name: 'Results', path: '/results', icon: <BarChartIcon /> },
-        { name: 'Reports', path: '/reports', icon: <BarChartIcon /> },
+        { name: 'Reports', path: '/reports', icon: <FileTextIcon /> },
         { name: 'User Accounts', path: '/users', icon: <UsersIcon /> },
         { name: 'User Logs', path: '/logs', icon: <FileCheckIcon /> },
         { name: 'Settings', path: '/settings', icon: <SettingsIcon /> },
@@ -92,7 +96,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     [UserRole.Accountant]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
-        { name: 'Reports', path: '/reports', icon: <BarChartIcon /> },
+        { name: 'Reports', path: '/reports', icon: <FileTextIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
     ],
     [UserRole.Teacher]: [

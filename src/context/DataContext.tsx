@@ -173,19 +173,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const studentIds = (studentsData || []).map((s: Student) => s.id);
 
             if (studentIds.length > 0) {
-                const fetchDependentTable = async (tableName: string) => {
-                    const { data, error } = await supabase.from(tableName).select('*').in('student_id', studentIds);
-                    if (error) {
-                        console.error(`Error fetching ${tableName}:`, error);
-                        showToast('Data Load Error', `Could not load data for ${tableName}.`, 'error');
-                        return [];
+                const CHUNK_SIZE = 500; // Process 500 students at a time to avoid URL length limits
+
+                const fetchDependentInChunks = async (tableName: string) => {
+                    let allData: any[] = [];
+                    for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
+                        const chunk = studentIds.slice(i, i + CHUNK_SIZE);
+                        const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
+                        if (error) {
+                            console.error(`Error fetching chunk for ${tableName}:`, error);
+                            showToast('Data Load Error', `Could not load partial data for ${tableName}.`, 'error');
+                        }
+                        if (data) {
+                            allData = allData.concat(data);
+                        }
                     }
-                    return toCamelCase(data || []);
+                    return toCamelCase(allData);
                 };
+
                 const [feesData, attendanceData, resultsData] = await Promise.all([
-                    fetchDependentTable('fee_challans'),
-                    fetchDependentTable('attendance'),
-                    fetchDependentTable('results'),
+                    fetchDependentInChunks('fee_challans'),
+                    fetchDependentInChunks('attendance'),
+                    fetchDependentInChunks('results'),
                 ]);
                 setFees(feesData);
                 setAttendanceState(attendanceData);
