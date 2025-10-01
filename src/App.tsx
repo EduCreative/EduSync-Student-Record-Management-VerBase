@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
@@ -10,22 +11,33 @@ import Layout from './components/layout/Layout';
 import { ToastProvider } from './context/ToastContext';
 import { SyncProvider } from './context/SyncContext';
 import { PrintProvider, usePrint } from './context/PrintContext';
-// FIX: Import PrintPreview component to resolve 'Cannot find name' error.
 import PrintPreview from './components/common/PrintPreview';
 import { NotificationProvider } from './context/NotificationContext';
+import RequestPasswordResetPage from './components/auth/RequestPasswordResetPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 
-type AuthView = 'login' | 'register';
+type AuthView = 'login' | 'register' | 'requestReset';
 
 const AppContent: React.FC = () => {
-    const { user } = useAuth();
+    const { user, authEvent } = useAuth();
     const [authView, setAuthView] = useState<AuthView>('login');
     const { isPrinting } = usePrint();
 
+    if (user && authEvent === 'PASSWORD_RECOVERY') {
+        return <ResetPasswordPage onResetSuccess={() => setAuthView('login')} />;
+    }
+
     if (!user) {
-        if (authView === 'login') {
-            return <LoginPage onSwitchToRegister={() => setAuthView('register')} />;
+        switch (authView) {
+            case 'login':
+                return <LoginPage onSwitchToRegister={() => setAuthView('register')} onForgotPassword={() => setAuthView('requestReset')} />;
+            case 'register':
+                return <RegisterPage onSwitchToLogin={() => setAuthView('login')} />;
+            case 'requestReset':
+                return <RequestPasswordResetPage onSwitchToLogin={() => setAuthView('login')} />;
+            default:
+                 return <LoginPage onSwitchToRegister={() => setAuthView('register')} onForgotPassword={() => setAuthView('requestReset')} />;
         }
-        return <RegisterPage onSwitchToLogin={() => setAuthView('login')} />;
     }
 
     return (

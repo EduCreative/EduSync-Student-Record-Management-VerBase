@@ -54,7 +54,6 @@ interface DataContextType {
     getSchoolById: (schoolId: string) => School | undefined;
     addUser: (userData: Omit<User, 'id'>, password?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
-    resetUserPassword: (userId: string, newPassword: string) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
     addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
     updateStudent: (updatedStudent: Student) => Promise<void>;
@@ -346,22 +345,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 createNotifications([updatedUserFromDB], "Your account has been approved by an administrator.", 'Account Approval', 'account');
             }
         }
-    };
-
-    const resetUserPassword = async (userId: string, newPassword: string) => {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ password: newPassword })
-            .eq('id', userId);
-        
-        if (error) {
-            showToast('Error', `Failed to reset password: ${error.message}`, 'error');
-            throw error;
-        }
-        
-        const userToUpdate = users.find(u => u.id === userId);
-        addLog('Password Reset', `Password reset for user ${userToUpdate?.name || userId}.`);
-        showToast('Success', `Password has been reset successfully.`);
     };
 
     const deleteUser = async (userId: string) => {
@@ -894,7 +877,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const value: DataContextType = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
-        getSchoolById, addUser, updateUser, resetUserPassword, deleteUser, addStudent, updateStudent, deleteStudent,
+        getSchoolById, addUser, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults,
         addSchool, updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent,

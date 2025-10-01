@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { Permission, ROLE_PERMISSIONS } from '../permissions';
-import { Session } from '@supabase/supabase-js';
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 // Helper to convert snake_case object keys to camelCase
 const toCamelCase = (obj: any): any => {
@@ -24,12 +24,14 @@ interface AuthContextType {
     logout: () => void;
     register: (name: string, email: string, pass: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
     updateUserPassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+    sendPasswordResetEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
     activeSchoolId: string | null;
     switchSchoolContext: (schoolId: string | null) => void;
     effectiveRole: UserRole | null;
     profileSetupNeeded: boolean;
     completeProfileSetup: (name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
     hasPermission: (permission: Permission) => boolean;
+    authEvent: AuthChangeEvent | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,45 +40,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
+    const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
+
+    const fetchUserProfile = async (session: Session | null) => {
+        if (session?.user) {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user profile:', error);
+                setUser(null);
+            } else if (profile) {
+                const userProfile = toCamelCase(profile) as User;
+                setUser(userProfile);
+                // Set initial school context for non-owners
+                if (userProfile.role !== UserRole.Owner) {
+                    setActiveSchoolId(userProfile.schoolId);
+                }
+            }
+        } else {
+            setUser(null);
+        }
+        setLoading(false);
+    };
 
     useEffect(() => {
-        const fetchUserProfile = async (session: Session | null) => {
-            if (session?.user) {
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (error) {
-                    console.error('Error fetching user profile:', error);
-                    setUser(null);
-                } else if (profile) {
-                    const userProfile = toCamelCase(profile) as User;
-                    setUser(userProfile);
-                    // Set initial school context for non-owners
-                    if (userProfile.role !== UserRole.Owner) {
-                        setActiveSchoolId(userProfile.schoolId);
-                    }
-                }
-            } else {
-                setUser(null);
-            }
-            setLoading(false);
+        // Check for initial session on app load
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            await fetchUserProfile(session);
         };
 
-        // Check for initial session on app load
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            fetchUserProfile(session);
-        });
+        checkSession();
 
         // Listen for auth state changes (login, logout)
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            fetchUserProfile(session);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            setAuthEvent(event);
+            await fetchUserProfile(session);
         });
 
         return () => {
-            authListener.subscription.unsubscribe();
+            subscription?.unsubscribe();
         };
     }, []);
 
@@ -105,7 +112,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             email,
             password: pass,
             options: {
-                // Pass metadata to be used by the database trigger
                 data: {
                     name,
                     role,
@@ -119,6 +125,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // The DB trigger (handle_new_user) will create the profile.
         // A success message is shown to the user, who then can log in.
+        return { success: true };
+    };
+    
+    const sendPasswordResetEmail = async (email: string): Promise<{ success: boolean; error?: string }> => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin, // Redirects user back to the app
+        });
+
+        if (error) {
+            return { success: false, error: error.message };
+        }
         return { success: true };
     };
 
@@ -158,7 +175,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded: false, completeProfileSetup, hasPermission }}>
+        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, sendPasswordResetEmail, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded: false, completeProfileSetup, hasPermission, authEvent }}>
             {children}
         </AuthContext.Provider>
     );

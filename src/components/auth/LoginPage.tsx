@@ -4,6 +4,7 @@ import { EduSyncLogo } from '../../constants';
 
 interface LoginPageProps {
     onSwitchToRegister: () => void;
+    onForgotPassword: () => void;
 }
 
 const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -43,7 +44,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassword }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -145,9 +146,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                                 />
                                 <span className="ml-2">Remember me</span>
                             </label>
-                            <a href="#" className="font-semibold text-primary-300 hover:text-white">
+                            <button type="button" onClick={onForgotPassword} className="font-semibold text-primary-300 hover:text-white">
                                 Forgot password?
-                            </a>
+                            </button>
                         </div>
 
                         <button

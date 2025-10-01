@@ -27,11 +27,20 @@ const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) =>
 
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
-    const { user, effectiveRole } = useAuth();
+    const { user, effectiveRole, updateUserPassword } = useAuth();
     const { backupData, restoreData, updateUser } = useData();
     const { showToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
+
+    // State for Profile Update
+    const [name, setName] = useState(user?.name || '');
+    const [isProfileSaving, setIsProfileSaving] = useState(false);
+
+    // State for Password Change
+    const [password, setPassword] = useState({ new: '', confirm: '' });
+    const [passwordErrors, setPasswordErrors] = useState<{ new?: string; confirm?: string }>({});
+    const [isPasswordSaving, setIsPasswordSaving] = useState(false);
 
     // Default preferences structure
     const defaultPrefs = {
@@ -40,17 +49,20 @@ const SettingsPage: React.FC = () => {
     };
 
     const [prefs, setPrefs] = useState(defaultPrefs);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
-    // Initialize preferences from user data
+    // Initialize forms and preferences from user data
     useEffect(() => {
-        if (user?.notificationPreferences) {
-            setPrefs({
-                feeDeadlines: { ...defaultPrefs.feeDeadlines, ...user.notificationPreferences.feeDeadlines },
-                examResults: { ...defaultPrefs.examResults, ...user.notificationPreferences.examResults },
-            });
-        } else {
-            setPrefs(defaultPrefs);
+        if (user) {
+            setName(user.name);
+            if (user.notificationPreferences) {
+                setPrefs({
+                    feeDeadlines: { ...defaultPrefs.feeDeadlines, ...user.notificationPreferences.feeDeadlines },
+                    examResults: { ...defaultPrefs.examResults, ...user.notificationPreferences.examResults },
+                });
+            } else {
+                setPrefs(defaultPrefs);
+            }
         }
     }, [user]);
 
@@ -64,25 +76,63 @@ const SettingsPage: React.FC = () => {
         }));
     };
 
-    const handleSaveChanges = async () => {
+    const handleSavePrefs = async () => {
         if (!user) return;
-        setIsSaving(true);
+        setIsSavingPrefs(true);
         try {
             await updateUser({ ...user, notificationPreferences: prefs });
             showToast('Success', 'Notification preferences saved!', 'success');
         } catch (error) {
             showToast('Error', 'Could not save preferences.', 'error');
         } finally {
-            setIsSaving(false);
+            setIsSavingPrefs(false);
         }
     };
 
+    const handleProfileUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user || !name.trim()) return;
+
+        setIsProfileSaving(true);
+        try {
+            await updateUser({ ...user, name });
+            showToast('Success', 'Profile updated successfully!', 'success');
+        } catch (error) {
+            showToast('Error', 'Failed to update profile.', 'error');
+        } finally {
+            setIsProfileSaving(false);
+        }
+    };
+    
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordErrors({});
+        
+        if (password.new.length < 6) {
+            setPasswordErrors(p => ({...p, new: 'Password must be at least 6 characters.'}));
+            return;
+        }
+
+        if (password.new !== password.confirm) {
+            setPasswordErrors(p => ({...p, confirm: 'New passwords do not match.'}));
+            return;
+        }
+        
+        setIsPasswordSaving(true);
+        const { success, error } = await updateUserPassword(password.new);
+        if (success) {
+            showToast('Success', 'Password changed successfully!', 'success');
+            setPassword({ new: '', confirm: '' });
+        } else {
+            showToast('Error', error || 'Failed to change password.', 'error');
+        }
+        setIsPasswordSaving(false);
+    };
 
     const handleRestoreInitiate = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
             setRestoreFile(event.target.files[0]);
         }
-        // Reset file input value to allow re-selection of the same file
         event.target.value = '';
     };
 
@@ -117,11 +167,9 @@ const SettingsPage: React.FC = () => {
             <div className="max-w-4xl mx-auto space-y-8">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Settings</h1>
 
-                {/* Appearance Settings */}
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Appearance</h2>
                     <div className="py-4 space-y-4">
-                        {/* Theme Toggle */}
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium">Theme</p>
@@ -131,7 +179,6 @@ const SettingsPage: React.FC = () => {
                                 <span className={`${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`} />
                             </button>
                         </div>
-                        {/* Font Size Control */}
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium">Font Size</p>
@@ -146,12 +193,10 @@ const SettingsPage: React.FC = () => {
                     </div>
                 </div>
                 
-                {/* Notification Preferences (New Section) */}
                 {canSeeNotifications && (
                     <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Notification Preferences</h2>
                         <div className="py-4 space-y-4">
-                            {/* Fee Deadlines */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                                 <div className="md:col-span-1">
                                     <p className="font-medium">Fee Deadlines</p>
@@ -169,7 +214,6 @@ const SettingsPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Exam Results */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center pt-4 border-t dark:border-secondary-700">
                                 <div className="md:col-span-1">
                                     <p className="font-medium">Exam Results</p>
@@ -188,65 +232,79 @@ const SettingsPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex justify-end pt-4 border-t dark:border-secondary-700">
-                            <button onClick={handleSaveChanges} disabled={isSaving} className="btn-primary">
-                                {isSaving ? 'Saving...' : 'Save Preferences'}
+                            <button onClick={handleSavePrefs} disabled={isSavingPrefs} className="btn-primary">
+                                {isSavingPrefs ? 'Saving...' : 'Save Preferences'}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Account Settings */}
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Account</h2>
-                    <div className="py-4 space-y-4">
+                    <form onSubmit={handleProfileUpdate} className="py-4 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                             <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300">Full Name</label>
-                            <input type="text" defaultValue={user?.name} className="md:col-span-2 input-field" />
+                            <input type="text" value={name} onChange={e => setName(e.target.value)} className="md:col-span-2 input-field" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                             <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300">Email Address</label>
                             <input type="email" defaultValue={user?.email} disabled className="md:col-span-2 input-field" />
                         </div>
                         <div className="flex justify-end pt-2">
-                            <button className="btn-primary">Update Profile</button>
+                            <button type="submit" disabled={isProfileSaving} className="btn-primary">
+                                {isProfileSaving ? 'Saving...' : 'Update Profile'}
+                            </button>
                         </div>
-                    </div>
-                    <div className="border-t dark:border-secondary-700 pt-4 mt-4 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                            <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300">New Password</label>
-                            <input type="password" placeholder="••••••••" className="md:col-span-2 input-field" />
+                    </form>
+                    <form onSubmit={handlePasswordChange} className="border-t dark:border-secondary-700 pt-4 mt-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                            <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300 pt-2">New Password</label>
+                            <div className="md:col-span-2">
+                                <input type="password" placeholder="••••••••" value={password.new} onChange={e => setPassword(p => ({...p, new: e.target.value}))} className="w-full input-field" />
+                                {passwordErrors.new && <p className="text-red-500 text-xs mt-1">{passwordErrors.new}</p>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                            <label className="text-sm font-medium text-secondary-600 dark:text-secondary-300 pt-2">Confirm New Password</label>
+                            <div className="md:col-span-2">
+                                <input type="password" placeholder="••••••••" value={password.confirm} onChange={e => setPassword(p => ({...p, confirm: e.target.value}))} className="w-full input-field" />
+                                {passwordErrors.confirm && <p className="text-red-500 text-xs mt-1">{passwordErrors.confirm}</p>}
+                            </div>
                         </div>
                         <div className="flex justify-end">
-                            <button className="btn-primary">Change Password</button>
+                            <button type="submit" disabled={isPasswordSaving} className="btn-primary">
+                                {isPasswordSaving ? 'Saving...' : 'Change Password'}
+                            </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
 
-                {/* Data Management */}
-                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Data Management</h2>
-                    <div className="py-4 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="font-medium">Backup Data</p>
-                                <p className="text-sm text-secondary-500 dark:text-secondary-400">Download all school data (students, fees, etc.) as a single JSON file.</p>
+                {effectiveRole === UserRole.Admin && (
+                    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Data Management</h2>
+                        <div className="py-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium">Backup Data</p>
+                                    <p className="text-sm text-secondary-500 dark:text-secondary-400">Download all school data (students, fees, etc.) as a single JSON file.</p>
+                                </div>
+                                <button onClick={backupData} className="btn-secondary">
+                                    <DownloadIcon className="w-4 h-4" /> Backup
+                                </button>
                             </div>
-                            <button onClick={backupData} className="btn-secondary">
-                                <DownloadIcon className="w-4 h-4" /> Backup
-                            </button>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="font-medium">Restore Data</p>
-                                <p className="text-sm text-secondary-500 dark:text-secondary-400">Restore school data from a backup file. This is a destructive action.</p>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium">Restore Data</p>
+                                    <p className="text-sm text-secondary-500 dark:text-secondary-400">Restore school data from a backup file. This is a destructive action.</p>
+                                </div>
+                                <button onClick={() => fileInputRef.current?.click()} className="btn-danger">
+                                    <UploadIcon className="w-4 h-4" /> Restore
+                                </button>
+                                <input type="file" ref={fileInputRef} onChange={handleRestoreInitiate} className="hidden" accept=".json" />
                             </div>
-                            <button onClick={() => fileInputRef.current?.click()} className="btn-danger">
-                                <UploadIcon className="w-4 h-4" /> Restore
-                            </button>
-                            <input type="file" ref={fileInputRef} onChange={handleRestoreInitiate} className="hidden" accept=".json" />
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </>
     );
