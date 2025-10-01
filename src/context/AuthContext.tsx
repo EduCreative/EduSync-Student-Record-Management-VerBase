@@ -91,16 +91,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     status: 'Active' as const,
                     password: 'password' // Set a default password
                 };
-                const { data: newOwner, error: createError } = await supabase
+
+                const { error: createError } = await supabase
                     .from('profiles')
-                    .insert(newOwnerData)
-                    .select()
-                    .single();
+                    .insert(newOwnerData);
     
-                if (createError || !newOwner) {
+                if (createError) {
+                    console.error("Error creating owner profile:", createError);
                     return { success: false, error: "Failed to automatically create owner profile. Please contact support." };
                 }
-                userProfile = toCamelCase(newOwner) as User;
+                userProfile = toCamelCase(newOwnerData) as User;
             }
             
             // Log in the user with the found or created profile
