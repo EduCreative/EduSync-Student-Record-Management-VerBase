@@ -60,16 +60,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        // Special handling for the owner account to ensure access.
+        // Special handling for the owner account to ensure access and creation.
         if (email.toLowerCase() === 'kmasroor50@gmail.com') {
-            // First, try to find the owner profile by email, ignoring password
             const { data: existingOwner, error: findError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('email', email.toLowerCase())
                 .single();
     
-            // "PGRST116: single row not found" is the expected 'error' if user doesn't exist. We can ignore it.
+            // Handle unexpected database errors, but ignore "row not found" which is expected.
             if (findError && findError.code !== 'PGRST116') {
                 return { success: false, error: findError.message };
             }
@@ -77,11 +76,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             let userProfile: User;
     
             if (existingOwner) {
-                // Owner profile exists, use it.
+                // Case 1: Owner account exists. Validate the password.
+                if (existingOwner.password !== pass) {
+                    return { success: false, error: 'Invalid password for owner account.' };
+                }
                 userProfile = toCamelCase(existingOwner) as User;
+    
             } else {
-                // Owner profile does not exist, create it.
-                console.warn("Owner profile not found for kmasroor50@gmail.com. Creating a new one.");
+                // Case 2: Owner account does not exist. Create it only if the correct initial password is used.
+                if (pass !== 'password') {
+                    return { success: false, error: 'Invalid credentials to create owner account.' };
+                }
+                
+                console.warn("Owner profile not found for kmasroor50@gmail.com. Creating a new one with the default password.");
                 const newOwnerData = {
                     id: crypto.randomUUID(),
                     name: 'Khurram Masroor (Owner)',
@@ -89,9 +96,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     role: UserRole.Owner,
                     school_id: null,
                     status: 'Active' as const,
-                    password: 'password' // Set a default password
+                    password: 'password' // Set the specified default password
                 };
-
+    
                 const { error: createError } = await supabase
                     .from('profiles')
                     .insert(newOwnerData);
@@ -103,11 +110,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 userProfile = toCamelCase(newOwnerData) as User;
             }
             
-            // Log in the user with the found or created profile
+            // If we reach here, authentication/creation was successful.
             setUser(userProfile);
             localStorage.setItem('edusync_user', JSON.stringify(userProfile));
             
-            // Update last login time
             await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', userProfile.id);
             
             return { success: true };
