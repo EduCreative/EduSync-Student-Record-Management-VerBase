@@ -20,8 +20,9 @@ import ToastContainer from '../common/ToastContainer';
 import TeacherManagementPage from '../teachers/TeacherManagementPage';
 import AccountantManagementPage from '../accountants/AccountantManagementPage';
 import ClassManagementPage from '../classes/ClassManagementPage';
+import UserProfilePage from '../users/UserProfilePage';
 
-export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'schools' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | string;
+export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'schools' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | 'userProfile' | string;
 
 export interface ActiveView {
     view: ViewType;
@@ -107,6 +108,8 @@ const Layout: React.FC = () => {
                 return <Dashboard setActiveView={setActiveView} />;
             case 'settings':
                 return <SettingsPage />;
+            case 'userProfile':
+                return <UserProfilePage setActiveView={setActiveView} />;
             case 'dashboard':
             case 'overview': // Treat owner's overview as dashboard
             default:

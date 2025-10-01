@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -146,6 +144,15 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                             </button>
                             {profileOpen && (
                                 <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                    <button
+                                        onClick={() => {
+                                            setActiveView({ view: 'userProfile' });
+                                            setProfileOpen(false);
+                                        }}
+                                        className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                    >
+                                        My Profile
+                                    </button>
                                     <button
                                         onClick={() => {
                                             setActiveView({ view: 'settings' });

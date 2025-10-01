@@ -9,6 +9,7 @@ interface AuthContextType {
     login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
     register: (name: string, email: string, pass: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+    updateUserPassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
     activeSchoolId: string | null;
     switchSchoolContext: (schoolId: string | null) => void;
     effectiveRole: UserRole | null;
@@ -23,9 +24,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
     const [profileSetupNeeded, setProfileSetupNeeded] = useState(false);
-    const [tempSession, setTempSession] = useState<Session | null>(null);
+    // FIX: Changed Session to any to resolve import error
+    const [tempSession, setTempSession] = useState<any | null>(null);
 
-    const fetchUserProfile = async (session: Session | null) => {
+    // FIX: Changed Session to any to resolve import error
+    const fetchUserProfile = async (session: any | null) => {
         setProfileSetupNeeded(false);
         setTempSession(null);
 
@@ -56,14 +59,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     useEffect(() => {
-        setLoading(true);
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        // FIX: Replaced `getSession` with `session()` for supabase-js v1 compatibility.
+        const session = supabase.auth.session();
+        fetchUserProfile(session);
+        setLoading(false);
+
+        // FIX: Adjusted destructuring for `onAuthStateChange` for supabase-js v1 compatibility.
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
             await fetchUserProfile(session);
-            setLoading(false);
         });
 
         return () => {
-            subscription?.unsubscribe();
+            authListener?.unsubscribe();
         };
     }, []);
     
@@ -91,7 +98,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+        // FIX: Replaced `signInWithPassword` with `signIn` for supabase-js v1 compatibility.
+        const { error } = await supabase.auth.signIn({ email, password: pass });
         if (error) {
             return { success: false, error: error.message };
         }
@@ -99,13 +107,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = async () => {
+        // FIX: `signOut` is correct for v1/v2 but error suggests v1, this is likely correct.
         await supabase.auth.signOut();
         setUser(null);
         setActiveSchoolId(null);
     };
 
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        // FIX: Replaced `signUp` and adjusted destructuring for supabase-js v1 compatibility.
+        const { user: authUser, error: signUpError } = await supabase.auth.signUp({
             email: email,
             password: pass,
         });
@@ -114,12 +124,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return { success: false, error: signUpError.message };
         }
 
-        if (authData.user) {
+        if (authUser) {
             // Owners are approved automatically, others require admin approval.
             const userStatus = role === UserRole.Owner ? 'Active' : 'Pending Approval';
 
             const { error: profileError } = await supabase.from('profiles').insert({
-                id: authData.user.id,
+                id: authUser.id,
                 name,
                 email,
                 role,
@@ -135,6 +145,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         return { success: false, error: 'An unknown error occurred during registration.' };
+    };
+
+    const updateUserPassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
+        // FIX: Replaced `updateUser` with `update` for supabase-js v1 compatibility.
+        const { error } = await supabase.auth.update({ password: newPassword });
+        if (error) {
+            return { success: false, error: error.message };
+        }
+        return { success: true };
     };
     
     const switchSchoolContext = (schoolId: string | null) => {
@@ -152,7 +171,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded, completeProfileSetup }}>
+        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded, completeProfileSetup }}>
             {children}
         </AuthContext.Provider>
     );

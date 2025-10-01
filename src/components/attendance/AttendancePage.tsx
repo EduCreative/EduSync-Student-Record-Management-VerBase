@@ -62,12 +62,17 @@ const AttendanceMarker: React.FC = () => {
 
     const handleSaveAttendance = async () => {
         setIsSaving(true);
-        const recordsToSave = Array.from(attendanceRecords.entries()).map(([studentId, status]) => ({
-            studentId,
-            status,
-        }));
-        await setAttendance(selectedDate, recordsToSave);
-        setIsSaving(false);
+        try {
+            const recordsToSave = Array.from(attendanceRecords.entries()).map(([studentId, status]) => ({
+                studentId,
+                status,
+            }));
+            await setAttendance(selectedDate, recordsToSave);
+        } catch (error) {
+            console.error("Failed to save attendance:", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (

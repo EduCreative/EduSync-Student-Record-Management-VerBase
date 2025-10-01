@@ -85,9 +85,8 @@ const TeacherManagementPage: React.FC = () => {
         const teachersToImport = data.map(item => ({
             ...item,
             role: UserRole.Teacher,
-            status: item.status || 'Active',
+            status: 'Active',
             schoolId: effectiveSchoolId,
-            avatarUrl: item.avatarUrl || null,
         }));
         await bulkAddUsers(teachersToImport);
     };
@@ -95,9 +94,7 @@ const TeacherManagementPage: React.FC = () => {
     const sampleDataForImport = [{
         name: "Jane Doe",
         email: "teacher.jane@example.com",
-        password: "securePassword123",
-        status: "Active",
-        avatarUrl: "https://example.com/avatar.png",
+        password: "securePassword123"
     }];
 
     const requiredHeaders = ['name', 'email', 'password'];

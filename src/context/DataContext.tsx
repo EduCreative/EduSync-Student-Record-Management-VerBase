@@ -55,8 +55,8 @@ interface DataContextType {
     addUser: (userData: Omit<User, 'id'>, password?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
-    addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<boolean>;
-    updateStudent: (updatedStudent: Student) => Promise<boolean>;
+    addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
+    updateStudent: (updatedStudent: Student) => Promise<void>;
     deleteStudent: (studentId: string) => Promise<void>;
     addClass: (classData: Omit<Class, 'id'>) => Promise<void>;
     updateClass: (updatedClass: Class) => Promise<void>;
@@ -246,7 +246,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', 'A password is required to create a new user.', 'error');
         }
 
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        // FIX: Replaced `signUp` and adjusted destructuring for supabase-js v1 compatibility.
+        const { user: signedUpUser, error: signUpError } = await supabase.auth.signUp({
             email: userData.email,
             password: password,
         });
@@ -255,11 +256,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return showToast('Error', `Could not create auth user: ${signUpError.message}`, 'error');
         }
 
-        if (!signUpData.user) {
+        if (!signedUpUser) {
             return showToast('Error', 'User was not created in authentication system. They may already exist.', 'error');
         }
 
-        const profileData = { ...userData, id: signUpData.user.id };
+        const profileData = { ...userData, id: signedUpUser.id };
         const { data: profileInsertData, error: profileError } = await supabase
             .from('profiles')
             .insert(toSnakeCase(profileData))
@@ -284,23 +285,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
             const updatedUserFromDB = toCamelCase(data) as User;
-            const originalUser = users.find(u => u.id === updatedUser.id);
-
             setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
-
-            if (originalUser && originalUser.status === 'Pending Approval' && updatedUserFromDB.status === 'Active') {
-                addLog('User Approved', `Approved user: ${updatedUserFromDB.name}.`);
-                showToast('Success', `${updatedUserFromDB.name} has been approved and is now active.`);
-            } else {
-                addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
-                showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
-            }
+            addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
+            showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
         }
     };
 
     const deleteUser = async (userId: string) => {
         // FIX: Find user before DB operation for safer type narrowing and logic.
-        const userToDelete: User | undefined = users.find(u => u.id === userId);
+        const userToDelete = users.find(u => u.id === userId);
         if (!userToDelete) {
             return console.warn(`User with ID ${userId} not found for deletion.`);
         }
@@ -313,53 +306,31 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `${userToDelete.name}'s profile has been deleted.`);
     };
     
-    const addStudent = async (studentData: Omit<Student, 'id' | 'status'>): Promise<boolean> => {
-        try {
-            const newStudent = { ...studentData, status: 'Active' as const };
-            const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
-            
-            if (error) {
-                throw new Error(error.message);
-            }
-        
-            if (data) {
-                setStudents(prev => [...prev, toCamelCase(data) as Student]);
-                addLog('Student Added', `New student added: ${newStudent.name}.`);
-                showToast('Success', `${newStudent.name} has been added.`);
-                return true;
-            }
-            throw new Error('Student record was not created.');
-        } catch (error: any) {
-            showToast('Save Error', error.message, 'error');
-            return false;
+    const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
+        const newStudent = { ...studentData, status: 'Active' as const };
+        const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data) {
+            setStudents(prev => [...prev, toCamelCase(data) as Student]);
+            addLog('Student Added', `New student added: ${newStudent.name}.`);
+            showToast('Success', `${newStudent.name} has been added.`);
         }
     };
     
-    const updateStudent = async (updatedStudent: Student): Promise<boolean> => {
-        try {
-            const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
-            
-            if (error) {
-                throw new Error(error.message);
-            }
-    
-            if (data) {
-                const updatedStudentFromDB = toCamelCase(data) as Student;
-                setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudentFromDB : s));
-                addLog('Student Updated', `Profile updated for ${updatedStudentFromDB.name}.`);
-                showToast('Success', `${updatedStudentFromDB.name}'s profile has been updated.`);
-                return true;
-            }
-             throw new Error('Student record was not updated.');
-        } catch (error: any) {
-            showToast('Update Error', error.message, 'error');
-            return false;
+    const updateStudent = async (updatedStudent: Student) => {
+        const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
+        if (error) return showToast('Error', error.message, 'error');
+        if (data) {
+            const updatedStudentFromDB = toCamelCase(data) as Student;
+            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudentFromDB : s));
+            addLog('Student Updated', `Profile updated for ${updatedStudentFromDB.name}.`);
+            showToast('Success', `${updatedStudentFromDB.name}'s profile has been updated.`);
         }
     };
     
     const deleteStudent = async (studentId: string) => {
         // FIX: Find student before DB operation for safer type narrowing and logic.
-        const studentToDelete: Student | undefined = students.find(s => s.id === studentId);
+        const studentToDelete = students.find(s => s.id === studentId);
         if (!studentToDelete) {
             return console.warn(`Student with ID ${studentId} not found for deletion.`);
         }
@@ -557,8 +528,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteFeeHead = async (feeHeadId: string) => {
-        // FIX: Explicitly typed `feeHeadToDelete` to resolve 'unknown' type error.
-        const feeHeadToDelete: FeeHead | undefined = feeHeads.find(fh => fh.id === feeHeadId);
+        // FIX: Find fee head before DB operation for safer type narrowing and logic.
+        const feeHeadToDelete = feeHeads.find(fh => fh.id === feeHeadId);
         if (!feeHeadToDelete) {
             return console.warn(`Fee head with ID ${feeHeadId} not found for deletion.`);
         }
@@ -629,8 +600,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteSchool = async (schoolId: string) => {
-        // FIX: Explicitly typed `schoolToDelete` to resolve 'unknown' type error.
-        const schoolToDelete: School | undefined = schools.find(s => s.id === schoolId);
+        const schoolToDelete = schools.find(s => s.id === schoolId);
+        // FIX: Add guard clause to ensure school exists before proceeding.
         if (!schoolToDelete) {
             return console.warn(`School with ID ${schoolId} not found for deletion.`);
         }
@@ -700,14 +671,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         for (const userData of usersToAdd) {
             const { password, ...profileData } = userData;
             if (password) {
-                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                 // FIX: Replaced `signUp` and adjusted destructuring for supabase-js v1 compatibility.
+                 const { user: signedUpUser, error: signUpError } = await supabase.auth.signUp({
                     email: userData.email, password: password,
                 });
-                if (signUpError || !signUpData.user) {
+                if (signUpError || !signedUpUser) {
                      showToast('Error', `Could not create auth user for ${userData.email}: ${signUpError?.message}`, 'error');
                      continue;
                 }
-                const { error: profileError } = await supabase.from('profiles').insert(toSnakeCase({ ...profileData, id: signUpData.user.id }));
+                const { error: profileError } = await supabase.from('profiles').insert(toSnakeCase({ ...profileData, id: signedUpUser.id }));
                 if (profileError) {
                      showToast('Error', `Auth user created, but profile failed for ${userData.email}.`, 'error');
                 } else {

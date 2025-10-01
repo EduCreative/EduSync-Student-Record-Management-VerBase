@@ -9,7 +9,7 @@ import ImageUpload from '../common/ImageUpload';
 interface StudentFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => Promise<boolean>;
+    onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => Promise<void>;
     studentToEdit?: Student | null;
 }
 
@@ -24,7 +24,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         rollNumber: '',
         classId: '',
         fatherName: '',
-        fathersCnic: '',
+        fatherCnic: '',
         dateOfBirth: '',
         dateOfAdmission: new Date().toISOString().split('T')[0],
         admittedClass: '',
@@ -58,7 +58,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     rollNumber: studentToEdit.rollNumber,
                     classId: studentToEdit.classId,
                     fatherName: studentToEdit.fatherName,
-                    fathersCnic: studentToEdit.fathersCnic,
+                    fatherCnic: studentToEdit.fatherCnic,
                     dateOfBirth: studentToEdit.dateOfBirth,
                     dateOfAdmission: studentToEdit.dateOfAdmission,
                     admittedClass: studentToEdit.admittedClass,
@@ -78,7 +78,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 setFormData(getInitialFormData());
             }
             setErrors({});
-            setIsSaving(false);
         }
     }, [studentToEdit, isOpen]);
 
@@ -112,26 +111,24 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         if (!validate()) return;
         
         setIsSaving(true);
-
-        const saveData = {
-            ...formData,
-            userId: formData.userId || null, // Convert empty string back to null for DB
-        };
-
-        let success = false;
         try {
+            const saveData = {
+                ...formData,
+                userId: formData.userId || null, // Convert empty string back to null for DB
+            };
+
             if (studentToEdit) {
-                success = await onSave({ ...studentToEdit, ...saveData });
+                await onSave({ ...studentToEdit, ...saveData });
             } else {
                 // Remove the 'status' for new students as it's set by the backend/data context
                 const { status, ...rest } = saveData;
-                success = await onSave(rest);
+                await onSave(rest);
             }
+            onClose();
+        } catch (error) {
+            console.error("Failed to save student:", error);
         } finally {
             setIsSaving(false);
-            if (success) {
-                onClose();
-            }
         }
     };
 
@@ -174,8 +171,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         {errors.fatherName && <p className="text-red-500 text-xs mt-1">{errors.fatherName}</p>}
                     </div>
                     <div>
-                        <label htmlFor="fathersCnic" className="input-label">Father's CNIC</label>
-                        <input type="text" name="fathersCnic" id="fathersCnic" value={formData.fathersCnic} onChange={handleChange} className="w-full input-field" />
+                        <label htmlFor="fatherCnic" className="input-label">Father's CNIC</label>
+                        <input type="text" name="fatherCnic" id="fatherCnic" value={formData.fatherCnic} onChange={handleChange} className="w-full input-field" />
                     </div>
                     <div>
                         <label htmlFor="caste" className="input-label">Caste</label>

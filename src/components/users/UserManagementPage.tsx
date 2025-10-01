@@ -106,10 +106,6 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
             bulkAddUsers([{...singleUserData, password}]);
         }
     };
-    
-    const handleApproveUser = (userToApprove: User) => {
-        updateUser({ ...userToApprove, status: 'Active' });
-    };
 
     const handleDeleteUser = () => {
         if (userToDelete) {
@@ -121,9 +117,8 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
     const handleImportUsers = async (data: any[]) => {
         const usersToImport = data.map(item => ({
             ...item,
-            status: item.status || 'Active', // Use status from CSV or default to 'Active'
+            status: 'Active', // Default status for imported users
             schoolId: item.schoolId || effectiveSchoolId, // Use schoolId from CSV or current context
-            avatarUrl: item.avatarUrl || null,
         }));
         await bulkAddUsers(usersToImport);
     };
@@ -133,8 +128,6 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
         email: "john.doe@example.com",
         role: "Teacher",
         password: "securePassword123",
-        status: "Active",
-        avatarUrl: "https://example.com/avatar.png",
         ...(isOwnerGlobalView && { schoolId: "paste_valid_school_id_here" })
     }];
 
@@ -327,15 +320,6 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                                     <td className="px-6 py-4">{formatDateTime(user.lastLogin)}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center space-x-4">
-                                                             {user.status === 'Pending Approval' && canPerformActions && (
-                                                                <button
-                                                                    onClick={() => handleApproveUser(user)}
-                                                                    className="font-medium text-green-600 dark:text-green-500 hover:underline"
-                                                                    aria-label={`Approve ${user.name}`}
-                                                                >
-                                                                    Approve
-                                                                </button>
-                                                            )}
                                                             <button 
                                                                 onClick={() => handleOpenModal(user)} 
                                                                 className="font-medium text-primary-600 dark:text-primary-500 hover:underline disabled:text-secondary-400 disabled:no-underline disabled:cursor-not-allowed"

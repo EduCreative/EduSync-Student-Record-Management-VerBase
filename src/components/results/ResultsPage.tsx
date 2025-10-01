@@ -56,16 +56,15 @@ const ResultsEntry: React.FC = () => {
 
         setMarks(prev => {
             const newMarks = new Map(prev);
-            // FIX: Explicitly typed `current` to resolve issue where it was inferred as `unknown`.
-            const current: { marks: number; totalMarks: number } | undefined = newMarks.get(studentId);
+            const current = newMarks.get(studentId);
             
-            const newEntry = {
+            const updatedEntry = {
                 marks: current?.marks ?? 0,
                 totalMarks: current?.totalMarks ?? 100,
-                [field]: numValue,
             };
+            updatedEntry[field] = numValue;
 
-            newMarks.set(studentId, newEntry);
+            newMarks.set(studentId, updatedEntry);
             return newMarks;
         });
     };
@@ -76,17 +75,22 @@ const ResultsEntry: React.FC = () => {
             return;
         }
         setIsSaving(true);
-        const resultsToSave: Omit<Result, 'id'>[] = Array.from(marks.entries())
-            .map(([studentId, { marks: studentMarks, totalMarks }]) => ({
-                studentId,
-                classId: selectedClassId,
-                exam: selectedExam,
-                subject: selectedSubject,
-                marks: studentMarks,
-                totalMarks: totalMarks,
-            }));
-        await saveResults(resultsToSave);
-        setIsSaving(false);
+        try {
+            const resultsToSave: Omit<Result, 'id'>[] = Array.from(marks.entries())
+                .map(([studentId, { marks: studentMarks, totalMarks }]) => ({
+                    studentId,
+                    classId: selectedClassId,
+                    exam: selectedExam,
+                    subject: selectedSubject,
+                    marks: studentMarks,
+                    totalMarks: totalMarks,
+                }));
+            await saveResults(resultsToSave);
+        } catch (error) {
+            console.error("Failed to save results:", error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const exams = useMemo(() => ["Quiz 1", "Mid-Term", "Quiz 2", "Final Exam", ...[...new Set(results.map(r => r.exam))] ], [results]);
