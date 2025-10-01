@@ -109,121 +109,94 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const fetchData = async () => {
             if (!user) {
                 setLoading(false);
-                setSchools([]);
-                setUsers([]);
-                setClasses([]);
-                setStudents([]);
-                setAttendanceState([]);
-                setFees([]);
-                setResults([]);
-                setLogs([]);
-                setFeeHeads([]);
-                setEvents([]);
+                setSchools([]); setUsers([]); setClasses([]); setStudents([]);
+                setAttendanceState([]); setFees([]); setResults([]); setLogs([]);
+                setFeeHeads([]); setEvents([]);
                 return;
-            };
+            }
 
             setLoading(true);
 
-            try {
-                const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+            const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
 
-                // Helper function to fetch data from a single table, with optional school filtering
-                const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
-                    let query = supabase.from(tableName).select('*');
-                    
-                    if (options.filterBySchool && effectiveSchoolId) {
+            // Helper function to fetch data from a single table
+            const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
+                let query = supabase.from(tableName).select('*');
+                
+                if (options.filterBySchool) {
+                    if (effectiveSchoolId) {
                         query = query.eq('school_id', effectiveSchoolId);
-                    } else if (options.filterBySchool && user.role !== UserRole.Owner) {
-                         query = query.eq('school_id', user.schoolId);
+                    } else if (user.role !== UserRole.Owner && user.schoolId) {
+                        query = query.eq('school_id', user.schoolId);
+                    } else if (user.role !== UserRole.Owner && !user.schoolId) {
+                        return []; // Non-owners must have a school context
                     }
-                    
-                    if (options.order) {
-                        query = query.order(options.order, { ascending: false });
-                    }
-                    if (options.limit) {
-                        query = query.limit(options.limit);
-                    }
-                    const { data, error } = await query;
-                    if (error) {
-                        console.error(`Error fetching ${tableName}:`, error.message);
-                        // Throw the error to be caught by the main catch block
-                        throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
-                    }
-                    return toCamelCase(data || []);
-                };
-
-                // Step 1: Fetch core data that might be needed for subsequent queries
-                const [schoolsData, usersData, classesData, studentsData] = await Promise.all([
-                    fetchTable('schools'),
-                    fetchTable('profiles', { filterBySchool: true }),
-                    fetchTable('classes', { filterBySchool: true }),
-                    fetchTable('students', { filterBySchool: true }),
-                ]);
-
-                // Step 2: Fetch role-specific data for attendance and results
-                let attendanceData: Attendance[] = [];
-                let resultsData: Result[] = [];
-                
-                if (user.role === UserRole.Student) {
-                    const studentProfile = (studentsData as Student[]).find(s => s.userId === user.id);
-                    if (studentProfile) {
-                        const [{ data: attData, error: attError }, { data: resData, error: resError }] = await Promise.all([
-                            supabase.from('attendance').select('*').eq('student_id', studentProfile.id),
-                            supabase.from('results').select('*').eq('student_id', studentProfile.id)
-                        ]);
-                        if (attError) throw attError;
-                        if (resError) throw resError;
-                        attendanceData = toCamelCase(attData || []);
-                        resultsData = toCamelCase(resData || []);
-                    }
-                } else if (user.role === UserRole.Parent && user.childStudentIds && user.childStudentIds.length > 0) {
-                     const [{ data: attData, error: attError }, { data: resData, error: resError }] = await Promise.all([
-                        supabase.from('attendance').select('*').in('student_id', user.childStudentIds),
-                        supabase.from('results').select('*').in('student_id', user.childStudentIds)
-                    ]);
-                    if (attError) throw attError;
-                    if (resError) throw resError;
-                    attendanceData = toCamelCase(attData || []);
-                    resultsData = toCamelCase(resData || []);
-                } else {
-                    // Default behavior for Admin, Teacher, etc.
-                    [attendanceData, resultsData] = await Promise.all([
-                        fetchTable('attendance', { filterBySchool: true }),
-                        fetchTable('results', { filterBySchool: true })
-                    ]);
+                    // For Owner global view, no filter is applied, fetching all.
                 }
-
-                // Step 3: Fetch remaining general data
-                const [logsData, feeHeadsData, eventsData, allFees] = await Promise.all([
-                    fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
-                    fetchTable('fee_heads', { filterBySchool: true }),
-                    fetchTable('school_events', { filterBySchool: true }),
-                    fetchTable('fee_challans'),
-                ]);
-
-                // Client-side filtering for fees (this can be optimized but is okay for now)
-                const schoolStudentIds = new Set((studentsData as Student[]).map(s => s.id));
-                const feesData = (allFees as FeeChallan[]).filter(fee => schoolStudentIds.has(fee.studentId));
                 
-                // Step 4: Set all state at once
-                setSchools(schoolsData as School[]);
-                setUsers(usersData as User[]);
-                setClasses(classesData as Class[]);
-                setStudents(studentsData as Student[]);
-                setAttendanceState(attendanceData);
-                setResults(resultsData);
-                setLogs(logsData as ActivityLog[]);
-                setFeeHeads(feeHeadsData as FeeHead[]);
-                setEvents(eventsData as SchoolEvent[]);
-                setFees(feesData);
+                if (options.order) query = query.order(options.order, { ascending: false });
+                if (options.limit) query = query.limit(options.limit);
+                
+                const { data, error } = await query;
+                if (error) {
+                    throw new Error(`Could not load data for ${tableName}.`);
+                }
+                return toCamelCase(data || []);
+            };
+            
+            // Helper to process settled promises
+            const handleResult = <T,>(result: PromiseSettledResult<T>, setter: React.Dispatch<React.SetStateAction<T>>, tableName: string): T => {
+                if (result.status === 'fulfilled') {
+                    setter(result.value);
+                    return result.value;
+                } else {
+                    console.error(`Failed to fetch ${tableName}:`, result.reason);
+                    showToast('Data Load Error', result.reason.message || `Could not load data for ${tableName}.`, 'error');
+                    setter([] as T); // Set state to empty array on failure
+                    return [] as T;
+                }
+            };
+            
+            // Step 1: Fetch all data concurrently and handle individual failures
+            const dataPromises = await Promise.allSettled([
+                fetchTable('schools'),
+                fetchTable('profiles', { filterBySchool: true }),
+                fetchTable('classes', { filterBySchool: true }),
+                fetchTable('students', { filterBySchool: true }),
+                fetchTable('attendance', { filterBySchool: true }), // <-- Potential failure point
+                fetchTable('results', { filterBySchool: true }),     // <-- Potential failure point
+                fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
+                fetchTable('fee_heads', { filterBySchool: true }),
+                fetchTable('school_events', { filterBySchool: true }),
+                fetchTable('fee_challans'), // Fetches all, filters on client
+            ]);
 
-                updateSyncTime();
-            } catch (error: any) {
-                console.error("A critical error occurred during data fetching:", error);
-                showToast('Data Fetch Error', error.message || 'An unexpected error occurred.', 'error');
-            } finally {
-                setLoading(false);
-            }
+            const [
+                schoolsRes, usersRes, classesRes, studentsRes, attendanceRes,
+                resultsRes, logsRes, feeHeadsRes, eventsRes, allFeesRes
+            ] = dataPromises;
+
+            // Step 2: Process results, setting state for success and showing toasts for failure
+            const studentsData = handleResult(studentsRes, setStudents, 'Students');
+            const allFeesData = handleResult(allFeesRes, setFees, 'Fee Challans');
+
+            handleResult(schoolsRes, setSchools, 'Schools');
+            handleResult(usersRes, setUsers, 'Users');
+            handleResult(classesRes, setClasses, 'Classes');
+            handleResult(attendanceRes, setAttendanceState, 'Attendance');
+            handleResult(resultsRes, setResults, 'Results');
+            handleResult(logsRes, setLogs, 'Activity Logs');
+            handleResult(feeHeadsRes, setFeeHeads, 'Fee Heads');
+            handleResult(eventsRes, setEvents, 'School Events');
+
+            // Step 3: Perform any client-side filtering after data is loaded
+            // This ensures that even if other fetches fail, fees can be filtered against the students that did load.
+            const schoolStudentIds = new Set((studentsData as Student[]).map(s => s.id));
+            const feesData = (allFeesData as FeeChallan[]).filter(fee => schoolStudentIds.has(fee.studentId));
+            setFees(feesData);
+            
+            updateSyncTime();
+            setLoading(false);
         };
 
         fetchData();
@@ -591,7 +564,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
-            // FIX: Introduce a properly typed variable to prevent accessing properties on an unknown type.
             const updatedSchoolFromDB = toCamelCase(data) as School;
             setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
             addLog('School Updated', `Details updated for ${updatedSchoolFromDB.name}.`);
@@ -607,7 +579,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setSchools(prev => prev.filter(s => s.id !== schoolId));
         if (schoolToDelete) {
-             // FIX: Relied on TypeScript's type narrowing within the if-block to safely access properties.
              addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
              showToast('Success', `${schoolToDelete.name} has been deleted.`);
         }
@@ -663,8 +634,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    // NOTE: Supabase bulk user creation via API is more complex due to auth. This is a simplified version.
-    // For a real-world scenario, you would likely use a server-side function.
     const bulkAddUsers = async (usersToAdd: (Omit<User, 'id'> & { password?: string })[]) => {
         let successCount = 0;
         for (const userData of usersToAdd) {
@@ -685,7 +654,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
         }
-        // Re-fetch users to update the list, as individual inserts happened.
         const { data } = await supabase.from('profiles').select('*');
         if(data) setUsers(toCamelCase(data) as User[]);
         

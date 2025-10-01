@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { Result, Student, UserRole } from '../../types';
+import { UserRole } from '../../types';
 import PrintableReportCard from './PrintableReportCard';
 
 interface ReportCardModalProps {
