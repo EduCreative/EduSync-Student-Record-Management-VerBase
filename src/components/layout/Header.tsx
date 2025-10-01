@@ -148,15 +148,6 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                                         }}
                                         className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
                                     >
-                                        Profile
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setActiveView({ view: 'settings' });
-                                            setProfileOpen(false);
-                                        }}
-                                        className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-                                    >
                                         Settings
                                     </button>
                                     <button

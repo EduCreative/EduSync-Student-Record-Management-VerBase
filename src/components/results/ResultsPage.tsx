@@ -145,10 +145,6 @@ const ResultsPage: React.FC = () => {
                     </div>
                  </div>
             )}
-             <style>{`
-                .input-field { @apply p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-            `}</style>
         </div>
     );
 };

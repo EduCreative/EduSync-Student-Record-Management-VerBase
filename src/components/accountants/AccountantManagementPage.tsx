@@ -132,8 +132,8 @@ const AccountantManagementPage: React.FC = () => {
                         <strong className="text-secondary-800 dark:text-secondary-200">{userToDelete?.name}</strong>?
                     </p>
                     <div className="mt-6 flex justify-end space-x-3">
-                        <button type="button" onClick={() => setUserToDelete(null)} className="px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg">Cancel</button>
-                        <button type="button" onClick={handleDeleteUser} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">Delete</button>
+                        <button type="button" onClick={() => setUserToDelete(null)} className="btn-secondary">Cancel</button>
+                        <button type="button" onClick={handleDeleteUser} className="btn-danger">Delete</button>
                     </div>
                 </div>
             </Modal>
@@ -158,19 +158,19 @@ const AccountantManagementPage: React.FC = () => {
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="search-accountant" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Search Accountants</label>
+                            <label htmlFor="search-accountant" className="input-label">Search Accountants</label>
                             <input
                                 id="search-accountant"
                                 type="text"
                                 placeholder="By name or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500"
+                                className="input-field"
                             />
                         </div>
                         <div>
-                            <label htmlFor="status-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Status</label>
-                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | 'Active' | 'Inactive')} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
+                            <label htmlFor="status-filter" className="input-label">Status</label>
+                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | 'Active' | 'Inactive')} className="input-field">
                                 <option value="all">All Statuses</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
@@ -250,10 +250,6 @@ const AccountantManagementPage: React.FC = () => {
                     )}
                 </div>
             </div>
-            <style>{`
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg flex items-center gap-2; }
-            `}</style>
         </>
     );
 };

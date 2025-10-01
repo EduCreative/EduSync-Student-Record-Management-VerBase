@@ -239,7 +239,7 @@ const TeacherManagementPage: React.FC = () => {
                                         <button
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                             disabled={currentPage === 1}
-                                            className="pagination-btn"
+                                            className="px-3 py-1 text-sm rounded-md border dark:border-secondary-600 disabled:opacity-50"
                                         >
                                             Previous
                                         </button>
@@ -247,7 +247,7 @@ const TeacherManagementPage: React.FC = () => {
                                         <button
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                             disabled={currentPage === totalPages}
-                                            className="pagination-btn"
+                                            className="px-3 py-1 text-sm rounded-md border dark:border-secondary-600 disabled:opacity-50"
                                         >
                                             Next
                                         </button>
@@ -258,14 +258,6 @@ const TeacherManagementPage: React.FC = () => {
                     )}
                 </div>
             </div>
-            <style>{`
-                .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg flex items-center gap-2; }
-                .btn-danger { @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg; }
-                .pagination-btn { @apply px-3 py-1 text-sm rounded-md border dark:border-secondary-600 disabled:opacity-50; }
-            `}</style>
         </>
     );
 };

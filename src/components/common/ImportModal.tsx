@@ -98,7 +98,7 @@ const ImportModal = <T extends Record<string, any>>({
                 </div>
 
                 <div>
-                    <label htmlFor="csv-file-input" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                    <label htmlFor="csv-file-input" className="input-label">
                         Upload CSV File
                     </label>
                     <input
@@ -117,16 +117,12 @@ const ImportModal = <T extends Record<string, any>>({
                     <button
                         onClick={handleImportClick}
                         disabled={!file || isImporting}
-                        className="btn-primary disabled:opacity-50"
+                        className="btn-primary"
                     >
                         {isImporting ? 'Importing...' : 'Process Import'}
                     </button>
                 </div>
             </div>
-            <style>{`
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-            `}</style>
         </Modal>
     );
 };

@@ -112,15 +112,15 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                     <table className="w-full">
                         <thead className="bg-secondary-50 dark:bg-secondary-700">
                             <tr>
-                                <th className="th-style">School</th>
-                                <th className="th-style">Address</th>
-                                <th className="th-style">Actions</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">School</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Address</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {schools.map(school => (
                                 <tr key={school.id} className="border-b dark:border-secondary-700">
-                                    <td className="td-style font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-800 dark:text-secondary-200 font-medium">
                                         <button 
                                             onClick={() => handleSchoolClick(school.id)} 
                                             className="text-primary-600 dark:text-primary-400 hover:underline text-left"
@@ -128,8 +128,8 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                                             {school.name}
                                         </button>
                                     </td>
-                                    <td className="td-style">{school.address}</td>
-                                    <td className="td-style space-x-2">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-800 dark:text-secondary-200">{school.address}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                         <button onClick={() => { setSchoolToEdit(school); setIsModalOpen(true); }} className="text-primary-600 hover:underline">Edit</button>
                                         <button onClick={() => setSchoolToDelete(school)} className="text-red-600 hover:underline">Delete</button>
                                     </td>
@@ -139,15 +139,6 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                     </table>
                 </div>
             </div>
-             <style>{`
-                .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-                .btn-danger { @apply px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg; }
-                .th-style { @apply px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider; }
-                .td-style { @apply px-6 py-4 whitespace-nowrap text-sm text-secondary-800 dark:text-secondary-200; }
-            `}</style>
         </>
     );
 };

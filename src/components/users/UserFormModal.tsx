@@ -168,25 +168,25 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                   onChange={(newAvatarUrl) => setFormData(prev => ({...prev, avatarUrl: newAvatarUrl}))}
                 />
                 <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Full Name</label>
-                    <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="w-full input-style" />
+                    <label htmlFor="name" className="input-label">Full Name</label>
+                    <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="input-field" />
                     {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
                 <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Email Address</label>
-                    <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} required className="w-full input-style" />
+                    <label htmlFor="email" className="input-label">Email Address</label>
+                    <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} required className="input-field" />
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                 </div>
                 {!userToEdit && (
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Set Initial Password</label>
-                        <input type="password" name="password" id="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full input-style" />
+                        <label htmlFor="password" className="input-label">Set Initial Password</label>
+                        <input type="password" name="password" id="password" value={password} onChange={e => setPassword(e.target.value)} required className="input-field" />
                         {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
                     </div>
                 )}
                 <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Role</label>
-                    <select name="role" id="role" value={formData.role} onChange={handleChange} required className="w-full input-style" disabled={lockRole}>
+                    <label htmlFor="role" className="input-label">Role</label>
+                    <select name="role" id="role" value={formData.role} onChange={handleChange} required className="input-field" disabled={lockRole}>
                         {availableRoles.map(role => (
                             <option key={role} value={role}>{role}</option>
                         ))}
@@ -195,8 +195,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 </div>
                 {isOwnerGlobalView && (
                     <div>
-                        <label htmlFor="schoolId" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">School</label>
-                        <select name="schoolId" id="schoolId" value={formData.schoolId} onChange={handleChange} required className="w-full input-style">
+                        <label htmlFor="schoolId" className="input-label">School</label>
+                        <select name="schoolId" id="schoolId" value={formData.schoolId} onChange={handleChange} required className="input-field">
                             <option value="">Select a school</option>
                             {schools.map(school => (
                                 <option key={school.id} value={school.id}>{school.name}</option>
@@ -207,8 +207,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 )}
                 {userToEdit && (
                      <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Status</label>
-                        <select name="status" id="status" value={formData.status} onChange={handleChange} className="w-full input-style">
+                        <label htmlFor="status" className="input-label">Status</label>
+                        <select name="status" id="status" value={formData.status} onChange={handleChange} className="input-field">
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                             <option value="Pending Approval">Pending Approval</option>
@@ -218,7 +218,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 )}
                  {currentUser?.role === UserRole.Owner && userToEdit && (
                     <div className="pt-2">
-                        <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">Menu Permissions</label>
+                        <label className="input-label mb-2">Menu Permissions</label>
                         <div className="space-y-2 max-h-40 overflow-y-auto p-3 bg-secondary-50 dark:bg-secondary-700 rounded-md border dark:border-secondary-600">
                              {linksForRole.map(link => (
                                 <label key={link.path} className="flex items-center space-x-3">
@@ -235,33 +235,10 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     </div>
                 )}
                 <div className="flex justify-end space-x-3 pt-4">
-                    <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg">Cancel</button>
-                    <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg">Save User</button>
+                    <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+                    <button type="submit" className="btn-primary">Save User</button>
                 </div>
             </form>
-             <style>{`
-                .input-style {
-                    background-color: #f9fafb;
-                    border: 1px solid #d1d5db;
-                    color: #111827;
-                    font-size: 0.875rem;
-                    border-radius: 0.5rem;
-                    display: block;
-                    width: 100%;
-                    padding: 0.625rem;
-                }
-                .dark .input-style {
-                    background-color: #374151;
-                    border-color: #4b5563;
-                    color: white;
-                }
-                .input-style:focus {
-                    outline: 2px solid transparent;
-                    outline-offset: 2px;
-                    --tw-ring-color: #3b82f6;
-                    box-shadow: 0 0 0 2px var(--tw-ring-color);
-                }
-            `}</style>
         </Modal>
     );
 };

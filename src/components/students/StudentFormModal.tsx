@@ -134,12 +134,12 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="name" className="input-label">Student Name</label>
                         <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} className="w-full input-field" required />
-                        {errors.name && <p className="error-text">{errors.name}</p>}
+                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                     </div>
                      <div>
                         <label htmlFor="rollNumber" className="input-label">Roll Number</label>
                         <input type="text" name="rollNumber" id="rollNumber" value={formData.rollNumber} onChange={handleChange} className="w-full input-field" required />
-                        {errors.rollNumber && <p className="error-text">{errors.rollNumber}</p>}
+                        {errors.rollNumber && <p className="text-red-500 text-xs mt-1">{errors.rollNumber}</p>}
                     </div>
                      <div>
                         <label htmlFor="classId" className="input-label">Class</label>
@@ -147,7 +147,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                             <option value="">Select Class</option>
                             {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
-                        {errors.classId && <p className="error-text">{errors.classId}</p>}
+                        {errors.classId && <p className="text-red-500 text-xs mt-1">{errors.classId}</p>}
                     </div>
                      <div>
                         <label htmlFor="userId" className="input-label">Link Parent Account</label>
@@ -159,7 +159,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="fatherName" className="input-label">Father's Name</label>
                         <input type="text" name="fatherName" id="fatherName" value={formData.fatherName} onChange={handleChange} className="w-full input-field" required />
-                        {errors.fatherName && <p className="error-text">{errors.fatherName}</p>}
+                        {errors.fatherName && <p className="text-red-500 text-xs mt-1">{errors.fatherName}</p>}
                     </div>
                     <div>
                         <label htmlFor="fatherCnic" className="input-label">Father's CNIC</label>
@@ -175,7 +175,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="dateOfBirth" className="input-label">Date of Birth</label>
                         <input type="date" name="dateOfBirth" id="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className="w-full input-field" required />
-                        {errors.dateOfBirth && <p className="error-text">{errors.dateOfBirth}</p>}
+                        {errors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>}
                     </div>
                      <div>
                         <label htmlFor="dateOfAdmission" className="input-label">Date of Admission</label>
@@ -184,7 +184,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="contactNumber" className="input-label">Contact Number</label>
                         <input type="tel" name="contactNumber" id="contactNumber" value={formData.contactNumber} onChange={handleChange} className="w-full input-field" required />
-                        {errors.contactNumber && <p className="error-text">{errors.contactNumber}</p>}
+                        {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
                     </div>
                     <div>
                         <label htmlFor="secondaryContactNumber" className="input-label">Secondary Contact</label>
@@ -200,13 +200,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <button type="submit" className="btn-primary">Save Student</button>
                 </div>
             </form>
-            <style>{`
-                .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .error-text { @apply text-red-500 text-xs mt-1; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-            `}</style>
         </Modal>
     );
 };

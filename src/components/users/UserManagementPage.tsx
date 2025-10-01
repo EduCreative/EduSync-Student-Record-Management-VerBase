@@ -197,14 +197,14 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                         <button
                             type="button"
                             onClick={() => setUserToDelete(null)}
-                            className="px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500"
+                            className="btn-secondary"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
                             onClick={handleDeleteUser}
-                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            className="btn-danger"
                         >
                             Delete
                         </button>
@@ -231,21 +231,21 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                          <div className={currentUser?.role === UserRole.Owner ? 'sm:col-span-2 lg:col-span-1' : 'sm:col-span-2'}>
-                            <label htmlFor="search-user" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Search Users</label>
+                            <label htmlFor="search-user" className="input-label">Search Users</label>
                             <input
                                 id="search-user"
                                 type="text"
                                 placeholder="By name or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500"
+                                className="input-field"
                             />
                         </div>
 
                         {currentUser?.role === UserRole.Owner && !activeSchoolId && (
                             <div>
-                                <label htmlFor="school-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">School</label>
-                                <select id="school-filter" value={schoolFilter} onChange={e => setSchoolFilter(e.target.value)} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
+                                <label htmlFor="school-filter" className="input-label">School</label>
+                                <select id="school-filter" value={schoolFilter} onChange={e => setSchoolFilter(e.target.value)} className="input-field">
                                     <option value="all">All Schools</option>
                                     {schools.map(school => <option key={school.id} value={school.id}>{school.name}</option>)}
                                 </select>
@@ -253,16 +253,16 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                         )}
                         
                         <div>
-                             <label htmlFor="role-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Role</label>
-                             <select id="role-filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value as UserRole | 'all')} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
+                             <label htmlFor="role-filter" className="input-label">Role</label>
+                             <select id="role-filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value as UserRole | 'all')} className="input-field">
                                 <option value="all">All Roles</option>
                                 {creatableRoles.map(role => <option key={role} value={role}>{role}</option>)}
                             </select>
                         </div>
                        
                         <div>
-                            <label htmlFor="status-filter" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">Status</label>
-                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as User['status'] | 'all')} className="w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500">
+                            <label htmlFor="status-filter" className="input-label">Status</label>
+                            <select id="status-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as User['status'] | 'all')} className="input-field">
                                 <option value="all">All Statuses</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
@@ -372,10 +372,6 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                     )}
                 </div>
             </div>
-            <style>{`
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg flex items-center gap-2; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg flex items-center gap-2; }
-            `}</style>
         </>
     );
 };

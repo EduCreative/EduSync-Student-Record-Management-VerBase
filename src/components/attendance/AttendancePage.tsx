@@ -89,8 +89,8 @@ const AttendancePage: React.FC = () => {
                     <div className="p-4 border-b dark:border-secondary-700 flex justify-between items-center">
                         <h2 className="font-semibold">Student List ({studentsInClass.length})</h2>
                         <div className="flex space-x-2">
-                            <button onClick={() => markAllAs('Present')} className="btn-secondary btn-sm">Mark All Present</button>
-                            <button onClick={() => markAllAs('Absent')} className="btn-secondary btn-sm">Mark All Absent</button>
+                            <button onClick={() => markAllAs('Present')} className="btn-secondary px-3 py-1 text-xs">Mark All Present</button>
+                            <button onClick={() => markAllAs('Absent')} className="btn-secondary px-3 py-1 text-xs">Mark All Absent</button>
                         </div>
                     </div>
                     <div className="overflow-x-auto">
@@ -136,11 +136,6 @@ const AttendancePage: React.FC = () => {
                 </div>
             )}
              <style>{`
-                .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-                .btn-sm { @apply px-3 py-1 text-xs; }
                 .btn-present { @apply bg-green-500 text-white; }
                 .btn-absent { @apply bg-red-500 text-white; }
                 .btn-leave { @apply bg-yellow-500 text-white; }

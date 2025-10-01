@@ -3,6 +3,7 @@ import { Class, UserRole } from '../../types';
 import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 interface ClassFormModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface ClassFormModalProps {
 const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave, classToEdit }) => {
     const { user: currentUser, activeSchoolId } = useAuth();
     const { users } = useData();
+    const { showToast } = useToast();
 
     const [formData, setFormData] = useState({ name: '', teacherId: '' });
     const [error, setError] = useState('');
@@ -37,15 +39,23 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (!formData.name.trim()) {
             setError('Class name is required.');
+            return;
+        }
+
+        if (!effectiveSchoolId) {
+            const msg = 'No active school context. Cannot save class.';
+            setError(msg);
+            showToast('Error', 'No active school selected. Please select a school first.', 'error');
             return;
         }
         
         const saveData = {
             ...formData,
             teacherId: formData.teacherId || null,
-            schoolId: effectiveSchoolId || '',
+            schoolId: effectiveSchoolId,
         };
 
         if (classToEdit) {
@@ -78,12 +88,6 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
                     <button type="submit" className="btn-primary">Save Class</button>
                 </div>
             </form>
-            <style>{`
-                .input-label { @apply block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1; }
-                .input-field { @apply w-full p-2 border rounded-md bg-secondary-50 text-secondary-900 dark:bg-secondary-700 dark:border-secondary-600 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500; }
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-            `}</style>
         </Modal>
     );
 };
