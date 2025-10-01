@@ -284,15 +284,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (error) return showToast('Error', error.message, 'error');
         if (data) {
             const updatedUserFromDB = toCamelCase(data) as User;
+            const originalUser = users.find(u => u.id === updatedUser.id);
+
             setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
-            addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
-            showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
+
+            if (originalUser && originalUser.status === 'Pending Approval' && updatedUserFromDB.status === 'Active') {
+                addLog('User Approved', `Approved user: ${updatedUserFromDB.name}.`);
+                showToast('Success', `${updatedUserFromDB.name} has been approved and is now active.`);
+            } else {
+                addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
+                showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
+            }
         }
     };
 
     const deleteUser = async (userId: string) => {
         // FIX: Find user before DB operation for safer type narrowing and logic.
-        const userToDelete = users.find(u => u.id === userId);
+        const userToDelete: User | undefined = users.find(u => u.id === userId);
         if (!userToDelete) {
             return console.warn(`User with ID ${userId} not found for deletion.`);
         }
@@ -351,7 +359,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const deleteStudent = async (studentId: string) => {
         // FIX: Find student before DB operation for safer type narrowing and logic.
-        const studentToDelete = students.find(s => s.id === studentId);
+        const studentToDelete: Student | undefined = students.find(s => s.id === studentId);
         if (!studentToDelete) {
             return console.warn(`Student with ID ${studentId} not found for deletion.`);
         }
@@ -549,8 +557,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteFeeHead = async (feeHeadId: string) => {
-        // FIX: Find fee head before DB operation for safer type narrowing and logic.
-        const feeHeadToDelete = feeHeads.find(fh => fh.id === feeHeadId);
+        // FIX: Explicitly typed `feeHeadToDelete` to resolve 'unknown' type error.
+        const feeHeadToDelete: FeeHead | undefined = feeHeads.find(fh => fh.id === feeHeadId);
         if (!feeHeadToDelete) {
             return console.warn(`Fee head with ID ${feeHeadId} not found for deletion.`);
         }
@@ -621,8 +629,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteSchool = async (schoolId: string) => {
-        const schoolToDelete = schools.find(s => s.id === schoolId);
-        // FIX: Add guard clause to ensure school exists before proceeding.
+        // FIX: Explicitly typed `schoolToDelete` to resolve 'unknown' type error.
+        const schoolToDelete: School | undefined = schools.find(s => s.id === schoolId);
         if (!schoolToDelete) {
             return console.warn(`School with ID ${schoolId} not found for deletion.`);
         }

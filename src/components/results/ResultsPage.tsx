@@ -56,15 +56,16 @@ const ResultsEntry: React.FC = () => {
 
         setMarks(prev => {
             const newMarks = new Map(prev);
-            const current = newMarks.get(studentId);
+            // FIX: Explicitly typed `current` to resolve issue where it was inferred as `unknown`.
+            const current: { marks: number; totalMarks: number } | undefined = newMarks.get(studentId);
             
-            const updatedEntry = {
+            const newEntry = {
                 marks: current?.marks ?? 0,
                 totalMarks: current?.totalMarks ?? 100,
+                [field]: numValue,
             };
-            updatedEntry[field] = numValue;
 
-            newMarks.set(studentId, updatedEntry);
+            newMarks.set(studentId, newEntry);
             return newMarks;
         });
     };

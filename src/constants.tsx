@@ -4,10 +4,13 @@ import { UserRole } from './types';
 export function EduSyncLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path d="M4 19.5V4.5C4 3.94772 4.44772 3.5 5 3.5H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M8 3.5H19C19.5523 3.5 20 3.94772 20 4.5V19.5C20 20.0523 19.5523 20.5 19 20.5H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M16 8.5L20 11.5L16 14.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M20 11.5H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+        {/* A more abstract and stylish open book */}
+        <path d="M4 20.5V5.5C4 4.94772 4.44772 4.5 5 4.5H19C19.5523 4.5 20 4.94772 20 5.5V20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M4 20.5C6.5 18.5 9 18 12 18C15 18 17.5 18.5 20 20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        
+        {/* Graduation cap floating above */}
+        <path d="M6 8L12 5L18 8L12 11L6 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M16 8.5V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   );
 }

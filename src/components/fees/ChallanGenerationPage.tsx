@@ -31,9 +31,11 @@ const ChallanGenerationPage: React.FC = () => {
     const handleFeeHeadToggle = (id: string) => {
         setSelectedFeeHeads(prev => {
             const newMap = new Map(prev);
-            const current = newMap.get(id);
+            // FIX: Explicitly typed `current` to resolve issue where it was inferred as `unknown`.
+            const current: { selected: boolean; amount: number } | undefined = newMap.get(id);
             if (current) {
-                newMap.set(id, { ...current, selected: !current.selected });
+                // FIX: Replaced spread syntax with explicit property assignment to prevent type errors.
+                newMap.set(id, { amount: current.amount, selected: !current.selected });
             }
             return newMap;
         });
@@ -45,9 +47,11 @@ const ChallanGenerationPage: React.FC = () => {
         
         setSelectedFeeHeads(prev => {
             const newMap = new Map(prev);
-            const current = newMap.get(id);
+            // FIX: Explicitly typed `current` to resolve issue where it was inferred as `unknown`.
+            const current: { selected: boolean; amount: number } | undefined = newMap.get(id);
             if (current) {
-                newMap.set(id, { ...current, amount: numAmount });
+                // FIX: Replaced spread syntax with explicit property assignment to prevent type errors.
+                newMap.set(id, { selected: current.selected, amount: numAmount });
             }
             return newMap;
         });
