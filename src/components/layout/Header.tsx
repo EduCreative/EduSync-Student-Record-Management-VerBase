@@ -7,6 +7,7 @@ import { useData } from '../../context/DataContext';
 import { UserRole } from '../../types';
 import { ActiveView } from './Layout';
 import Avatar from '../common/Avatar';
+import { EduSyncLogo } from '../../constants';
 
 interface HeaderProps {
     setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -77,8 +78,10 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                            {user?.role === UserRole.Owner ? (
                                 activeSchoolId ? (
                                     <>
-                                        {school?.logoUrl && (
+                                        {school?.logoUrl ? (
                                             <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                        ) : (
+                                            <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
                                         )}
                                         <h1 className="text-xl font-semibold">{school?.name}</h1>
                                         <button onClick={handleReturnToOwnerView} className="text-sm text-primary-600 hover:underline">
@@ -113,8 +116,10 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                                 )
                             ) : (
                                 <>
-                                    {school?.logoUrl && (
+                                    {school?.logoUrl ? (
                                         <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                     ) : (
+                                        <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
                                     )}
                                     <h1 className="text-xl font-semibold">{school?.name || 'EduSync'}</h1>
                                 </>

@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { UserRole } from '../../types';
+import { UserRole, FeeChallan } from '../../types';
 import PrintableChallan from './PrintableChallan';
 
 interface BulkChallanReportModalProps {
@@ -51,7 +51,8 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
             <div className="challan-print-container">
                 {challanChunks.map((chunk, pageIndex) => (
                     <div key={pageIndex} className="challan-page">
-                        {chunk.map(challan => {
+                        {/* FIX: Explicitly type 'challan' to resolve 'unknown' type error. */}
+                        {chunk.map((challan: FeeChallan) => {
                             const student = studentMap.get(challan.studentId);
                             const studentClass = student ? classMap.get(student.classId) : undefined;
                             if (!student) return null;

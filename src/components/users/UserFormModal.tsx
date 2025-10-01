@@ -5,6 +5,8 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { NAV_LINKS } from '../../constants';
 import ImageUpload from '../common/ImageUpload';
+import { supabase } from '../../lib/supabaseClient';
+import { useToast } from '../../context/ToastContext';
 
 interface UserFormModalProps {
     isOpen: boolean;
@@ -24,6 +26,7 @@ const isValidEmail = (email: string): boolean => {
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, userToEdit, defaultRole, lockRole = false }) => {
     const { user: currentUser, activeSchoolId } = useAuth();
     const { schools } = useData();
+    const { showToast } = useToast();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -122,6 +125,16 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
             ...prev,
             [path]: !prev[path],
         }));
+    };
+
+    const handlePasswordReset = async () => {
+        if (!userToEdit) return;
+        const { error } = await supabase.auth.resetPasswordForEmail(userToEdit.email);
+        if (error) {
+            showToast('Error', error.message, 'error');
+        } else {
+            showToast('Success', `Password reset email sent to ${userToEdit.email}.`, 'success');
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -238,6 +251,16 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
                     <button type="submit" className="btn-primary">Save User</button>
                 </div>
+
+                {userToEdit && currentUser?.role === UserRole.Owner && (
+                    <div className="border-t dark:border-secondary-700 pt-4 mt-4">
+                        <label className="input-label">Password Management</label>
+                        <p className="text-sm text-secondary-500 dark:text-secondary-400 mb-2">
+                            Send an email to {userToEdit.email} with instructions to reset their password.
+                        </p>
+                        <button type="button" onClick={handlePasswordReset} className="btn-secondary">Send Password Reset Email</button>
+                    </div>
+                )}
             </form>
         </Modal>
     );

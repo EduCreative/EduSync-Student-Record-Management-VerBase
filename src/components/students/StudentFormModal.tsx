@@ -27,6 +27,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         fatherCnic: '',
         dateOfBirth: '',
         dateOfAdmission: new Date().toISOString().split('T')[0],
+        admittedClass: '',
+        caste: '',
+        lastSchoolAttended: '',
         contactNumber: '',
         address: '',
         gender: 'Male' as 'Male' | 'Female',
@@ -34,9 +37,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         schoolId: effectiveSchoolId || '',
         userId: '',
         secondaryContactNumber: '',
-        lastSchoolAttended: '',
-        admittedInClass: '',
-        caste: '',
         openingBalance: 0,
         status: 'Active' as 'Active' | 'Inactive' | 'Left',
     });
@@ -60,6 +60,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     fatherCnic: studentToEdit.fatherCnic,
                     dateOfBirth: studentToEdit.dateOfBirth,
                     dateOfAdmission: studentToEdit.dateOfAdmission,
+                    admittedClass: studentToEdit.admittedClass,
+                    caste: studentToEdit.caste || '',
+                    lastSchoolAttended: studentToEdit.lastSchoolAttended || '',
                     contactNumber: studentToEdit.contactNumber,
                     address: studentToEdit.address,
                     gender: studentToEdit.gender,
@@ -67,9 +70,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     schoolId: studentToEdit.schoolId,
                     userId: studentToEdit.userId ?? '', // Coalesce null/undefined to empty string
                     secondaryContactNumber: studentToEdit.secondaryContactNumber || '',
-                    lastSchoolAttended: studentToEdit.lastSchoolAttended || '',
-                    admittedInClass: studentToEdit.admittedInClass || '',
-                    caste: studentToEdit.caste || '',
                     openingBalance: studentToEdit.openingBalance || 0,
                     status: studentToEdit.status,
                 });
@@ -88,6 +88,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         if (!formData.fatherName.trim()) newErrors.fatherName = "Father's name is required.";
         if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required.';
         if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required.';
+        if (!formData.admittedClass.trim()) newErrors.admittedClass = 'Admitted in Class is required.';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -165,6 +166,10 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         <label htmlFor="fatherCnic" className="input-label">Father's CNIC</label>
                         <input type="text" name="fatherCnic" id="fatherCnic" value={formData.fatherCnic} onChange={handleChange} className="w-full input-field" />
                     </div>
+                    <div>
+                        <label htmlFor="caste" className="input-label">Caste</label>
+                        <input type="text" name="caste" id="caste" value={formData.caste} onChange={handleChange} className="w-full input-field" />
+                    </div>
                      <div>
                         <label htmlFor="gender" className="input-label">Gender</label>
                         <select name="gender" id="gender" value={formData.gender} onChange={handleChange} className="w-full input-field">
@@ -181,6 +186,11 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         <label htmlFor="dateOfAdmission" className="input-label">Date of Admission</label>
                         <input type="date" name="dateOfAdmission" id="dateOfAdmission" value={formData.dateOfAdmission} onChange={handleChange} className="w-full input-field" />
                     </div>
+                     <div>
+                        <label htmlFor="admittedClass" className="input-label">Admitted in Class</label>
+                        <input type="text" name="admittedClass" id="admittedClass" value={formData.admittedClass} onChange={handleChange} className="w-full input-field" required />
+                        {errors.admittedClass && <p className="text-red-500 text-xs mt-1">{errors.admittedClass}</p>}
+                    </div>
                     <div>
                         <label htmlFor="contactNumber" className="input-label">Contact Number</label>
                         <input type="tel" name="contactNumber" id="contactNumber" value={formData.contactNumber} onChange={handleChange} className="w-full input-field" required />
@@ -189,6 +199,10 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="secondaryContactNumber" className="input-label">Secondary Contact</label>
                         <input type="tel" name="secondaryContactNumber" id="secondaryContactNumber" value={formData.secondaryContactNumber} onChange={handleChange} className="w-full input-field" />
+                    </div>
+                    <div>
+                        <label htmlFor="lastSchoolAttended" className="input-label">Last School Attended</label>
+                        <input type="text" name="lastSchoolAttended" id="lastSchoolAttended" value={formData.lastSchoolAttended} onChange={handleChange} className="w-full input-field" />
                     </div>
                     <div className="md:col-span-2">
                         <label htmlFor="address" className="input-label">Address</label>

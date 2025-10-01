@@ -6,29 +6,31 @@ import { useSync } from './SyncContext';
 import { supabase } from '../lib/supabaseClient';
 
 // Helper to convert snake_case object keys to camelCase
+// FIX: Made the object check more robust and typed the accumulator in reduce to prevent type inference issues.
 const toCamelCase = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(v => toCamelCase(v));
-    } else if (obj !== null && obj.constructor === Object) {
-        return Object.keys(obj).reduce((result, key) => {
+    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
+        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
             const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
             result[camelKey] = toCamelCase(obj[key]);
             return result;
-        }, {} as any);
+        }, {});
     }
     return obj;
 };
 
 // Helper to convert camelCase object keys to snake_case for Supabase
+// FIX: Made the object check more robust and typed the accumulator in reduce to prevent type inference issues.
 const toSnakeCase = (obj: any): any => {
      if (Array.isArray(obj)) {
         return obj.map(v => toSnakeCase(v));
-    } else if (obj !== null && obj.constructor === Object) {
-        return Object.keys(obj).reduce((result, key) => {
+    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
+        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
             const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
             result[snakeKey] = toSnakeCase(obj[key]);
             return result;
-        }, {} as any);
+        }, {});
     }
     return obj;
 };
@@ -76,6 +78,8 @@ interface DataContextType {
     bulkAddStudents: (students: Omit<Student, 'id' | 'status'>[]) => Promise<void>;
     bulkAddUsers: (users: (Omit<User, 'id'> & { password?: string })[]) => Promise<void>;
     bulkAddClasses: (classes: Omit<Class, 'id'>[]) => Promise<void>;
+    backupData: () => Promise<void>;
+    restoreData: (backupFile: File) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -105,103 +109,106 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
     const [events, setEvents] = useState<SchoolEvent[]>([]);
     
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!user) {
-                setLoading(false);
-                setSchools([]); setUsers([]); setClasses([]); setStudents([]);
-                setAttendanceState([]); setFees([]); setResults([]); setLogs([]);
-                setFeeHeads([]); setEvents([]);
-                return;
+    const fetchData = useCallback(async () => {
+        if (!user) {
+            setLoading(false);
+            setSchools([]); setUsers([]); setClasses([]); setStudents([]);
+            setAttendanceState([]); setFees([]); setResults([]); setLogs([]);
+            setFeeHeads([]); setEvents([]);
+            return;
+        }
+
+        setLoading(true);
+
+        const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+
+        const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
+            let query = supabase.from(tableName).select('*');
+            
+            if (options.filterBySchool) {
+                if (effectiveSchoolId) {
+                    query = query.eq('school_id', effectiveSchoolId);
+                } else if (user.role !== UserRole.Owner && user.schoolId) {
+                    query = query.eq('school_id', user.schoolId);
+                } else if (user.role !== UserRole.Owner && !user.schoolId) {
+                    return [];
+                }
             }
-
-            setLoading(true);
-
-            const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
-
-            // Helper function to fetch data from a single table
-            const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
-                let query = supabase.from(tableName).select('*');
-                
-                if (options.filterBySchool) {
-                    if (effectiveSchoolId) {
-                        query = query.eq('school_id', effectiveSchoolId);
-                    } else if (user.role !== UserRole.Owner && user.schoolId) {
-                        query = query.eq('school_id', user.schoolId);
-                    } else if (user.role !== UserRole.Owner && !user.schoolId) {
-                        return []; // Non-owners must have a school context
-                    }
-                    // For Owner global view, no filter is applied, fetching all.
-                }
-                
-                if (options.order) query = query.order(options.order, { ascending: false });
-                if (options.limit) query = query.limit(options.limit);
-                
-                const { data, error } = await query;
-                if (error) {
-                    throw new Error(`Could not load data for ${tableName}.`);
-                }
-                return toCamelCase(data || []);
-            };
             
-            // Helper to process settled promises
-            const handleResult = <T,>(result: PromiseSettledResult<T>, setter: React.Dispatch<React.SetStateAction<T>>, tableName: string): T => {
-                if (result.status === 'fulfilled') {
-                    setter(result.value);
-                    return result.value;
-                } else {
-                    console.error(`Failed to fetch ${tableName}:`, result.reason);
-                    showToast('Data Load Error', result.reason.message || `Could not load data for ${tableName}.`, 'error');
-                    setter([] as T); // Set state to empty array on failure
-                    return [] as T;
-                }
-            };
+            if (options.order) query = query.order(options.order, { ascending: false });
+            if (options.limit) query = query.limit(options.limit);
             
-            // Step 1: Fetch all data concurrently and handle individual failures
-            const dataPromises = await Promise.allSettled([
+            const { data, error } = await query;
+            if (error) {
+                console.error(`Error fetching ${tableName}:`, error);
+                showToast('Data Load Error', `Could not load data for ${tableName}.`, 'error');
+                return null;
+            }
+            return toCamelCase(data || []);
+        };
+
+        try {
+            // Step 1: Fetch independent data concurrently
+            const [schoolsData, usersData, classesData, feeHeadsData, eventsData, logsData] = await Promise.all([
                 fetchTable('schools'),
                 fetchTable('profiles', { filterBySchool: true }),
                 fetchTable('classes', { filterBySchool: true }),
-                fetchTable('students', { filterBySchool: true }),
-                fetchTable('attendance', { filterBySchool: true }), // <-- Potential failure point
-                fetchTable('results', { filterBySchool: true }),     // <-- Potential failure point
-                fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
                 fetchTable('fee_heads', { filterBySchool: true }),
                 fetchTable('school_events', { filterBySchool: true }),
-                fetchTable('fee_challans'), // Fetches all, filters on client
+                fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
             ]);
 
-            const [
-                schoolsRes, usersRes, classesRes, studentsRes, attendanceRes,
-                resultsRes, logsRes, feeHeadsRes, eventsRes, allFeesRes
-            ] = dataPromises;
+            setSchools(schoolsData || []);
+            setUsers(usersData || []);
+            setClasses(classesData || []);
+            setFeeHeads(feeHeadsData || []);
+            setEvents(eventsData || []);
+            setLogs(logsData || []);
 
-            // Step 2: Process results, setting state for success and showing toasts for failure
-            const studentsData = handleResult(studentsRes, setStudents, 'Students');
-            const allFeesData = handleResult(allFeesRes, setFees, 'Fee Challans');
+            // Step 2: Fetch students
+            const studentsData = await fetchTable('students', { filterBySchool: true });
+            setStudents(studentsData || []);
 
-            handleResult(schoolsRes, setSchools, 'Schools');
-            handleResult(usersRes, setUsers, 'Users');
-            handleResult(classesRes, setClasses, 'Classes');
-            handleResult(attendanceRes, setAttendanceState, 'Attendance');
-            handleResult(resultsRes, setResults, 'Results');
-            handleResult(logsRes, setLogs, 'Activity Logs');
-            handleResult(feeHeadsRes, setFeeHeads, 'Fee Heads');
-            handleResult(eventsRes, setEvents, 'School Events');
+            // Step 3: Fetch student-dependent data
+            const studentIds = (studentsData || []).map((s: Student) => s.id);
 
-            // Step 3: Perform any client-side filtering after data is loaded
-            // This ensures that even if other fetches fail, fees can be filtered against the students that did load.
-            const schoolStudentIds = new Set((studentsData as Student[]).map(s => s.id));
-            const feesData = (allFeesData as FeeChallan[]).filter(fee => schoolStudentIds.has(fee.studentId));
-            setFees(feesData);
+            if (studentIds.length > 0) {
+                const fetchDependentTable = async (tableName: string) => {
+                    const { data, error } = await supabase.from(tableName).select('*').in('student_id', studentIds);
+                    if (error) {
+                        console.error(`Error fetching ${tableName}:`, error);
+                        showToast('Data Load Error', `Could not load data for ${tableName}.`, 'error');
+                        return [];
+                    }
+                    return toCamelCase(data || []);
+                };
+                const [feesData, attendanceData, resultsData] = await Promise.all([
+                    fetchDependentTable('fee_challans'),
+                    fetchDependentTable('attendance'),
+                    fetchDependentTable('results'),
+                ]);
+                setFees(feesData);
+                setAttendanceState(attendanceData);
+                setResults(resultsData);
+            } else {
+                setFees([]);
+                setAttendanceState([]);
+                setResults([]);
+            }
             
             updateSyncTime();
+        } catch (error) {
+            console.error("A critical error occurred during data fetching:", error);
+            showToast('Error', 'Failed to load essential data. Please refresh.', 'error');
+        } finally {
             setLoading(false);
-        };
-
-        fetchData();
+        }
     }, [user, activeSchoolId, showToast, updateSyncTime]);
-    
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
 
@@ -275,15 +282,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteUser = async (userId: string) => {
+        // FIX: Find user before DB operation for safer type narrowing and logic.
+        const userToDelete = users.find(u => u.id === userId);
+        if (!userToDelete) {
+            return console.warn(`User with ID ${userId} not found for deletion.`);
+        }
+    
         const { error } = await supabase.from('profiles').delete().eq('id', userId);
         if (error) return showToast('Error', error.message, 'error');
-        
-        const userToDelete = users.find(u => u.id === userId);
+    
         setUsers(prev => prev.filter(u => u.id !== userId));
-        if (userToDelete) {
-             addLog('User Deleted', `User profile deleted for ${userToDelete.name}.`);
-             showToast('Success', `${userToDelete.name}'s profile has been deleted.`);
-        }
+        addLog('User Deleted', `User profile deleted for ${userToDelete.name}.`);
+        showToast('Success', `${userToDelete.name}'s profile has been deleted.`);
     };
     
     const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
@@ -309,15 +319,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const deleteStudent = async (studentId: string) => {
-         const { error } = await supabase.from('students').delete().eq('id', studentId);
-        if (error) return showToast('Error', error.message, 'error');
-        
+        // FIX: Find student before DB operation for safer type narrowing and logic.
         const studentToDelete = students.find(s => s.id === studentId);
-        setStudents(prev => prev.filter(s => s.id !== studentId));
-        if (studentToDelete) {
-            addLog('Student Deleted', `Student deleted: ${studentToDelete.name}.`);
-            showToast('Success', `${studentToDelete.name} has been deleted.`);
+        if (!studentToDelete) {
+            return console.warn(`Student with ID ${studentId} not found for deletion.`);
         }
+    
+        const { error } = await supabase.from('students').delete().eq('id', studentId);
+        if (error) return showToast('Error', error.message, 'error');
+    
+        setStudents(prev => prev.filter(s => s.id !== studentId));
+        addLog('Student Deleted', `Student deleted: ${studentToDelete.name}.`);
+        showToast('Success', `${studentToDelete.name} has been deleted.`);
     };
     
     const addClass = async (classData: Omit<Class, 'id'>) => {
@@ -349,15 +362,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const classToDelete = classes.find(c => c.id === classId);
+        // FIX: Add guard clause to ensure class exists before proceeding, preventing errors.
+        if (!classToDelete) {
+            return console.warn(`Class with ID ${classId} not found for deletion.`);
+        }
 
         const { error } = await supabase.from('classes').delete().eq('id', classId);
         if (error) return showToast('Error', error.message, 'error');
 
         setClasses(prev => prev.filter(c => c.id !== classId));
-        if (classToDelete) {
-            addLog('Class Deleted', `Class deleted: ${classToDelete.name}.`);
-            showToast('Success', `Class "${classToDelete.name}" deleted.`);
-        }
+        addLog('Class Deleted', `Class deleted: ${classToDelete.name}.`);
+        showToast('Success', `Class "${classToDelete.name}" deleted.`);
     };
 
     const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => {
@@ -503,15 +518,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const deleteFeeHead = async (feeHeadId: string) => {
+        // FIX: Find fee head before DB operation for safer type narrowing and logic.
+        const feeHeadToDelete = feeHeads.find(fh => fh.id === feeHeadId);
+        if (!feeHeadToDelete) {
+            return console.warn(`Fee head with ID ${feeHeadId} not found for deletion.`);
+        }
+    
         const { error } = await supabase.from('fee_heads').delete().eq('id', feeHeadId);
         if (error) return showToast('Error', error.message, 'error');
-
-        const feeHeadToDelete = feeHeads.find(fh => fh.id === feeHeadId);
+    
         setFeeHeads(prev => prev.filter(fh => fh.id !== feeHeadId));
-        if (feeHeadToDelete) {
-             addLog('Fee Head Deleted', `Fee head deleted: ${feeHeadToDelete.name}.`);
-             showToast('Success', `Fee Head "${feeHeadToDelete.name}" deleted.`);
-        }
+        addLog('Fee Head Deleted', `Fee head deleted: ${feeHeadToDelete.name}.`);
+        showToast('Success', `Fee Head "${feeHeadToDelete.name}" deleted.`);
     };
 
     const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => {
@@ -573,15 +591,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const deleteSchool = async (schoolId: string) => {
         const schoolToDelete = schools.find(s => s.id === schoolId);
+        // FIX: Add guard clause to ensure school exists before proceeding.
+        if (!schoolToDelete) {
+            return console.warn(`School with ID ${schoolId} not found for deletion.`);
+        }
 
         const { error } = await supabase.from('schools').delete().eq('id', schoolId);
         if (error) return showToast('Error', error.message, 'error');
 
         setSchools(prev => prev.filter(s => s.id !== schoolId));
-        if (schoolToDelete) {
-             addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
-             showToast('Success', `${schoolToDelete.name} has been deleted.`);
-        }
+        addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
+        showToast('Success', `${schoolToDelete.name} has been deleted.`);
     };
 
     const addEvent = async (eventData: Omit<SchoolEvent, 'id'>) => {
@@ -608,14 +628,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const deleteEvent = async (eventId: string) => {
         const eventToDelete = events.find(e => e.id === eventId);
+        if (!eventToDelete) {
+            return console.warn(`Event with ID ${eventId} not found for deletion.`);
+        }
+
         const { error } = await supabase.from('school_events').delete().eq('id', eventId);
         if (error) return showToast('Error', error.message, 'error');
 
         setEvents(prev => prev.filter(e => e.id !== eventId));
-        if (eventToDelete) {
-            addLog('Event Deleted', `Event deleted: ${eventToDelete.title}.`);
-            showToast('Success', `Event "${eventToDelete.title}" deleted.`);
-        }
+        addLog('Event Deleted', `Event deleted: ${eventToDelete.title}.`);
+        showToast('Success', `Event "${eventToDelete.title}" deleted.`);
     };
 
     const bulkAddStudents = async (studentsToAdd: Omit<Student, 'id' | 'status'>[]) => {
@@ -679,7 +701,72 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Success', `${addedClasses.length} classes imported successfully.`);
         }
     };
+    
+    const backupData = async () => {
+        if (!user) return showToast('Error', 'You must be logged in to perform a backup.', 'error');
+        const schoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+        if (!schoolId) return showToast('Error', 'No school context selected for backup.', 'error');
+        const school = schools.find(s => s.id === schoolId);
 
+        const dataToBackup = {
+            classes: classes.filter(c => c.schoolId === schoolId),
+            students: students.filter(s => s.schoolId === schoolId),
+            fee_heads: feeHeads.filter(fh => fh.schoolId === schoolId),
+            school_events: events.filter(e => e.schoolId === schoolId),
+            fee_challans: fees.filter(f => students.some(s => s.id === f.studentId && s.schoolId === schoolId)),
+            attendance: attendance.filter(a => students.some(s => s.id === a.studentId && s.schoolId === schoolId)),
+            results: results.filter(r => students.some(s => s.id === r.studentId && s.schoolId === schoolId)),
+        };
+
+        const blob = new Blob([JSON.stringify(dataToBackup, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `edusync_backup_${school?.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('Success', 'Backup file has been downloaded.', 'success');
+    };
+
+    const restoreData = async (backupFile: File) => {
+        if (!user) return showToast('Error', 'You must be logged in to restore data.', 'error');
+        const schoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+        if (!schoolId) return showToast('Error', 'No school context selected for restore.', 'error');
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const backupData = JSON.parse(e.target?.result as string);
+                
+                const studentIds = students.filter(s => s.schoolId === schoolId).map(s => s.id);
+
+                // Deletion
+                if (studentIds.length > 0) {
+                    await supabase.from('attendance').delete().in('student_id', studentIds);
+                    await supabase.from('results').delete().in('student_id', studentIds);
+                    await supabase.from('fee_challans').delete().in('student_id', studentIds);
+                }
+                await supabase.from('students').delete().eq('school_id', schoolId);
+                await supabase.from('classes').delete().eq('school_id', schoolId);
+                await supabase.from('fee_heads').delete().eq('school_id', schoolId);
+                await supabase.from('school_events').delete().eq('school_id', schoolId);
+
+                // Insertion
+                await supabase.from('classes').insert(backupData.classes.map(toSnakeCase));
+                await supabase.from('students').insert(backupData.students.map(toSnakeCase));
+                await supabase.from('fee_heads').insert(backupData.fee_heads.map(toSnakeCase));
+                await supabase.from('school_events').insert(backupData.school_events.map(toSnakeCase));
+                if (backupData.fee_challans?.length > 0) await supabase.from('fee_challans').insert(backupData.fee_challans.map(toSnakeCase));
+                if (backupData.attendance?.length > 0) await supabase.from('attendance').insert(backupData.attendance.map(toSnakeCase));
+                if (backupData.results?.length > 0) await supabase.from('results').insert(backupData.results.map(toSnakeCase));
+
+                showToast('Success', 'Data restored successfully. The app will now reload.');
+                setTimeout(() => window.location.reload(), 2000);
+            } catch (error: any) {
+                showToast('Restore Failed', error.message, 'error');
+            }
+        };
+        reader.readAsText(backupFile);
+    };
 
     const value: DataContextType = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
@@ -687,7 +774,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults,
         addSchool, updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent,
-        bulkAddStudents, bulkAddUsers, bulkAddClasses,
+        bulkAddStudents, bulkAddUsers, bulkAddClasses, backupData, restoreData
     };
 
     return (

@@ -57,13 +57,13 @@ export interface Student {
     dateOfLeaving?: string;
     reasonForLeaving?: string;
     conduct?: 'Excellent' | 'Good' | 'Fair' | 'Poor';
-    // Added new fields for more detailed student records
-    lastSchoolAttended?: string;
-    admittedInClass?: string;
-    caste?: string;
     // Fields for individual fee management
     openingBalance?: number;
     feeStructure?: { feeHeadId: string; amount: number }[];
+    // FIX: Re-added fields as per user request and renamed `admittedInClass` to `admittedClass` to fix DB column name mismatch.
+    admittedClass: string;
+    caste?: string;
+    lastSchoolAttended?: string;
 }
 
 export interface Attendance {

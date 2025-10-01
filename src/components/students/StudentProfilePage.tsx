@@ -66,6 +66,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                         <InfoItem label="Father's CNIC" value={student.fatherCnic} />
                         <InfoItem label="Date of Birth" value={formatDate(student.dateOfBirth)} />
                         <InfoItem label="Gender" value={student.gender} />
+                        <InfoItem label="Caste" value={student.caste} />
                         <InfoItem label="Contact Number" value={student.contactNumber} />
                         <InfoItem label="Secondary Contact" value={student.secondaryContactNumber} />
                         <InfoItem label="Address" value={student.address} className="sm:col-span-2" />
@@ -75,9 +76,8 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                     <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Academic & Financials</h2>
                     <dl className="space-y-4">
                         <InfoItem label="Admission Date" value={formatDate(student.dateOfAdmission)} />
-                        <InfoItem label="Admitted in Class" value={student.admittedInClass} />
-                        <InfoItem label="Caste" value={student.caste} />
-                        <InfoItem label="Previous School" value={student.lastSchoolAttended} />
+                        <InfoItem label="Admitted in Class" value={student.admittedClass} />
+                        <InfoItem label="Last School Attended" value={student.lastSchoolAttended} />
                         <InfoItem label="Opening Balance" value={`Rs. ${student.openingBalance?.toLocaleString() || 0}`} />
                         <InfoItem label="Fee Balance" value={`Rs. ${feeSummary.balance.toLocaleString()}`} />
                     </dl>
@@ -98,6 +98,6 @@ const InfoItem: React.FC<{ label: string; value?: string | number | null; classN
     </div>
 );
 
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 
 export default StudentProfilePage;

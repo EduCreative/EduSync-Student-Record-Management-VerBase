@@ -1,6 +1,6 @@
 import React from 'react';
 import { Student, School, Result } from '../../types';
-import { formatDate } from '../../constants';
+import { formatDate, EduSyncLogo } from '../../constants';
 
 interface PrintableReportCardProps {
     student: Student;
@@ -36,7 +36,13 @@ const PrintableReportCard: React.FC<PrintableReportCardProps> = ({ student, stud
                     <h1 className="text-2xl font-bold">{school.name}</h1>
                     <p className="text-sm">{school.address}</p>
                 </div>
-                {school.logoUrl && <img src={school.logoUrl} alt="School Logo" className="h-16" />}
+                <div className="h-16 w-16 flex items-center justify-center">
+                    {school.logoUrl ? (
+                        <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                    ) : (
+                        <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                    )}
+                </div>
             </div>
             
             <h2 className="text-xl font-semibold text-center my-4 uppercase tracking-wider">{exam} - Progress Report</h2>

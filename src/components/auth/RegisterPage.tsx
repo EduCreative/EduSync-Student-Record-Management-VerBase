@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
+import { EduSyncLogo } from '../../constants';
 
 interface RegisterPageProps {
     onSwitchToLogin: () => void;
@@ -24,13 +25,6 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-);
-
-const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-        <path d="M6 12v5c0 1.66 10 1.66 10 0v-5" />
     </svg>
 );
 
@@ -119,7 +113,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
             <div className="hidden lg:flex flex-col items-center justify-center p-12 relative">
                 <div className="text-center space-y-6">
                      <div className="bg-white/20 p-4 rounded-full inline-block backdrop-blur-sm">
-                        <GraduationCapIcon className="h-16 w-16 text-white" />
+                        <EduSyncLogo className="h-20 w-20 text-white" />
                     </div>
                     <h2 className="text-5xl font-bold tracking-tight">
                         Join EduSync Today

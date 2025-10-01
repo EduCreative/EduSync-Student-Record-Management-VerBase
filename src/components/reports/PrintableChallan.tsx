@@ -1,6 +1,6 @@
 import React from 'react';
 import { FeeChallan, Student, School } from '../../types';
-import { formatDate } from '../../constants';
+import { formatDate, EduSyncLogo } from '../../constants';
 
 interface PrintableChallanProps {
     challan: FeeChallan;
@@ -21,7 +21,13 @@ const PrintableChallan: React.FC<PrintableChallanProps> = ({ challan, student, s
     const ChallanBody: React.FC = () => (
         <>
             <div className="text-center p-2 border-b">
-                {school.logoUrl && <img src={school.logoUrl} alt="logo" className="h-8 mx-auto mb-1" />}
+                <div className="h-8 w-full flex items-center justify-center mb-1">
+                    {school.logoUrl ? (
+                        <img src={school.logoUrl} alt="logo" className="max-h-8 max-w-full object-contain" />
+                    ) : (
+                        <EduSyncLogo className="h-8 text-primary-700" />
+                    )}
+                </div>
                 <h3 className="font-bold text-sm">{school.name}</h3>
                 <p className="text-xs">Fee Challan</p>
             </div>

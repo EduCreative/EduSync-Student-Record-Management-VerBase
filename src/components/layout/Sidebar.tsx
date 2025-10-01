@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { NAV_LINKS, formatDateTime } from '../../constants';
+import { NAV_LINKS, formatDateTime, EduSyncLogo } from '../../constants';
 import { ActiveView } from './Layout';
 import { UserRole } from '../../types';
 import { useSync } from '../../context/SyncContext';
@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeVi
                 {/* Sidebar header */}
                 <div className="flex justify-between mb-10 pr-3 sm:px-2">
                      <a href="/" className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center font-bold text-primary-700">E</div>
+                        <EduSyncLogo className="w-8 h-8 text-white" />
                         <h1 className="text-2xl font-bold text-white lg:opacity-0 group-hover:opacity-100 transition-opacity duration-200">EduSync</h1>
                     </a>
                 </div>

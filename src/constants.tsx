@@ -1,6 +1,17 @@
 import React from 'react';
 import { UserRole } from './types';
 
+export function EduSyncLogo(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M4 18.5V14.5C4 13.9477 4.44772 13.5 5 13.5H13C13.5523 13.5 14 13.9477 14 14.5V18.5C14 19.0523 13.5523 19.5 13 19.5H5C4.44772 19.5 4 19.0523 4 18.5Z" stroke="currentColor" strokeWidth="2"/>
+      <path d="M4 10.5V6.5C4 5.94772 4.44772 5.5 5 5.5H13C13.5523 5.5 14 5.94772 14 6.5V10.5C14 11.0523 13.5523 11.5 13 11.5H5C4.44772 11.5 4 10.5V6.5Z" stroke="currentColor" strokeWidth="2"/>
+      <path d="M17 5.5L20 8.5L17 11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M20 8.5H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 // FIX: Corrected viewBox attribute from "0 0 24" to "0 0 24 24".
 function DashboardIcon(props: React.SVGProps<SVGSVGElement>) {
   return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg>
