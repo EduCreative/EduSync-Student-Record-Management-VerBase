@@ -64,6 +64,64 @@ const SchoolFormModal: React.FC<{
     );
 };
 
+const BuildingIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>
+    </svg>
+);
+
+const SchoolCard: React.FC<{
+    school: School;
+    stats: { studentCount: number; classCount: number };
+    onViewAsAdmin: () => void;
+    onDetails: () => void;
+    onEdit: () => void;
+    onDelete: () => void;
+}> = ({ school, stats, onViewAsAdmin, onDetails, onEdit, onDelete }) => {
+    const { hasPermission } = useAuth();
+    return (
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
+            <div className="p-5">
+                <div className="flex items-start space-x-4">
+                    {school.logoUrl ? (
+                        <img src={school.logoUrl} alt={`${school.name} logo`} className="w-16 h-16 object-contain rounded-md bg-white p-1 border dark:border-secondary-700"/>
+                    ) : (
+                        <div className="w-16 h-16 bg-secondary-100 dark:bg-secondary-700 rounded-md flex items-center justify-center text-xs text-secondary-500">
+                            <BuildingIcon className="w-8 h-8 text-secondary-400" />
+                        </div>
+                    )}
+                    <div className="flex-1">
+                        <h3 className="text-lg font-bold text-secondary-900 dark:text-white truncate">{school.name}</h3>
+                        <p className="text-sm text-secondary-500 line-clamp-2 h-10">{school.address}</p>
+                    </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4 text-center border-t dark:border-secondary-700 pt-4">
+                    <div>
+                        <p className="text-xs text-secondary-500 uppercase">Students</p>
+                        <p className="text-2xl font-bold">{stats.studentCount}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-secondary-500 uppercase">Classes</p>
+                        <p className="text-2xl font-bold">{stats.classCount}</p>
+                    </div>
+                </div>
+            </div>
+            <div className="bg-secondary-50 dark:bg-secondary-800/50 px-5 py-3 border-t dark:border-secondary-700">
+                <div className="flex items-center justify-end space-x-3 text-sm font-medium">
+                    <button onClick={onDetails} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Details</button>
+                    <button onClick={onViewAsAdmin} className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">View as Admin</button>
+                    {hasPermission(Permission.CAN_MANAGE_SCHOOLS) && (
+                        <button onClick={onEdit} className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">Edit</button>
+                    )}
+                    {hasPermission(Permission.CAN_DELETE_SCHOOLS) && (
+                        <button onClick={onDelete} className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 interface SchoolManagementPageProps {
     setActiveView: (view: ActiveView) => void;
@@ -197,48 +255,18 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                         <button onClick={() => { setSchoolToEdit(null); setIsModalOpen(true); }} className="btn-primary">+ Add School</button>
                     )}
                 </div>
-                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-secondary-50 dark:bg-secondary-700">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">School</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Students</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Classes</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {schools.map(school => (
-                                <tr key={school.id} className="border-b dark:border-secondary-700">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center space-x-3">
-                                            {school.logoUrl ? (
-                                                <img src={school.logoUrl} alt={`${school.name} logo`} className="w-10 h-10 object-contain rounded-md bg-white p-1"/>
-                                            ) : (
-                                                <div className="w-10 h-10 bg-secondary-200 rounded-md flex items-center justify-center text-xs text-secondary-500">Logo</div>
-                                            )}
-                                            <div>
-                                                <div className="text-sm font-medium text-secondary-800 dark:text-secondary-200">{school.name}</div>
-                                                <div className="text-xs text-secondary-500">{school.address}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-800 dark:text-secondary-200">{schoolStats.get(school.id)?.studentCount || 0}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-800 dark:text-secondary-200">{schoolStats.get(school.id)?.classCount || 0}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
-                                        <button onClick={() => { setViewingSchool(school); setActiveDetailsTab('students'); }} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Details</button>
-                                        <button onClick={() => handleSchoolClick(school.id)} className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">View as Admin</button>
-                                        {hasPermission(Permission.CAN_MANAGE_SCHOOLS) && (
-                                            <button onClick={() => { setSchoolToEdit(school); setIsModalOpen(true); }} className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300">Edit</button>
-                                        )}
-                                        {hasPermission(Permission.CAN_DELETE_SCHOOLS) && (
-                                            <button onClick={() => setSchoolToDelete(school)} className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">Delete</button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {schools.map(school => (
+                        <SchoolCard
+                            key={school.id}
+                            school={school}
+                            stats={schoolStats.get(school.id) || { studentCount: 0, classCount: 0 }}
+                            onDetails={() => { setViewingSchool(school); setActiveDetailsTab('students'); }}
+                            onViewAsAdmin={() => handleSchoolClick(school.id)}
+                            onEdit={() => { setSchoolToEdit(school); setIsModalOpen(true); }}
+                            onDelete={() => setSchoolToDelete(school)}
+                        />
+                    ))}
                 </div>
             </div>
         </>

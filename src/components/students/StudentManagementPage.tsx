@@ -103,11 +103,17 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         dateOfBirth: "2010-05-15",
         dateOfAdmission: new Date().toISOString().split('T')[0],
         contactNumber: "0300-1234567",
+        secondaryContactNumber: "0333-7654321",
         address: "123 School Lane, City",
         gender: "Male",
+        admittedClass: "Grade 5",
+        caste: "Arain",
+        lastSchoolAttended: "Previous Public School",
+        openingBalance: 0,
+        userId: ""
     }];
 
-    const requiredHeaders = ['name', 'rollNumber', 'classId', 'fatherName', 'dateOfBirth', 'contactNumber'];
+    const requiredHeaders = ['name', 'rollNumber', 'classId', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];
 
     const handleExport = () => {
         const dataToExport = filteredStudents.map(s => ({

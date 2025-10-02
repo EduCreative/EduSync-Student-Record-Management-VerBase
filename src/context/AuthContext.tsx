@@ -43,28 +43,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
 
     const fetchUserProfile = async (session: Session | null) => {
-        if (session?.user) {
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+        try {
+            if (session?.user) {
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
 
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                setUser(null);
-            } else if (profile) {
-                const userProfile = toCamelCase(profile) as User;
-                setUser(userProfile);
-                // Set initial school context for non-owners
-                if (userProfile.role !== UserRole.Owner) {
-                    setActiveSchoolId(userProfile.schoolId);
+                if (error) {
+                    console.error('Error fetching user profile:', error);
+                    setUser(null);
+                } else if (profile) {
+                    const userProfile = toCamelCase(profile) as User;
+                    setUser(userProfile);
+                    // Set initial school context for non-owners
+                    if (userProfile.role !== UserRole.Owner) {
+                        setActiveSchoolId(userProfile.schoolId);
+                    }
+                } else {
+                    // Handle case where session exists but profile doesn't (e.g., during sign up race condition)
+                    setUser(null);
                 }
+            } else {
+                setUser(null);
             }
-        } else {
+        } catch (error) {
+            console.error("A critical error occurred while fetching the user profile:", error);
             setUser(null);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => {
@@ -74,12 +83,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await fetchUserProfile(session);
         };
 
-        checkSession();
+        checkSession().catch(err => {
+            console.error("Error during initial session check:", err);
+            // If getSession fails, ensure we stop loading and show login.
+            setUser(null);
+            setLoading(false);
+        });
 
         // Listen for auth state changes (login, logout)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             setAuthEvent(event);
-            await fetchUserProfile(session);
+            await fetchUserProfile(session); // Errors are handled inside fetchUserProfile
         });
 
         return () => {
