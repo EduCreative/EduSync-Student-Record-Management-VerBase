@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { Permission, ROLE_PERMISSIONS } from '../permissions';
-import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import type { AuthChangeEvent } from '@supabase/supabase-js';
 
 // Helper to convert snake_case object keys to camelCase
 const toCamelCase = (obj: any): any => {
