@@ -80,12 +80,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }, [fees, students, effectiveSchoolId]);
 
     const attendanceData = useMemo(() => {
-        const latestDate = attendance.reduce((latest, a) => a.date > latest ? a.date : latest, '');
+        const todayStr = new Date().toISOString().split('T')[0];
 
         const schoolStudentIds = new Set(schoolStudents.map(s => s.id));
         
         const todaysAttendance = attendance.filter(a => 
-            a.date === latestDate && schoolStudentIds.has(a.studentId)
+            a.date === todayStr && schoolStudentIds.has(a.studentId)
         );
 
         const statusCounts = todaysAttendance.reduce((acc, att) => {

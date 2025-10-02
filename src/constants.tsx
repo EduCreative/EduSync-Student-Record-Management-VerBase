@@ -4,10 +4,12 @@ import { UserRole } from './types';
 export function EduSyncLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path d="M4 19.5V4.5C4 3.94772 4.44772 3.5 5 3.5H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M8 3.5H19C19.5523 3.5 20 3.94772 20 4.5V19.5C20 20.0523 19.5523 20.5 19 20.5H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M16 8.5L20 11.5L16 14.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M20 11.5H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2V3z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7V3z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+      <path d="M7 8L7 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+      <path d="M9 10L7 8L5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+      <path d="M17 16L17 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+      <path d="M15 14L17 16L19 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
     </svg>
   );
 }

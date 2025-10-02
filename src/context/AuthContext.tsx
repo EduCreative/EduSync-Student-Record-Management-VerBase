@@ -42,64 +42,81 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
     const [authEvent, setAuthEvent] = useState<AuthChangeEvent | null>(null);
 
-    const fetchUserProfile = async (session: Session | null) => {
-        try {
-            if (session?.user) {
-                const { data: profile, error } = await supabase
+    useEffect(() => {
+        // This self-contained async function runs once to check the initial session state.
+        // It's designed to be robust, using a try/catch/finally block to ensure
+        // the loading state is always resolved.
+        const checkInitialSession = async () => {
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError) throw sessionError;
+
+                // If there's no active session, we can stop here.
+                if (!session?.user) {
+                    setUser(null);
+                    setActiveSchoolId(null);
+                    return;
+                }
+                
+                // If a session exists, fetch the user's profile.
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
 
-                if (error) {
-                    console.error('Error fetching user profile:', error);
+                // If fetching the profile fails or no profile is found, treat as logged out.
+                if (profileError || !profile) {
+                    console.error('Failed to fetch profile or profile not found:', profileError);
                     setUser(null);
-                } else if (profile) {
+                    setActiveSchoolId(null);
+                    return;
+                }
+
+                // Happy path: Both session and profile are valid.
+                const userProfile = toCamelCase(profile) as User;
+                setUser(userProfile);
+                if (userProfile.role !== UserRole.Owner) {
+                    setActiveSchoolId(userProfile.schoolId);
+                }
+            } catch (error) {
+                console.error("A critical error occurred during the initial auth check:", error);
+                setUser(null);
+                setActiveSchoolId(null);
+            } finally {
+                // CRITICAL: This block guarantees the loading state is set to false,
+                // preventing the app from getting stuck on the "Loading..." screen.
+                setLoading(false);
+            }
+        };
+        
+        checkInitialSession();
+
+        // Set up a listener for real-time authentication state changes (e.g., login, logout).
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            setAuthEvent(event);
+            if (event === 'SIGNED_IN' && session?.user) {
+                 // On sign-in, re-fetch profile to ensure data is fresh.
+                 const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+                 if (profile) {
                     const userProfile = toCamelCase(profile) as User;
                     setUser(userProfile);
-                    // Set initial school context for non-owners
                     if (userProfile.role !== UserRole.Owner) {
                         setActiveSchoolId(userProfile.schoolId);
                     }
-                } else {
-                    // Handle case where session exists but profile doesn't (e.g., during sign up race condition)
-                    setUser(null);
-                }
-            } else {
+                 }
+            } else if (event === 'SIGNED_OUT') {
                 setUser(null);
+                setActiveSchoolId(null);
             }
-        } catch (error) {
-            console.error("A critical error occurred while fetching the user profile:", error);
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        // Check for initial session on app load
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            await fetchUserProfile(session);
-        };
-
-        checkSession().catch(err => {
-            console.error("Error during initial session check:", err);
-            // If getSession fails, ensure we stop loading and show login.
-            setUser(null);
-            setLoading(false);
         });
 
-        // Listen for auth state changes (login, logout)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            setAuthEvent(event);
-            await fetchUserProfile(session); // Errors are handled inside fetchUserProfile
-        });
-
+        // Clean up the subscription when the component unmounts.
         return () => {
             subscription?.unsubscribe();
         };
     }, []);
+
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
         const { error } = await supabase.auth.signInWithPassword({
@@ -117,8 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const logout = async () => {
         await supabase.auth.signOut();
-        setActiveSchoolId(null);
-        setUser(null); // Immediately clear user state
+        // State updates are handled by onAuthStateChange
     };
     
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {

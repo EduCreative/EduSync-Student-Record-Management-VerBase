@@ -1,10 +1,8 @@
 
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import Layout from './components/layout/Layout';
@@ -22,6 +20,20 @@ const AppContent: React.FC = () => {
     const { user, authEvent } = useAuth();
     const [authView, setAuthView] = useState<AuthView>('login');
     const { isPrinting } = usePrint();
+    const { theme } = useTheme();
+
+    // FIX: Temporarily switch to light mode during print preview to ensure
+    // content with forced white backgrounds remains legible in dark mode.
+    useEffect(() => {
+        const root = document.documentElement;
+        if (isPrinting && theme === 'dark') {
+            root.classList.remove('dark');
+            return () => {
+                // Restore dark mode when print preview is closed
+                root.classList.add('dark');
+            };
+        }
+    }, [isPrinting, theme]);
 
     if (user && authEvent === 'PASSWORD_RECOVERY') {
         return <ResetPasswordPage onResetSuccess={() => setAuthView('login')} />;
