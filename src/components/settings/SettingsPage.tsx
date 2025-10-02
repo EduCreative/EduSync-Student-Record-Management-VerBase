@@ -6,6 +6,7 @@ import { DownloadIcon, UploadIcon } from '../../constants';
 import Modal from '../common/Modal';
 import { UserRole } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import ImageUpload from '../common/ImageUpload';
 
 // A simple toggle switch component
 const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void }> = ({ enabled, onChange }) => (
@@ -27,8 +28,8 @@ const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) =>
 
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
-    const { user, effectiveRole, updateUserPassword } = useAuth();
-    const { backupData, restoreData, updateUser } = useData();
+    const { user, effectiveRole, activeSchoolId, updateUserPassword } = useAuth();
+    const { schools, backupData, restoreData, updateUser, updateSchool } = useData();
     const { showToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -51,6 +52,16 @@ const SettingsPage: React.FC = () => {
     const [prefs, setPrefs] = useState(defaultPrefs);
     const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
+    // State for School Details
+    const [isSchoolSaving, setIsSchoolSaving] = useState(false);
+    const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+    const school = schools.find(s => s.id === effectiveSchoolId);
+    const [schoolData, setSchoolData] = useState({
+        name: '',
+        address: '',
+        logoUrl: null as string | null | undefined,
+    });
+
     // Initialize forms and preferences from user data
     useEffect(() => {
         if (user) {
@@ -64,7 +75,14 @@ const SettingsPage: React.FC = () => {
                 setPrefs(defaultPrefs);
             }
         }
-    }, [user]);
+        if (school) {
+            setSchoolData({
+                name: school.name,
+                address: school.address,
+                logoUrl: school.logoUrl
+            });
+        }
+    }, [user, school]);
 
     const handleToggle = (category: 'feeDeadlines' | 'examResults', type: 'email' | 'inApp') => {
         setPrefs(currentPrefs => ({
@@ -127,6 +145,21 @@ const SettingsPage: React.FC = () => {
             showToast('Error', error || 'Failed to change password.', 'error');
         }
         setIsPasswordSaving(false);
+    };
+
+    const handleSchoolUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!school || !schoolData.name.trim()) return;
+
+        setIsSchoolSaving(true);
+        try {
+            await updateSchool({ ...school, ...schoolData });
+            showToast('Success', 'School details updated!', 'success');
+        } catch (error) {
+            showToast('Error', 'Failed to update school details.', 'error');
+        } finally {
+            setIsSchoolSaving(false);
+        }
     };
 
     const handleRestoreInitiate = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,6 +270,36 @@ const SettingsPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
+                )}
+
+                {effectiveRole === UserRole.Admin && school && (
+                    <form onSubmit={handleSchoolUpdate} className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">School Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-1 flex flex-col items-center">
+                                <ImageUpload 
+                                    imageUrl={schoolData.logoUrl}
+                                    onChange={(url) => setSchoolData(p => ({...p, logoUrl: url}))}
+                                    bucketName="logos"
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-4">
+                                <div>
+                                    <label className="input-label">School Name</label>
+                                    <input type="text" value={schoolData.name} onChange={(e) => setSchoolData(p => ({...p, name: e.target.value}))} className="input-field" />
+                                </div>
+                                <div>
+                                    <label className="input-label">Address</label>
+                                    <textarea value={schoolData.address} onChange={(e) => setSchoolData(p => ({...p, address: e.target.value}))} rows={3} className="input-field" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-6 border-t dark:border-secondary-700 mt-6">
+                            <button type="submit" className="btn-primary" disabled={isSchoolSaving}>
+                                {isSchoolSaving ? 'Saving...' : 'Save School Details'}
+                            </button>
+                        </div>
+                    </form>
                 )}
 
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">

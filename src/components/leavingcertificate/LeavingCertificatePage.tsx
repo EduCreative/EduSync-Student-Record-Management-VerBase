@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { usePrint } from '../../context/PrintContext';
-import { formatDate } from '../../constants';
+import { formatDate, EduSyncLogo } from '../../constants';
 import { ActiveView } from '../layout/Layout';
 import { Student } from '../../types';
 
@@ -35,7 +35,11 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                  style={{ backgroundImage: `url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='24' ry='24' stroke='%23333' stroke-width='8' stroke-dasharray='16%2c 16' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e")`}}>
                  
                 <div className="text-center w-full">
-                    <img src={school.logoUrl || ''} alt="School Logo" className="h-24 mx-auto mb-4"/>
+                    {school.logoUrl ? (
+                        <img src={school.logoUrl} alt="School Logo" className="h-24 mx-auto mb-4 object-contain"/>
+                    ) : (
+                        <EduSyncLogo className="h-24 mx-auto mb-4 text-primary-700" />
+                    )}
                     <h1 className="text-4xl font-bold tracking-wider">{school.name}</h1>
                     <p className="text-lg">{school.address}</p>
                     <h2 className="text-3xl font-semibold mt-10 border-b-2 border-black pb-2 inline-block">SCHOOL LEAVING CERTIFICATE</h2>

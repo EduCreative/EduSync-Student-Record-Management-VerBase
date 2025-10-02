@@ -6,7 +6,6 @@ import ImageUpload from '../common/ImageUpload';
 import { useAuth } from '../../context/AuthContext';
 import { ActiveView } from '../layout/Layout';
 import { Permission } from '../../permissions';
-import Avatar from '../common/Avatar';
 
 const SchoolFormModal: React.FC<{
     isOpen: boolean;
@@ -133,10 +132,6 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [schoolToEdit, setSchoolToEdit] = useState<School | null>(null);
     const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
-    
-    // State for details modal
-    const [viewingSchool, setViewingSchool] = useState<School | null>(null);
-    const [activeDetailsTab, setActiveDetailsTab] = useState<'students' | 'classes'>('students');
 
     const handleSave = (school: School | Omit<School, 'id'>) => {
         if ('id' in school) {
@@ -162,14 +157,6 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
         return stats;
     }, [schools, students, classes]);
 
-    const schoolDetails = useMemo(() => {
-        if (!viewingSchool) return null;
-        return {
-            students: students.filter(s => s.schoolId === viewingSchool.id),
-            classes: classes.filter(c => c.schoolId === viewingSchool.id),
-        };
-    }, [viewingSchool, students, classes]);
-
     return (
         <>
             <SchoolFormModal 
@@ -186,68 +173,6 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                 </div>
             </Modal>
 
-             <Modal isOpen={!!viewingSchool} onClose={() => setViewingSchool(null)} title={viewingSchool?.name || 'School Details'}>
-                <div className="space-y-4">
-                    <div className="flex items-start gap-4 p-4 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
-                        {viewingSchool?.logoUrl ? (
-                            <img src={viewingSchool.logoUrl} alt={`${viewingSchool.name} logo`} className="w-16 h-16 object-contain rounded-md bg-white p-1" />
-                        ) : (
-                            <div className="w-16 h-16 bg-secondary-200 dark:bg-secondary-600 rounded-md flex items-center justify-center text-secondary-400">
-                                No Logo
-                            </div>
-                        )}
-                        <div>
-                            <h3 className="font-bold text-lg">{viewingSchool?.name}</h3>
-                            <p className="text-sm text-secondary-600 dark:text-secondary-400">{viewingSchool?.address}</p>
-                        </div>
-                    </div>
-                    
-                    <div className="border-b border-secondary-200 dark:border-secondary-700">
-                        <nav className="-mb-px flex space-x-4" aria-label="Tabs">
-                            <button
-                                onClick={() => setActiveDetailsTab('students')}
-                                className={`${activeDetailsTab === 'students' ? 'border-primary-500 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
-                            >
-                                Students ({schoolDetails?.students.length || 0})
-                            </button>
-                            <button
-                                onClick={() => setActiveDetailsTab('classes')}
-                                className={`${activeDetailsTab === 'classes' ? 'border-primary-500 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
-                            >
-                                Classes ({schoolDetails?.classes.length || 0})
-                            </button>
-                        </nav>
-                    </div>
-
-                    <div className="max-h-64 overflow-y-auto pr-2">
-                        {activeDetailsTab === 'students' && (
-                            <ul className="divide-y dark:divide-secondary-700">
-                                {schoolDetails?.students.map(student => (
-                                    <li key={student.id} className="py-2 flex items-center space-x-3">
-                                        <Avatar student={student} className="w-8 h-8"/>
-                                        <div>
-                                            <p className="font-medium text-sm">{student.name}</p>
-                                            <p className="text-xs text-secondary-500">Roll No: {student.rollNumber}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                                {schoolDetails?.students.length === 0 && <p className="text-center text-sm text-secondary-500 py-4">No students found for this school.</p>}
-                            </ul>
-                        )}
-                        {activeDetailsTab === 'classes' && (
-                            <ul className="divide-y dark:divide-secondary-700">
-                                {schoolDetails?.classes.map(cls => (
-                                    <li key={cls.id} className="py-2">
-                                        <p className="font-medium text-sm">{cls.name}</p>
-                                    </li>
-                                ))}
-                                {schoolDetails?.classes.length === 0 && <p className="text-center text-sm text-secondary-500 py-4">No classes found for this school.</p>}
-                            </ul>
-                        )}
-                    </div>
-                </div>
-            </Modal>
-
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-3xl font-bold">School Management</h1>
@@ -261,7 +186,7 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                             key={school.id}
                             school={school}
                             stats={schoolStats.get(school.id) || { studentCount: 0, classCount: 0 }}
-                            onDetails={() => { setViewingSchool(school); setActiveDetailsTab('students'); }}
+                            onDetails={() => setActiveView({ view: 'schoolDetails', payload: { schoolId: school.id } })}
                             onViewAsAdmin={() => handleSchoolClick(school.id)}
                             onEdit={() => { setSchoolToEdit(school); setIsModalOpen(true); }}
                             onDelete={() => setSchoolToDelete(school)}

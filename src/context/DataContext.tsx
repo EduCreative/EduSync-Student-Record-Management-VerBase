@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { useSync } from './SyncContext';
 import { supabase } from '../lib/supabaseClient';
 
 // Helper to convert snake_case object keys to camelCase
@@ -95,7 +94,6 @@ export const useData = (): DataContextType => {
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user, activeSchoolId } = useAuth();
     const { showToast } = useToast();
-    const { updateSyncTime } = useSync();
     
     const [loading, setLoading] = useState(true);
     const [schools, setSchools] = useState<School[]>([]);
@@ -205,14 +203,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setResults([]);
             }
             
-            updateSyncTime();
         } catch (error) {
             console.error("A critical error occurred during data fetching:", error);
             showToast('Error', 'Failed to load essential data. Please refresh.', 'error');
         } finally {
             setLoading(false);
         }
-    }, [user, activeSchoolId, showToast, updateSyncTime]);
+    }, [user, activeSchoolId, showToast]);
 
     useEffect(() => {
         fetchData();
@@ -285,8 +282,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (data && data.length > 0) {
             setLogs(prev => [toCamelCase(data[0]) as ActivityLog, ...prev]);
         }
-        updateSyncTime();
-    }, [user, activeSchoolId, updateSyncTime]);
+    }, [user, activeSchoolId]);
 
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     

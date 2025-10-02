@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
@@ -7,7 +8,6 @@ import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import Layout from './components/layout/Layout';
 import { ToastProvider } from './context/ToastContext';
-import { SyncProvider } from './context/SyncContext';
 import { PrintProvider, usePrint } from './context/PrintContext';
 import PrintPreview from './components/common/PrintPreview';
 import { NotificationProvider } from './context/NotificationContext';
@@ -67,15 +67,13 @@ const App: React.FC = () => {
     <ThemeProvider>
         <AuthProvider>
             <NotificationProvider>
-                <SyncProvider>
-                    <ToastProvider>
-                        <DataProvider>
-                            <PrintProvider>
-                                <AppContent />
-                            </PrintProvider>
-                        </DataProvider>
-                    </ToastProvider>
-                </SyncProvider>
+                <ToastProvider>
+                    <DataProvider>
+                        <PrintProvider>
+                            <AppContent />
+                        </PrintProvider>
+                    </DataProvider>
+                </ToastProvider>
             </NotificationProvider>
         </AuthProvider>
     </ThemeProvider>
