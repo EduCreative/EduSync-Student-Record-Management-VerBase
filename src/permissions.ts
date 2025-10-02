@@ -26,6 +26,7 @@ export enum Permission {
   CAN_MANAGE_ATTENDANCE = 'CAN_MANAGE_ATTENDANCE',
   CAN_MANAGE_RESULTS = 'CAN_MANAGE_RESULTS',
   CAN_VIEW_ACADEMIC_REPORTS = 'CAN_VIEW_ACADEMIC_REPORTS',
+  CAN_GENERATE_ID_CARDS = 'CAN_GENERATE_ID_CARDS',
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -44,6 +45,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.CAN_MANAGE_ATTENDANCE,
     Permission.CAN_MANAGE_RESULTS,
     Permission.CAN_VIEW_ACADEMIC_REPORTS,
+    Permission.CAN_GENERATE_ID_CARDS,
   ],
 
   [UserRole.Accountant]: [

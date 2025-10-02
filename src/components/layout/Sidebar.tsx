@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { NAV_LINKS, formatDateTime, EduSyncLogo } from '../../constants';
+import { NAV_LINKS, EduSyncLogo } from '../../constants';
 import { ActiveView } from './Layout';
 import { UserRole } from '../../types';
 import { version } from '../../../package.json';

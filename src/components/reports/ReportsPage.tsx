@@ -7,8 +7,9 @@ import FeeCollectionReportModal from './FeeCollectionReportModal';
 import { useAuth } from '../../context/AuthContext';
 import { Permission } from '../../permissions';
 import ChallanRangeReportModal from './ChallanRangeReportModal';
+import StudentIdCardModal from './StudentIdCardModal';
 
-type ReportType = 'feeCollection' | 'defaulter' | 'classList' | 'bulkChallan' | 'reportCard' | 'challanRange';
+type ReportType = 'feeCollection' | 'defaulter' | 'classList' | 'bulkChallan' | 'reportCard' | 'challanRange' | 'studentIdCard';
 
 interface ReportsPageProps {}
 
@@ -71,6 +72,12 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
             description: "Generate and print detailed report cards for students.", 
             icon: <AwardIcon className="w-6 h-6" />,
         },
+        { 
+            id: 'studentIdCard' as ReportType,
+            title: "Student ID Cards",
+            description: "Generate and print professional ID cards for an entire class.",
+            icon: <IdCardIcon className="w-6 h-6" />,
+        },
     ];
 
     const availableReports = allReports.filter(report => {
@@ -85,6 +92,8 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
                 return hasPermission(Permission.CAN_MANAGE_FEES);
             case 'reportCard':
                 return hasPermission(Permission.CAN_VIEW_ACADEMIC_REPORTS);
+            case 'studentIdCard':
+                return hasPermission(Permission.CAN_GENERATE_ID_CARDS);
             default:
                 return false;
         }
@@ -98,6 +107,7 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
             <BulkChallanReportModal isOpen={activeReport === 'bulkChallan'} onClose={() => setActiveReport(null)} />
             <ChallanRangeReportModal isOpen={activeReport === 'challanRange'} onClose={() => setActiveReport(null)} />
             <ReportCardModal isOpen={activeReport === 'reportCard'} onClose={() => setActiveReport(null)} />
+            <StudentIdCardModal isOpen={activeReport === 'studentIdCard'} onClose={() => setActiveReport(null)} />
 
             <div className="space-y-6">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Reports Center</h1>
@@ -121,6 +131,7 @@ const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmln
 const FileTextIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>;
 const AwardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 17 17 23 15.79 13.88"/></svg>;
 const PrinterIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></svg>;
+const IdCardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M14 14a2 2 0 0 0-2-2h-2"/><path d="M14 10h4"/><path d="M14 14h4"/></svg>;
 
 
 export default ReportsPage;
