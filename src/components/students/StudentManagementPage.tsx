@@ -90,6 +90,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             ...item,
             schoolId: effectiveSchoolId,
             openingBalance: Number(item.openingBalance) || 0,
+            userId: item.userId || null, // Convert empty string for UUID to null
         }));
         await bulkAddStudents(studentsToImport);
     };
