@@ -10,6 +10,14 @@ interface LeavingCertificatePageProps {
     setActiveView: (view: ActiveView) => void;
 }
 
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ studentId, setActiveView }) => {
     const { students, classes, getSchoolById, issueLeavingCertificate } = useData();
     const { showPrintPreview } = usePrint();
@@ -18,7 +26,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
     const school = useMemo(() => getSchoolById(student?.schoolId || ''), [getSchoolById, student]);
 
     const [details, setDetails] = useState({
-        dateOfLeaving: new Date().toISOString().split('T')[0],
+        dateOfLeaving: getTodayString(),
         reasonForLeaving: '',
         conduct: 'Good' as Student['conduct'],
     });

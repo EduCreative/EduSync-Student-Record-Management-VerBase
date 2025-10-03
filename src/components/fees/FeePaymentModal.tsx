@@ -10,13 +10,21 @@ interface FeePaymentModalProps {
     student: Student;
 }
 
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, challan, student }) => {
     const { recordFeePayment } = useData();
     const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
 
     const [amount, setAmount] = useState(balanceDue);
     const [discount, setDiscount] = useState(challan.discount);
-    const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
+    const [paidDate, setPaidDate] = useState(getTodayString());
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -24,7 +32,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
             const balance = challan.totalAmount - challan.discount - challan.paidAmount;
             setAmount(balance);
             setDiscount(challan.discount);
-            setPaidDate(new Date().toISOString().split('T')[0]);
+            setPaidDate(getTodayString());
         }
     }, [isOpen, challan]);
 

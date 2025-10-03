@@ -1,9 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { formatDate } from '../../constants';
 import Avatar from '../common/Avatar';
 import Badge from '../common/Badge';
 import { ActiveView } from '../layout/Layout';
+import StudentFeeStructure from './StudentFeeStructure';
+import StudentFeeHistory from './StudentFeeHistory';
+import StudentResults from './StudentResults';
+import StudentAttendance from './StudentAttendance';
 
 interface StudentProfilePageProps {
     studentId: string;
@@ -12,21 +16,31 @@ interface StudentProfilePageProps {
 
 const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setActiveView }) => {
     const { students, classes, fees } = useData();
+    const [activeTab, setActiveTab] = useState('details');
 
     const student = useMemo(() => students.find(s => s.id === studentId), [students, studentId]);
     const studentClass = useMemo(() => student ? classes.find(c => c.id === student.classId) : null, [classes, student]);
-    const studentFees = useMemo(() => fees.filter(f => f.studentId === studentId), [fees, studentId]);
+    
+    const feeSummary = useMemo(() => {
+        const studentFees = fees.filter(f => f.studentId === studentId);
+        const totalDue = studentFees.reduce((acc, f) => acc + f.totalAmount - f.discount, 0) + (student?.openingBalance || 0);
+        const totalPaid = studentFees.reduce((acc, f) => acc + f.paidAmount, 0);
+        return {
+            totalDue,
+            totalPaid,
+            balance: totalDue - totalPaid,
+        };
+    }, [fees, studentId, student]);
+
 
     if (!student) {
         return <div className="p-8 text-center">Student not found.</div>;
     }
-    
-    const totalDue = studentFees.reduce((acc, f) => acc + f.totalAmount - f.discount, 0);
-    const totalPaid = studentFees.reduce((acc, f) => acc + f.paidAmount, 0);
-    const feeSummary = {
-        totalDue,
-        totalPaid,
-        balance: totalDue - totalPaid,
+
+    const getTabClass = (tabName: string) => {
+        return activeTab === tabName
+            ? 'border-primary-500 text-primary-600'
+            : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300 dark:text-secondary-400 dark:hover:text-secondary-300';
     };
 
     return (
@@ -50,51 +64,77 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             {studentClass?.name || 'N/A'} | Roll No: {student.rollNumber}
                         </p>
                         <div className="mt-4 flex flex-wrap gap-4">
-                            <button className="btn-primary">View Report Card</button>
-                             <button className="btn-secondary">View Fee History</button>
+                            <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>
+                            <button className="btn-secondary" onClick={() => setActiveTab('feeHistory')}>View Fee History</button>
                             <button onClick={() => setActiveView({ view: 'leavingCertificate', payload: { studentId: student.id }})} className="btn-secondary">Issue Leaving Certificate</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
-                     <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Personal Information</h2>
-                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
-                        <InfoItem label="Father's Name" value={student.fatherName} />
-                        <InfoItem label="Father's CNIC" value={student.fatherCnic} />
-                        <InfoItem label="Date of Birth" value={formatDate(student.dateOfBirth)} />
-                        <InfoItem label="Gender" value={student.gender} />
-                        <InfoItem label="Caste" value={student.caste} />
-                        <InfoItem label="Contact Number" value={student.contactNumber} />
-                        <InfoItem label="Secondary Contact" value={student.secondaryContactNumber} />
-                        <InfoItem label="Address" value={student.address} className="sm:col-span-2" />
-                    </dl>
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
+                <div className="border-b border-secondary-200 dark:border-secondary-700">
+                    <nav className="-mb-px flex space-x-6 px-6 overflow-x-auto" aria-label="Tabs">
+                        <button onClick={() => setActiveTab('details')} className={`${getTabClass('details')} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                            Profile Details
+                        </button>
+                         <button onClick={() => setActiveTab('results')} className={`${getTabClass('results')} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                            Results Progress
+                        </button>
+                         <button onClick={() => setActiveTab('attendance')} className={`${getTabClass('attendance')} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                            Attendance Record
+                        </button>
+                        <button onClick={() => setActiveTab('feeStructure')} className={`${getTabClass('feeStructure')} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                            Fee Structure
+                        </button>
+                        <button onClick={() => setActiveTab('feeHistory')} className={`${getTabClass('feeHistory')} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                            Fee History
+                        </button>
+                    </nav>
                 </div>
-                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Academic & Financials</h2>
-                    <dl className="space-y-4">
-                        <InfoItem label="Admission Date" value={formatDate(student.dateOfAdmission)} />
-                        <InfoItem label="Admitted in Class" value={student.admittedClass} />
-                        <InfoItem label="Last School Attended" value={student.lastSchoolAttended} />
-                        <InfoItem label="Opening Balance" value={`Rs. ${student.openingBalance?.toLocaleString() || 0}`} />
-                        <InfoItem label="Fee Balance" value={`Rs. ${feeSummary.balance.toLocaleString()}`} />
-                    </dl>
+                
+                <div className="p-6">
+                    {activeTab === 'details' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                 <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Personal Information</h2>
+                                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
+                                    <InfoItem label="Father's Name" value={student.fatherName} />
+                                    <InfoItem label="Father's CNIC" value={student.fatherCnic} />
+                                    <InfoItem label="Date of Birth" value={formatDate(student.dateOfBirth)} />
+                                    <InfoItem label="Gender" value={student.gender} />
+                                    <InfoItem label="Caste" value={student.caste} />
+                                    <InfoItem label="Contact Number" value={student.contactNumber} />
+                                    <InfoItem label="Secondary Contact" value={student.secondaryContactNumber} />
+                                    <InfoItem label="Address" value={student.address} className="sm:col-span-2" />
+                                </dl>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Academic & Financials</h2>
+                                <dl className="space-y-4">
+                                    <InfoItem label="Admission Date" value={formatDate(student.dateOfAdmission)} />
+                                    <InfoItem label="Admitted in Class" value={student.admittedClass} />
+                                    <InfoItem label="Last School Attended" value={student.lastSchoolAttended} />
+                                    <InfoItem label="Opening Balance" value={`Rs. ${student.openingBalance?.toLocaleString() || 0}`} />
+                                    <InfoItem label="Current Fee Balance" value={`Rs. ${feeSummary.balance.toLocaleString()}`} bold={true} />
+                                </dl>
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'results' && <StudentResults studentId={student.id} />}
+                    {activeTab === 'attendance' && <StudentAttendance studentId={student.id} />}
+                    {activeTab === 'feeStructure' && <StudentFeeStructure student={student} />}
+                    {activeTab === 'feeHistory' && <StudentFeeHistory studentId={student.id} />}
                 </div>
             </div>
-            <style>{`
-                .btn-primary { @apply px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg; }
-                .btn-secondary { @apply px-4 py-2 text-sm font-medium text-secondary-700 bg-secondary-100 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 rounded-lg; }
-            `}</style>
         </div>
     );
 };
 
-const InfoItem: React.FC<{ label: string; value?: string | number | null; className?: string }> = ({ label, value, className }) => (
+const InfoItem: React.FC<{ label: string; value?: string | number | null; className?: string, bold?: boolean }> = ({ label, value, className, bold }) => (
     <div className={className}>
         <dt className="text-sm font-medium text-secondary-500 dark:text-secondary-400">{label}</dt>
-        <dd className="mt-1 text-sm text-secondary-900 dark:text-white">{value || 'N/A'}</dd>
+        <dd className={`mt-1 text-sm ${bold ? 'font-bold text-lg' : ''} text-secondary-900 dark:text-white`}>{value || 'N/A'}</dd>
     </div>
 );
 

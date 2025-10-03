@@ -64,6 +64,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' })
                                     r="3"
                                     fill={color}
                                 />
+                                {(i % 5 === 0 || i === data.length - 1) && (
                                 <text
                                     x={x}
                                     y={chartHeight + 20}
@@ -73,6 +74,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' })
                                 >
                                     {point.label}
                                 </text>
+                                )}
                             </g>
                         );
                     })}

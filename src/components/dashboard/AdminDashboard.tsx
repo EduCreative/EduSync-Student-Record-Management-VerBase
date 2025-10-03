@@ -92,7 +92,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const schoolUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.id !== user.id), [users, effectiveSchoolId, user.id]);
 
     const stats = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
         const feesCollectedToday = fees
             .filter(f => f.paidDate === todayStr && students.find(s => s.id === f.studentId)?.schoolId === effectiveSchoolId)
             .reduce((sum, f) => sum + f.paidAmount, 0);
@@ -132,7 +137,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }, [fees, students, effectiveSchoolId]);
 
     const attendanceData = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
 
         const schoolStudentIds = new Set(schoolStudents.map(s => s.id));
         

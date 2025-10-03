@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SchoolEvent } from '../../types';
 import Modal from '../common/Modal';
@@ -13,11 +12,19 @@ interface EventFormModalProps {
     isReadOnly?: boolean;
 }
 
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const EventFormModal: React.FC<EventFormModalProps> = ({ isOpen, onClose, onSave, onDelete, eventToEdit, selectedDate, isReadOnly = false }) => {
     
     const getInitialFormData = () => ({
         title: '',
-        date: selectedDate || new Date().toISOString().split('T')[0],
+        date: selectedDate || getTodayString(),
         category: 'Event' as SchoolEvent['category'],
         description: '',
     });

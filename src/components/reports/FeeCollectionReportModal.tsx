@@ -12,16 +12,27 @@ interface FeeCollectionReportModalProps {
     onClose: () => void;
 }
 
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+const getFirstDayOfMonthString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    return `${year}-${month}-01`;
+}
+
 const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isOpen, onClose }) => {
     const { user, activeSchoolId } = useAuth();
     const { fees, students, classes } = useData();
     const { showPrintPreview } = usePrint();
 
-    const today = new Date().toISOString().split('T')[0];
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-
-    const [startDate, setStartDate] = useState(firstDayOfMonth);
-    const [endDate, setEndDate] = useState(today);
+    const [startDate, setStartDate] = useState(getFirstDayOfMonthString());
+    const [endDate, setEndDate] = useState(getTodayString());
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);

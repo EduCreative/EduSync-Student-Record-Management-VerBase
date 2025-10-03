@@ -13,6 +13,12 @@ interface StudentFormModalProps {
     studentToEdit?: Student | null;
 }
 
+const getTodayString = () => {
+    const today = new Date();
+    const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+    return localDate.toISOString().split('T')[0];
+};
+
 const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, onSave, studentToEdit }) => {
     const { user, activeSchoolId } = useAuth();
     const { classes, users } = useData();
@@ -26,7 +32,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         fatherName: '',
         fatherCnic: '',
         dateOfBirth: '',
-        dateOfAdmission: new Date().toISOString().split('T')[0],
+        dateOfAdmission: getTodayString(),
         admittedClass: '',
         caste: '',
         lastSchoolAttended: '',
@@ -39,6 +45,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         secondaryContactNumber: '',
         openingBalance: 0,
         status: 'Active' as 'Active' | 'Inactive' | 'Left',
+        feeStructure: [],
     });
 
     const [formData, setFormData] = useState(getInitialFormData());
@@ -51,8 +58,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     useEffect(() => {
         if (isOpen) {
             if (studentToEdit) {
-                // Explicitly map properties from studentToEdit to the form state shape
-                // to avoid type conflicts from spreading an object with a different structure.
                 setFormData({
                     name: studentToEdit.name,
                     rollNumber: studentToEdit.rollNumber,
@@ -69,10 +74,11 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     gender: studentToEdit.gender,
                     avatarUrl: studentToEdit.avatarUrl,
                     schoolId: studentToEdit.schoolId,
-                    userId: studentToEdit.userId ?? '', // Coalesce null/undefined to empty string
+                    userId: studentToEdit.userId ?? '', 
                     secondaryContactNumber: studentToEdit.secondaryContactNumber || '',
                     openingBalance: studentToEdit.openingBalance || 0,
                     status: studentToEdit.status,
+                    feeStructure: studentToEdit.feeStructure || [],
                 });
             } else {
                 setFormData(getInitialFormData());
@@ -114,13 +120,13 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         try {
             const saveData = {
                 ...formData,
-                userId: formData.userId || null, // Convert empty string back to null for DB
+                userId: formData.userId || null, 
+                openingBalance: Number(formData.openingBalance) || 0,
             };
 
             if (studentToEdit) {
                 await onSave({ ...studentToEdit, ...saveData });
             } else {
-                // Remove the 'status' for new students as it's set by the backend/data context
                 const { status, ...rest } = saveData;
                 await onSave(rest);
             }
@@ -209,6 +215,10 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         <label htmlFor="admittedClass" className="input-label">Admitted in Class</label>
                         <input type="text" name="admittedClass" id="admittedClass" value={formData.admittedClass} onChange={handleChange} className="w-full input-field" required />
                         {errors.admittedClass && <p className="text-red-500 text-xs mt-1">{errors.admittedClass}</p>}
+                    </div>
+                     <div>
+                        <label htmlFor="openingBalance" className="input-label">Opening Balance (Arrears)</label>
+                        <input type="number" name="openingBalance" id="openingBalance" value={formData.openingBalance} onChange={handleChange} className="w-full input-field" />
                     </div>
                     <div>
                         <label htmlFor="contactNumber" className="input-label">Contact Number</label>

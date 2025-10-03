@@ -88,6 +88,7 @@ const ClassManagementPage: React.FC = () => {
 
     const handleExport = () => {
         const dataToExport = schoolClasses.map(c => ({
+            classId: c.id,
             className: c.name,
             teacher: c.teacherId ? teacherMap.get(c.teacherId) || 'N/A' : 'N/A',
             studentCount: studentCountMap[c.id] || 0,
