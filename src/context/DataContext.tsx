@@ -491,10 +491,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => {
         const { data: count, error } = await supabase.rpc('generate_monthly_challans', {
-            p_school_id: schoolId,
-            p_month: month,
-            p_year: year,
-            p_fee_items: selectedFeeHeads.map(fh => ({ fee_head_id: fh.feeHeadId, amount: fh.amount }))
+            school_id: schoolId,
+            month: month,
+            year: year,
+            fee_items: selectedFeeHeads.map(fh => ({ fee_head_id: fh.feeHeadId, amount: fh.amount }))
         });
 
         if (error) {
@@ -502,8 +502,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return 0;
         }
         
-        showToast('Success', `${count} new challans were generated for ${month}, ${year}.`, 'success');
-        addLog('Challans Generated', `${count} challans generated for ${month}, ${year}.`);
+        showToast('Success', `${count || 0} new challans were generated for ${month}, ${year}.`, 'success');
+        addLog('Challans Generated', `${count || 0} challans generated for ${month}, ${year}.`);
         await fetchData(); // Refresh all data
         return count || 0;
     };
