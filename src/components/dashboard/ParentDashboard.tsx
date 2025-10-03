@@ -1,17 +1,14 @@
-
-
-
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Student } from '../../types';
+import { Student, Result } from '../../types';
 import Avatar from '../common/Avatar';
 import StatCard from '../common/StatCard';
+import BarChart from '../charts/BarChart';
 
 const ParentDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { students, loading } = useData();
+    const { students, results, loading } = useData();
 
     const myChildren = useMemo(() => {
         if (!user || !user.childStudentIds) return [];
@@ -64,18 +61,35 @@ const ParentDashboard: React.FC = () => {
             <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Parent's Dashboard</h1>
             <div className="space-y-6">
                 {myChildren.map(child => (
-                    <ChildCard key={child.id} student={child} />
+                    <ChildCard key={child.id} student={child} results={results} />
                 ))}
             </div>
         </div>
     );
 };
 
-const ChildCard: React.FC<{ student: Student }> = ({ student }) => {
-    // In a real app, you'd fetch specific data for this child
+const ChildCard: React.FC<{ student: Student; results: Result[] }> = ({ student, results }) => {
+    
+    const recentExamPerformance = useMemo(() => {
+        const studentResults = results.filter(r => r.studentId === student.id);
+        const allExams = [...new Set(studentResults.map(r => r.exam))];
+        if (allExams.length === 0) return { data: [], title: "No Exam Data" };
+        
+        const latestExam = allExams.sort().pop() || "Recent Exam";
+    
+        const data = studentResults
+            .filter(r => r.exam === latestExam)
+            .map(r => ({
+                label: r.subject,
+                value: r.totalMarks > 0 ? Math.round((r.marks / r.totalMarks) * 100) : 0,
+            }));
+        
+        return { data, title: `${latestExam} Performance (%)`};
+    }, [results, student]);
+
     return (
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-            <div className="flex items-center space-x-4 mb-4">
+        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg space-y-4">
+            <div className="flex items-center space-x-4">
                 <Avatar student={student} className="w-16 h-16"/>
                 <div>
                     <h2 className="text-2xl font-bold">{student.name}</h2>
@@ -87,9 +101,14 @@ const ChildCard: React.FC<{ student: Student }> = ({ student }) => {
                 <StatCard title="Overall Grade" value="A" color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<AwardIcon />} />
                 <StatCard title="Fee Status" value="Paid" color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
                 <button className="h-full flex items-center justify-center p-4 bg-secondary-50 dark:bg-secondary-700 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-600">
-                    <span className="font-semibold">View Details &rarr;</span>
+                    <span className="font-semibold">View Full Details &rarr;</span>
                 </button>
             </div>
+            {recentExamPerformance.data.length > 0 && (
+                 <div className="pt-4 border-t dark:border-secondary-700">
+                    <BarChart title={recentExamPerformance.title} data={recentExamPerformance.data} color="#4f46e5" />
+                 </div>
+            )}
         </div>
     );
 };

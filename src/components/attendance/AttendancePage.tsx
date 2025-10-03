@@ -1,15 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
+// FIX: Added Class and Student to imports for explicit typing.
+import { UserRole, Attendance, Class, Student } from '../../types';
 import Avatar from '../common/Avatar';
 import AttendanceViewer from './AttendanceViewer';
+import { useToast } from '../../context/ToastContext';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
 const AttendanceMarker: React.FC = () => {
     const { user, effectiveRole, activeSchoolId } = useAuth();
     const { classes, students, attendance, setAttendance } = useData();
+    const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
 
     const [selectedClassId, setSelectedClassId] = useState('');
@@ -21,14 +24,17 @@ const AttendanceMarker: React.FC = () => {
     const userClasses = useMemo(() => {
         if (!user) return [];
         if (effectiveRole === UserRole.Teacher) {
-            return classes.filter(c => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
+            // FIX: Explicitly type 'c' to ensure correct type inference.
+            return classes.filter((c: Class) => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
         }
-        return classes.filter(c => c.schoolId === effectiveSchoolId);
+        // FIX: Explicitly type 'c' to ensure correct type inference.
+        return classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
     }, [classes, user, effectiveRole, effectiveSchoolId]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
-        return students.filter(s => s.classId === selectedClassId && s.status === 'Active');
+        // FIX: Explicitly type 's' to ensure correct type inference.
+        return students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
     }, [students, selectedClassId]);
     
     useEffect(() => {
@@ -39,7 +45,8 @@ const AttendanceMarker: React.FC = () => {
 
     useEffect(() => {
         const newRecords = new Map<string, AttendanceStatus>();
-        const recordsForDate = attendance.filter(a => a.date === selectedDate);
+        // FIX: Explicitly typed the 'a' parameter to ensure that recordsForDate is correctly typed as Attendance[], preventing type errors downstream.
+        const recordsForDate = attendance.filter((a: Attendance) => a.date === selectedDate);
         
         studentsInClass.forEach(student => {
             const existingRecord = recordsForDate.find(a => a.studentId === student.id);
@@ -49,14 +56,19 @@ const AttendanceMarker: React.FC = () => {
     }, [selectedClassId, selectedDate, studentsInClass, attendance]);
 
     const statuses: AttendanceStatus[] = ['Present', 'Absent', 'Leave'];
-    const handleStatusChange = (studentId: string) => {
+    const handleStatusChange = (studentId: string, newStatus?: AttendanceStatus) => {
         setAttendanceRecords(prev => {
             const newRecords = new Map(prev);
-            const currentStatus = newRecords.get(studentId);
-            const currentIndex = currentStatus ? statuses.indexOf(currentStatus) : -1;
-            const nextIndex = (currentIndex + 1) % statuses.length;
-            // FIX: Explicitly cast to AttendanceStatus to prevent type error.
-            newRecords.set(studentId, statuses[nextIndex] as AttendanceStatus);
+            if (newStatus) {
+                // Direct set for mobile UI
+                newRecords.set(studentId, newStatus);
+            } else {
+                // Cycle for desktop UI
+                const currentStatus = newRecords.get(studentId);
+                const currentIndex = currentStatus ? statuses.indexOf(currentStatus) : -1;
+                const nextIndex = (currentIndex + 1) % statuses.length;
+                newRecords.set(studentId, statuses[nextIndex] as AttendanceStatus);
+            }
             return newRecords;
         });
     };
@@ -79,8 +91,24 @@ const AttendanceMarker: React.FC = () => {
             await setAttendance(selectedDate, recordsToSave);
         } catch (error) {
             console.error("Failed to save attendance:", error);
+            showToast('Error', 'Could not save attendance. Please try again.', 'error');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    // Helper functions for styling
+    const getStatusBtnClass = (status: AttendanceStatus | undefined) => {
+        if (!status) return 'bg-secondary-200 dark:bg-secondary-600';
+        return `btn-${status.toLowerCase()}`;
+    };
+
+    const getStatusRowClass = (status: AttendanceStatus | undefined) => {
+        switch (status) {
+            case 'Present': return 'bg-green-50 dark:bg-green-900/20';
+            case 'Absent': return 'bg-red-50 dark:bg-red-900/20';
+            case 'Leave': return 'bg-yellow-50 dark:bg-yellow-900/20';
+            default: return 'bg-white dark:bg-secondary-800';
         }
     };
 
@@ -114,7 +142,9 @@ const AttendanceMarker: React.FC = () => {
                             <button onClick={() => markAllAs('Leave')} className="btn-secondary px-3 py-1 text-xs">Mark All Leave</button>
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
+
+                    {/* Desktop Table View */}
+                    <div className="overflow-x-auto hidden md:block">
                         <table className="w-full text-sm">
                             <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                 <tr>
@@ -126,9 +156,8 @@ const AttendanceMarker: React.FC = () => {
                             <tbody>
                                 {studentsInClass.map(student => {
                                     const status = attendanceRecords.get(student.id);
-                                    const statusClass = status ? `btn-${status.toLowerCase()}` : 'bg-secondary-200 dark:bg-secondary-600';
                                     return (
-                                        <tr key={student.id} className="border-b dark:border-secondary-700">
+                                        <tr key={student.id} className={`border-b dark:border-secondary-700 transition-colors ${getStatusRowClass(status)}`}>
                                             <td className="px-6 py-3">
                                                 <div className="flex items-center space-x-3">
                                                     <Avatar student={student} className="w-8 h-8"/>
@@ -140,7 +169,7 @@ const AttendanceMarker: React.FC = () => {
                                                 <div className="flex justify-center">
                                                     <button 
                                                         onClick={() => handleStatusChange(student.id)}
-                                                        className={`px-3 py-1 text-sm rounded-md transition-colors w-24 text-center ${statusClass}`}
+                                                        className={`px-3 py-1 text-sm rounded-md transition-colors w-24 text-center ${getStatusBtnClass(status)}`}
                                                     >
                                                         {status || '...'}
                                                     </button>
@@ -152,7 +181,43 @@ const AttendanceMarker: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
-                    <div className="p-4 flex justify-end">
+
+                    {/* Mobile Card View */}
+                    <div className="block md:hidden p-2 space-y-2">
+                         {studentsInClass.map(student => {
+                            const status = attendanceRecords.get(student.id);
+                            return (
+                                <div key={student.id} className="p-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg shadow-sm flex items-center justify-between">
+                                    <div className="flex items-center space-x-3 overflow-hidden">
+                                        <Avatar student={student} className="w-10 h-10 flex-shrink-0"/>
+                                        <div className="overflow-hidden">
+                                            <p className="font-medium text-secondary-900 dark:text-white truncate">{student.name}</p>
+                                            <p className="text-xs text-secondary-500">Roll: {student.rollNumber}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                                        {statuses.map(s => (
+                                            <button
+                                                key={s}
+                                                onClick={() => handleStatusChange(student.id, s)}
+                                                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-sm transition-all duration-150 flex items-center justify-center ${
+                                                    status === s
+                                                    ? `${getStatusBtnClass(s)} text-white shadow-md scale-110`
+                                                    : 'bg-secondary-200 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-300 dark:hover:bg-secondary-600'
+                                                }`}
+                                                aria-label={`Mark as ${s}`}
+                                            >
+                                                {s[0]}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+
+                    <div className="p-4 flex justify-end border-t dark:border-secondary-700">
                         <button onClick={handleSaveAttendance} disabled={isSaving} className="btn-primary">
                             {isSaving ? 'Saving...' : 'Save Attendance'}
                         </button>

@@ -1,10 +1,11 @@
-
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import StatCard from '../common/StatCard';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
+import BarChart from '../charts/BarChart';
+import DoughnutChart from '../charts/DoughnutChart';
+import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; }> = ({ title, icon }) => (
      <button className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center">
@@ -49,6 +50,40 @@ const AccountantDashboard: React.FC = () => {
         };
     }, [fees, students, user.schoolId]);
 
+    const monthlyCollection = useMemo(() => {
+        const schoolFees = fees.filter(fee => students.find(s => s.id === fee.studentId)?.schoolId === user.schoolId);
+        const collections: Record<string, number> = {};
+    
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const monthKey = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+            collections[monthKey] = 0;
+        }
+    
+        schoolFees.forEach(fee => {
+            if(fee.paidDate) {
+                const d = new Date(fee.paidDate);
+                const monthKey = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+                if (monthKey in collections) {
+                    collections[monthKey] += fee.paidAmount;
+                }
+            }
+        });
+    
+        return Object.entries(collections).map(([label, value]) => ({ label, value }));
+    }, [fees, students, user.schoolId]);
+    
+    const outstandingFees = useMemo(() => {
+        const schoolFees = fees.filter(fee => students.find(s => s.id === fee.studentId)?.schoolId === user.schoolId);
+        const unpaid = schoolFees.filter(f => f.status === 'Unpaid').length;
+        const partial = schoolFees.filter(f => f.status === 'Partial').length;
+        return [
+            { label: 'Unpaid', value: unpaid, color: '#ef4444' },
+            { label: 'Partial', value: partial, color: '#f59e0b' },
+        ];
+    }, [fees, students, user.schoolId]);
+
     if (loading) {
         return (
             <div className="space-y-8">
@@ -58,6 +93,10 @@ const AccountantDashboard: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <ChartSkeleton />
+                    <ChartSkeleton />
                 </div>
                 <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                     <div className="skeleton-bg h-6 w-48 mb-4 rounded"></div>
@@ -85,6 +124,11 @@ const AccountantDashboard: React.FC = () => {
                 <StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
                 <StatCard title="Overdue Invoices" value={stats.overdueInvoices} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertCircleIcon />} />
                 <StatCard title="Total Students" value={stats.totalStudentsInSchool} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} color="#10b981" />
+                <DoughnutChart title="Outstanding Fees" data={outstandingFees} />
             </div>
 
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">

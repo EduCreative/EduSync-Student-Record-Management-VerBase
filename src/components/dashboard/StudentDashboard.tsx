@@ -1,15 +1,15 @@
-
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import Avatar from '../common/Avatar';
 import StatCard from '../common/StatCard';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
+import BarChart from '../charts/BarChart';
+import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 
 const StudentDashboard: React.FC = () => {
     const { user } = useAuth();
-    const { students, classes, loading } = useData();
+    const { students, classes, results, loading } = useData();
 
     // Find the student profile that matches the logged-in user.
     const studentProfile = useMemo(() => {
@@ -20,6 +20,23 @@ const StudentDashboard: React.FC = () => {
     }, [students, user]);
     
     const studentClass = studentProfile ? classes.find(c => c.id === studentProfile.classId) : null;
+
+    const recentExamPerformance = useMemo(() => {
+        if (!studentProfile) return [];
+        
+        const studentResults = results.filter(r => r.studentId === studentProfile.id);
+        const allExams = [...new Set(studentResults.map(r => r.exam))];
+        if (allExams.length === 0) return [];
+
+        const latestExam = allExams.sort().pop();
+    
+        return studentResults
+            .filter(r => r.exam === latestExam)
+            .map(r => ({
+                label: r.subject,
+                value: r.totalMarks > 0 ? Math.round((r.marks / r.totalMarks) * 100) : 0
+            }));
+    }, [results, studentProfile]);
 
     if (loading) {
         return (
@@ -36,14 +53,7 @@ const StudentDashboard: React.FC = () => {
                      {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
                 </div>
     
-                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-                    <div className="skeleton-bg h-6 w-48 mb-4 rounded"></div>
-                    <div className="space-y-3">
-                        <div className="skeleton-bg h-4 w-full rounded"></div>
-                        <div className="skeleton-bg h-4 w-5/6 rounded"></div>
-                        <div className="skeleton-bg h-4 w-full rounded"></div>
-                    </div>
-                </div>
+                <ChartSkeleton />
             </div>
         )
     }
@@ -68,6 +78,8 @@ const StudentDashboard: React.FC = () => {
                  <StatCard title="Fee Status" value="Paid" color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
                  <StatCard title="Upcoming Exams" value="2" color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<EditIcon />} />
             </div>
+            
+            <BarChart title="Recent Exam Performance (%)" data={recentExamPerformance} color="#1d4ed8" />
 
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                  <h2 className="text-xl font-semibold mb-4">Announcements</h2>

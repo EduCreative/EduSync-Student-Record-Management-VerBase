@@ -1,13 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole, Result } from '../../types';
+// FIX: Added Class and Student to imports for explicit typing.
+import { UserRole, Result, Class, Student } from '../../types';
 import Avatar from '../common/Avatar';
 import ResultsViewer from './ResultsViewer';
+import { useToast } from '../../context/ToastContext';
 
 const ResultsEntry: React.FC = () => {
     const { user, effectiveRole, activeSchoolId } = useAuth();
     const { classes, students, results, saveResults } = useData();
+    const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
 
     const [selectedClassId, setSelectedClassId] = useState('');
@@ -20,14 +23,17 @@ const ResultsEntry: React.FC = () => {
     const userClasses = useMemo(() => {
         if (!user) return [];
         if (effectiveRole === UserRole.Teacher) {
-            return classes.filter(c => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
+            // FIX: Explicitly type 'c' to ensure correct type inference.
+            return classes.filter((c: Class) => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
         }
-        return classes.filter(c => c.schoolId === effectiveSchoolId);
+        // FIX: Explicitly type 'c' to ensure correct type inference.
+        return classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
     }, [classes, user, effectiveRole, effectiveSchoolId]);
 
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
-        return students.filter(s => s.classId === selectedClassId && s.status === 'Active');
+        // FIX: Explicitly type 's' to ensure correct type inference.
+        return students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
     }, [students, selectedClassId]);
 
     useEffect(() => {
@@ -38,14 +44,14 @@ const ResultsEntry: React.FC = () => {
 
     useEffect(() => {
         const newMarks = new Map<string, { marks: number, totalMarks: number }>();
-        const recordsForExamAndSubject = results.filter(r => r.classId === selectedClassId && r.exam === selectedExam && r.subject === selectedSubject);
+        // FIX: Explicitly typed the 'r' parameter to ensure that recordsForExamAndSubject is correctly typed as Result[], preventing type errors downstream.
+        const recordsForExamAndSubject = results.filter((r: Result) => r.classId === selectedClassId && r.exam === selectedExam && r.subject === selectedSubject);
 
         studentsInClass.forEach(student => {
             const existingRecord = recordsForExamAndSubject.find(r => r.studentId === student.id);
-            // FIX: Add type assertion to resolve 'property does not exist on type unknown' error.
             newMarks.set(student.id, {
-                marks: (existingRecord as Result)?.marks ?? 0,
-                totalMarks: (existingRecord as Result)?.totalMarks || 100,
+                marks: existingRecord ? existingRecord.marks : 0,
+                totalMarks: existingRecord ? existingRecord.totalMarks : 100,
             });
         });
         setMarks(newMarks);
@@ -89,6 +95,7 @@ const ResultsEntry: React.FC = () => {
             await saveResults(resultsToSave);
         } catch (error) {
             console.error("Failed to save results:", error);
+            showToast('Error', 'Could not save results. Please try again.', 'error');
         } finally {
             setIsSaving(false);
         }

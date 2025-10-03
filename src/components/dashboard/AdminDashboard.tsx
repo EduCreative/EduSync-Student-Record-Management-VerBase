@@ -1,15 +1,14 @@
-
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserRole, FeeChallan, Attendance } from '../../types';
+import { UserRole, FeeChallan, Attendance, ActivityLog } from '../../types';
 import DoughnutChart from '../charts/DoughnutChart';
 import BarChart from '../charts/BarChart';
 import StatCard from '../common/StatCard';
 import { ActiveView } from '../layout/Layout';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
 import ChartSkeleton from '../common/skeletons/ChartSkeleton';
+import LineChart from '../charts/LineChart';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -26,9 +25,62 @@ interface AdminDashboardProps {
     setActiveView: (view: ActiveView) => void;
 }
 
+const timeAgo = (timestamp?: string): string => {
+    if (!timestamp) return 'Just now';
+    const now = new Date();
+    const past = new Date(timestamp);
+    const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return `${Math.floor(interval)} years ago`;
+    interval = seconds / 2592000;
+    if (interval > 1) return `${Math.floor(interval)} months ago`;
+    interval = seconds / 86400;
+    if (interval > 1) return `${Math.floor(interval)} days ago`;
+    interval = seconds / 3600;
+    if (interval > 1) return `${Math.floor(interval)} hours ago`;
+    interval = seconds / 60;
+    if (interval > 1) return `${Math.floor(interval)} minutes ago`;
+    return `${Math.floor(seconds)} seconds ago`;
+};
+
+const getActivityIcon = (action: string) => {
+    const lowerAction = action.toLowerCase();
+    if (lowerAction.includes('fee') || lowerAction.includes('challan') || lowerAction.includes('payment')) {
+        return <DollarSignIcon className="w-4 h-4 text-green-600 dark:text-green-300"/>;
+    }
+    if (lowerAction.includes('student') || lowerAction.includes('user')) {
+        return <UserPlusIcon className="w-4 h-4 text-blue-600 dark:text-blue-300"/>;
+    }
+    if (lowerAction.includes('attendance') || lowerAction.includes('result')) {
+        return <CheckCircleIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-300"/>
+    }
+    if (lowerAction.includes('class') || lowerAction.includes('school')) {
+        return <SchoolIcon className="w-4 h-4 text-purple-600 dark:text-purple-300"/>
+    }
+    return <BellIcon className="w-4 h-4 text-yellow-600 dark:text-yellow-300"/>;
+};
+
+const getIconBgColor = (action: string) => {
+    const lowerAction = action.toLowerCase();
+    if (lowerAction.includes('fee') || lowerAction.includes('challan') || lowerAction.includes('payment')) {
+        return 'bg-green-100 dark:bg-green-900/50';
+    }
+    if (lowerAction.includes('student') || lowerAction.includes('user')) {
+        return 'bg-blue-100 dark:bg-blue-900/50';
+    }
+    if (lowerAction.includes('attendance') || lowerAction.includes('result')) {
+        return 'bg-indigo-100 dark:bg-indigo-900/50';
+    }
+    if (lowerAction.includes('class') || lowerAction.includes('school')) {
+        return 'bg-purple-100 dark:bg-purple-900/50';
+    }
+    return 'bg-yellow-100 dark:bg-yellow-900/50';
+};
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
-    const { users, students, getSchoolById, fees, attendance, loading } = useData();
+    const { users, students, getSchoolById, fees, attendance, loading, logs } = useData();
     
     if (!user) return null;
     
@@ -100,6 +152,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
         ];
     }, [attendance, schoolStudents]);
 
+    const feeCollectionData = useMemo(() => {
+        const last30Days = [...Array(30)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return d.toISOString().split('T')[0];
+        }).reverse();
+    
+        const schoolFees = fees.filter(fee => students.find(s => s.id === fee.studentId)?.schoolId === effectiveSchoolId);
+    
+        const collectionsByDay: Record<string, number> = {};
+        schoolFees.forEach(fee => {
+            if (fee.paidDate && fee.paidDate >= last30Days[0]) {
+                collectionsByDay[fee.paidDate] = (collectionsByDay[fee.paidDate] || 0) + fee.paidAmount;
+            }
+        });
+    
+        return last30Days.map(date => ({
+            label: new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+            value: collectionsByDay[date] || 0
+        }));
+    }, [fees, students, effectiveSchoolId]);
+
+    const recentLogs = useMemo(() => {
+        return logs.slice(0, 5);
+    }, [logs]);
+
     if (loading) {
         return (
             <div className="space-y-8">
@@ -138,6 +216,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
                 <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
             </div>
+
+            <div className="lg:col-span-2">
+                 <LineChart title="Fee Collection (Last 30 Days)" data={feeCollectionData} color="#f59e0b" />
+            </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <DoughnutChart title="Fee Collection Status" data={feeStatusData} />
@@ -157,29 +239,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
 
                 <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                     <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-                    <ul className="space-y-4">
-                        <li className="flex items-start space-x-3">
-                            <div className="bg-green-100 dark:bg-green-900/50 p-2 rounded-full"><DollarSignIcon className="w-4 h-4 text-green-600"/></div>
-                            <div>
-                                <p className="text-sm font-medium">Fee payment of Rs. 25,000 received from Ali Raza.</p>
-                                <p className="text-xs text-secondary-500">2 minutes ago by Fatima Ahmed</p>
-                            </div>
-                        </li>
-                         <li className="flex items-start space-x-3">
-                            <div className="bg-blue-100 dark:bg-blue-900/50 p-2 rounded-full"><UserPlusIcon className="w-4 h-4 text-blue-600"/></div>
-                            <div>
-                                <p className="text-sm font-medium">New student 'Sana Fatima d/o Ahmed Fatima' was added to Grade 10 - Section A.</p>
-                                <p className="text-xs text-secondary-500">1 hour ago by Bilal Hassan</p>
-                            </div>
-                        </li>
-                        <li className="flex items-start space-x-3">
-                            <div className="bg-yellow-100 dark:bg-yellow-900/50 p-2 rounded-full"><BellIcon className="w-4 h-4 text-yellow-600"/></div>
-                            <div>
-                                <p className="text-sm font-medium">Announcement posted: "Parent-Teacher Meeting on Friday".</p>
-                                <p className="text-xs text-secondary-500">3 hours ago by You</p>
-                            </div>
-                        </li>
-                    </ul>
+                    {recentLogs.length > 0 ? (
+                        <ul className="space-y-4">
+                            {recentLogs.map(log => (
+                                <li key={log.id} className="flex items-start space-x-3">
+                                    <div className={`${getIconBgColor(log.action)} p-2 rounded-full`}>
+                                        {getActivityIcon(log.action)}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-secondary-800 dark:text-secondary-100">{log.details}</p>
+                                        <p className="text-xs text-secondary-500">
+                                            {timeAgo(log.timestamp)} by {log.userName}
+                                        </p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-center text-secondary-500 py-8">No recent activity to display.</p>
+                    )}
                 </div>
             </div>
         </div>

@@ -9,7 +9,6 @@ interface ThemeContextType {
     theme: Theme;
     toggleTheme: () => void;
     fontSize: FontSize;
-    setFontSize: (size: FontSize) => void;
     increaseFontSize: () => void;
     decreaseFontSize: () => void;
     resetFontSize: () => void;
@@ -62,8 +61,8 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return newTheme;
         });
     };
-
-    const setFontSize = (size: FontSize) => {
+    
+    const applyFontSize = (size: FontSize) => {
         localStorage.setItem('fontSize', size);
         setFontSizeState(size);
     };
@@ -71,23 +70,23 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const increaseFontSize = () => {
         const currentIndex = FONT_SIZES.indexOf(fontSize);
         if (currentIndex < FONT_SIZES.length - 1) {
-            setFontSize(FONT_SIZES[currentIndex + 1]);
+            applyFontSize(FONT_SIZES[currentIndex + 1]);
         }
     };
 
     const decreaseFontSize = () => {
         const currentIndex = FONT_SIZES.indexOf(fontSize);
         if (currentIndex > 0) {
-            setFontSize(FONT_SIZES[currentIndex - 1]);
+            applyFontSize(FONT_SIZES[currentIndex - 1]);
         }
     };
 
     const resetFontSize = () => {
-        setFontSize('base');
+        applyFontSize('base');
     };
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, fontSize, setFontSize, increaseFontSize, decreaseFontSize, resetFontSize }}>
+        <ThemeContext.Provider value={{ theme, toggleTheme, fontSize, increaseFontSize, decreaseFontSize, resetFontSize }}>
             {children}
         </ThemeContext.Provider>
     );

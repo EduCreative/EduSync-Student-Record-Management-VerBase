@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -21,7 +22,6 @@ interface NotificationContextType {
     unreadCount: number;
     markAsRead: (notificationId: string) => Promise<void>;
     markAllAsRead: () => Promise<void>;
-    loading: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -29,15 +29,12 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
 
     const fetchNotifications = useCallback(async () => {
         if (!user) {
             setNotifications([]);
-            setLoading(false);
             return;
         }
-        setLoading(true);
         const { data, error } = await supabase
             .from('notifications')
             .select('*')
@@ -50,7 +47,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         } else if (data) {
             setNotifications(toCamelCase(data) as Notification[]);
         }
-        setLoading(false);
     }, [user]);
 
     useEffect(() => {
@@ -112,7 +108,6 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         unreadCount,
         markAsRead,
         markAllAsRead,
-        loading
     };
 
     return (

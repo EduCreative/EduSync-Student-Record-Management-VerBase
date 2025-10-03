@@ -1,10 +1,11 @@
-
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import StatCard from '../common/StatCard';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
+import DoughnutChart from '../charts/DoughnutChart';
+import BarChart from '../charts/BarChart';
+import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 
 const TeacherDashboard: React.FC = () => {
     const { user } = useAuth();
@@ -39,6 +40,45 @@ const TeacherDashboard: React.FC = () => {
         };
     }, [studentsInMyClasses, attendance, results]);
 
+    const attendanceSummary = useMemo(() => {
+        const studentIds = new Set(studentsInMyClasses.map(s => s.id));
+        const recentAttendance = attendance.filter(a => studentIds.has(a.studentId));
+        const summary = { Present: 0, Absent: 0, Leave: 0 };
+        recentAttendance.forEach(att => {
+            summary[att.status]++;
+        });
+        return [
+            { label: 'Present', value: summary.Present, color: '#10b981' },
+            { label: 'Absent', value: summary.Absent, color: '#ef4444' },
+            { label: 'Leave', value: summary.Leave, color: '#f59e0b' },
+        ];
+    }, [attendance, studentsInMyClasses]);
+    
+    const subjectPerformance = useMemo(() => {
+        const studentIds = new Set(studentsInMyClasses.map(s => s.id));
+        const allExams = [...new Set(results.filter(r => studentIds.has(r.studentId)).map(r => r.exam))];
+        if (allExams.length === 0) return [];
+
+        const latestExam = allExams.sort().pop();
+        
+        const latestExamResults = results.filter(r => studentIds.has(r.studentId) && r.exam === latestExam);
+        const performanceBySubject: Record<string, { total: number, count: number }> = {};
+    
+        latestExamResults.forEach(r => {
+            if (!performanceBySubject[r.subject]) {
+                performanceBySubject[r.subject] = { total: 0, count: 0 };
+            }
+            const percentage = r.totalMarks > 0 ? (r.marks / r.totalMarks) * 100 : 0;
+            performanceBySubject[r.subject].total += percentage;
+            performanceBySubject[r.subject].count += 1;
+        });
+    
+        return Object.entries(performanceBySubject).map(([subject, data]) => ({
+            label: subject,
+            value: Math.round(data.total / data.count)
+        }));
+    }, [results, studentsInMyClasses]);
+
     if (loading) {
         return (
             <div className="space-y-8">
@@ -48,6 +88,10 @@ const TeacherDashboard: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <ChartSkeleton />
+                    <ChartSkeleton />
                 </div>
                 <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                     <div className="skeleton-bg h-6 w-32 mb-4 rounded"></div>
@@ -72,6 +116,11 @@ const TeacherDashboard: React.FC = () => {
                 <StatCard title="Total Students" value={studentsInMyClasses.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} />
                 <StatCard title="Average Attendance" value={stats.averageAttendance} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<CheckCircleIcon />} />
                 <StatCard title="Subjects Taught" value={stats.subjectsTaught} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<ClipboardListIcon />} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <DoughnutChart title="Overall Attendance Summary" data={attendanceSummary} />
+                <BarChart title="Latest Exam Performance (Avg %)" data={subjectPerformance} color="#8b5cf6" />
             </div>
 
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">

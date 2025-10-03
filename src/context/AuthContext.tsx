@@ -134,7 +134,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const logout = async () => {
         await supabase.auth.signOut();
-        // State updates are handled by onAuthStateChange
+        // A full page reload is the most robust way to ensure all states are cleared
+        // and the user is redirected to the login page.
+        window.location.reload();
     };
     
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
