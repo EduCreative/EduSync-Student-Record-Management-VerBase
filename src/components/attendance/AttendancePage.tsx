@@ -57,7 +57,8 @@ const AttendanceMarker: React.FC = () => {
 
     const statuses: AttendanceStatus[] = ['Present', 'Absent', 'Leave'];
     const handleStatusChange = (studentId: string, newStatus?: AttendanceStatus) => {
-        setAttendanceRecords(prev => {
+        // FIX: Explicitly typing `prev` prevents it from being inferred as `unknown`, resolving type errors within the callback.
+        setAttendanceRecords((prev: Map<string, AttendanceStatus>) => {
             const newRecords = new Map(prev);
             if (newStatus) {
                 // Direct set for mobile UI

@@ -61,7 +61,8 @@ const ResultsEntry: React.FC = () => {
         const numValue = parseInt(value, 10);
         if (isNaN(numValue)) return;
 
-        setMarks(prev => {
+        // FIX: Explicitly typing `prev` prevents it from being inferred as `unknown`, resolving type errors on `current`.
+        setMarks((prev: Map<string, { marks: number, totalMarks: number }>) => {
             const newMarks = new Map(prev);
             const current = newMarks.get(studentId);
             
