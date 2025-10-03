@@ -45,7 +45,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         secondaryContactNumber: '',
         openingBalance: 0,
         status: 'Active' as 'Active' | 'Inactive' | 'Left',
-        feeStructure: [],
+        feeStructure: [] as { feeHeadId: string; amount: number }[],
     });
 
     const [formData, setFormData] = useState(getInitialFormData());
