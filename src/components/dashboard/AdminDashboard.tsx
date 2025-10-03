@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserRole, FeeChallan, Attendance, ActivityLog } from '../../types';
+import { UserRole, FeeChallan, Attendance } from '../../types';
 import DoughnutChart from '../charts/DoughnutChart';
 import BarChart from '../charts/BarChart';
 import StatCard from '../common/StatCard';

@@ -1,12 +1,23 @@
 // FIX: Added and exported a 'parseCsv' function to handle CSV file imports.
 // A simple CSV parser that handles quoted fields
-export const parseCsv = (csvText: string): Record<string, any>[] => {
-    const lines = csvText.trim().split(/\r\n|\n/);
-    if (lines.length < 2) {
-        return []; // Not enough lines for headers and data
+export const parseCsv = (csvText: string): { data: Record<string, any>[], errors: string[] } => {
+    let text = csvText.trim();
+    // Handle BOM (Byte Order Mark)
+    if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.substring(1);
     }
-    const headers = lines[0].split(',').map(h => h.trim());
+    const lines = text.split(/\r\n|\n/);
+    const errors: string[] = [];
+    
+    if (lines.length < 2 || !lines[0].trim()) {
+        errors.push("File must have a header row and at least one data row.");
+        return { data: [], errors };
+    }
+
+    // Trim quotes from headers, in case they are quoted in the CSV
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
     const data = [];
+    
     // Regex to split by comma but ignore commas inside double quotes
     const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
@@ -15,17 +26,16 @@ export const parseCsv = (csvText: string): Record<string, any>[] => {
         if (!line.trim()) continue;
 
         const values = line.split(regex).map(field => {
-            // Trim whitespace and remove quotes from start/end
             let value = field.trim();
             if (value.startsWith('"') && value.endsWith('"')) {
                 value = value.substring(1, value.length - 1);
             }
-            // Also handle escaped quotes if they exist "" -> "
+            // Handle escaped double quotes "" -> "
             return value.replace(/""/g, '"');
         });
 
         if (values.length !== headers.length) {
-            console.warn(`CSV Parse Warning: Row ${i + 1} has ${values.length} columns, but header has ${headers.length}. Skipping row.`);
+            errors.push(`Row ${i + 1}: Expected ${headers.length} columns, but found ${values.length}. This might be due to unquoted commas in your data. Skipping row.`);
             continue;
         }
         
@@ -36,7 +46,7 @@ export const parseCsv = (csvText: string): Record<string, any>[] => {
         
         data.push(row);
     }
-    return data;
+    return { data, errors };
 };
 
 // A simple CSV exporter

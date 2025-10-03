@@ -50,10 +50,15 @@ const ImportModal = <T extends Record<string, any>>({
         reader.onload = async (e) => {
             try {
                 const text = e.target?.result as string;
-                const parsedData = parseCsv(text);
+                const { data: parsedData, errors: parseErrors } = parseCsv(text);
 
                 if (parsedData.length === 0) {
-                    throw new Error('CSV file is empty or invalid.');
+                    if (parseErrors.length > 0) {
+                        // If there are parsing errors but no data, it means all rows failed.
+                        throw new Error(`Import failed. All data rows were invalid. First error: ${parseErrors[0]}`);
+                    }
+                    // This covers empty file, or file with only headers.
+                    throw new Error('CSV file is empty or contains no valid data rows.');
                 }
                 
                 // Validate headers
@@ -61,6 +66,11 @@ const ImportModal = <T extends Record<string, any>>({
                 const missingHeaders = requiredHeaders.filter(h => !fileHeaders.includes(h));
                 if (missingHeaders.length > 0) {
                      throw new Error(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
+                }
+
+                if (parseErrors.length > 0) {
+                    showToast('Import Warning', `${parseErrors.length} row(s) were skipped due to formatting errors. Please check the console for details.`, 'info');
+                    console.warn("CSV Import Skipped Rows:", parseErrors);
                 }
 
                 await onImport(parsedData as T[]);
