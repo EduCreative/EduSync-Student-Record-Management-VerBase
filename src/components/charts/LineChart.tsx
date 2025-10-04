@@ -6,7 +6,7 @@ export interface LineChartData {
 }
 
 interface LineChartProps {
-    title: string;
+    title: React.ReactNode;
     data: LineChartData[];
     color?: string;
 }
@@ -15,7 +15,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' })
     if (!data || data.length === 0 || data.every(d => d.value === 0)) {
         return (
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
-                <h2 className="text-xl font-semibold mb-2">{title}</h2>
+                <div className="mb-2">{title}</div>
                 <div className="flex items-center justify-center h-64 text-secondary-500">
                     No data to display
                 </div>
@@ -37,7 +37,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' })
 
     return (
         <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">{title}</h2>
+            <div className="mb-4">{title}</div>
             <div className="w-full overflow-x-auto">
                 <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 30}`} className="min-w-[400px]">
                     <defs>

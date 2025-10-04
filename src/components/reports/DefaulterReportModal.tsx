@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { exportToCsv } from '../../utils/csvHelper';
+import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
 import { EduSyncLogo } from '../../constants';
 
@@ -203,41 +203,44 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     };
 
     const handleExport = () => {
-        const dataToExport: any[] = [];
+        const headers = ['Sr.', 'StdID', 'Student Name', 'Father Name', 'Amount Due', 'Paid', 'Balance'];
+        const rows = [headers.join(',')];
     
+        const escapeRow = (arr: any[]) => arr.map(v => escapeCsvCell(v)).join(',');
+
         reportData.forEach(classGroup => {
-            dataToExport.push({ 'Sr.': `CLASS: ${classGroup.className}` });
+            rows.push(escapeRow([`Class: ${classGroup.className}`]));
             classGroup.students.forEach((student, index) => {
-                dataToExport.push({
-                    'Sr.': index + 1,
-                    'StdID': student.stdId,
-                    'Student Name': student.studentName,
-                    'Father Name': student.fatherName,
-                    'Amount Due': student.amountDue,
-                    'Paid': student.paid,
-                    'Balance': student.balance,
-                });
+                rows.push(escapeRow([
+                    index + 1,
+                    student.stdId,
+                    student.studentName,
+                    student.fatherName,
+                    student.amountDue,
+                    student.paid,
+                    student.balance,
+                ]));
             });
-            dataToExport.push({
-                'Father Name': 'Sub Total',
-                'Amount Due': classGroup.subtotals.amountDue,
-                'Paid': classGroup.subtotals.paid,
-                'Balance': classGroup.subtotals.balance,
-            });
-            dataToExport.push({}); // Spacer
+            rows.push(escapeRow([
+                '', '', '', 'Sub Total',
+                classGroup.subtotals.amountDue,
+                classGroup.subtotals.paid,
+                classGroup.subtotals.balance,
+            ]));
+            rows.push(''); // Spacer
         });
     
         if (reportData.length > 0) {
-            dataToExport.push({});
-            dataToExport.push({
-                'Father Name': 'Grand Total',
-                'Amount Due': grandTotal.amountDue,
-                'Paid': grandTotal.paid,
-                'Balance': grandTotal.balance,
-            });
+            rows.push('');
+            rows.push(escapeRow([
+                '', '', '', 'Grand Total',
+                grandTotal.amountDue,
+                grandTotal.paid,
+                grandTotal.balance,
+            ]));
         }
     
-        exportToCsv(dataToExport, 'defaulter_report');
+        downloadCsvString(rows.join('\n'), 'defaulter_report');
     };
 
     return (

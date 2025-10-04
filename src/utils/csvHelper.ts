@@ -68,28 +68,24 @@ export const parseCsv = (csvText: string): { data: Record<string, any>[], errors
     return { data, errors };
 };
 
+export const escapeCsvCell = (value: any): string => {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    let stringValue = String(value);
 
-// A simple CSV exporter
-export const exportToCsv = (data: any[], fileName: string) => {
-    if (!data || data.length === 0) {
-        return;
+    // If the value contains a comma, a double quote, or a newline, it needs to be quoted.
+    if (/[",\n\r]/.test(stringValue)) {
+        // Escape double quotes by doubling them
+        stringValue = stringValue.replace(/"/g, '""');
+        return `"${stringValue}"`;
     }
 
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-        headers.join(','),
-        ...data.map(row => 
-            headers.map(header => {
-                let value = row[header];
-                if (typeof value === 'string' && value.includes(',')) {
-                    return `"${value}"`; // Quote values with commas
-                }
-                return value;
-            }).join(',')
-        )
-    ].join('\n');
+    return stringValue;
+};
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+export const downloadCsvString = (csvContent: string, fileName: string) => {
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel
     const link = document.createElement('a');
     if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
@@ -99,5 +95,22 @@ export const exportToCsv = (data: any[], fileName: string) => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
+};
+
+export const exportToCsv = (data: any[], fileName: string) => {
+    if (!data || data.length === 0) {
+        return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvRows = [
+        headers.map(escapeCsvCell).join(','), // Header row
+        ...data.map(row =>
+            headers.map(header => escapeCsvCell(row[header])).join(',')
+        )
+    ];
+    
+    downloadCsvString(csvRows.join('\n'), fileName);
 };

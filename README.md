@@ -36,22 +36,24 @@ EduSync is packed with features designed to streamline school management:
   - View, print, and save individual fee challans.
 
 #### 📊 **Reporting & Analytics**
-- **Dynamic Dashboards:** Each role gets a customized dashboard with key statistics presented in clean, visual stat cards and charts (Bar & Doughnut).
+- **Interactive Dashboards:** Each role gets a customized dashboard with key statistics. The Admin and Owner dashboards feature **interactive charts** with drill-down capabilities to explore data like fee status and attendance in detail.
+- **Versatile Charting:** The Admin dashboard includes a toggle to switch the "Fee Collection" graph between **Line** and **Bar** chart views for better analysis.
 - **Comprehensive Reporting Suite:** A dedicated reports section to generate, view, and print critical documents:
   - **Fee Collection Report:** Track collected fees within a specific date range.
   - **Fee Defaulter Report:** Quickly identify students with overdue payments.
   - **Printable Class Lists:** Generate student lists with customizable columns.
   - **Bulk Fee Challan Printing:** Print professional, three-part fee challans for an entire class (3 per A4 page).
   - **Student Report Cards:** Generate and print detailed, professional report cards for a whole class.
-- **Data Export:** Export key reports and data tables (like student lists) to CSV format.
+- **Data Export & Import:**
+  - **Robust CSV Export:** Export key reports and data tables (like student lists and users) to CSV format with proper data escaping.
+  - **Bulk CSV Import:** Easily import data for Students, Users, and Classes to speed up initial setup.
 
 #### 💻 **User Experience & Technology**
 - **Modern & Responsive UI:** Clean, intuitive interface built with Tailwind CSS that works beautifully on desktops, tablets, and mobile devices.
 - **Light & Dark Mode:** Switch between themes for user comfort.
 - **Accessibility:** Adjustable font sizes (Small, Default, Large) to improve readability.
 - **Real-time Feedback:** Toast notifications for actions like saving data or errors.
-- **Offline Capability:** Designed to function with local state, with a "Last Sync" indicator to assure users their data is persisted.
-- **Advanced Print Preview:** A custom print previewer ensures all printable documents (challans, reports, certificates) are perfectly formatted before sending to the printer or saving as a PDF.
+- **Advanced Print Preview:** A custom, robust print previewer ensures all printable documents (challans, reports, certificates) are perfectly formatted before sending to the printer or saving as a PDF, eliminating common browser printing issues.
 
 ---
 

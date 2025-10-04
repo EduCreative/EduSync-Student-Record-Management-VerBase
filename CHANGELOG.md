@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2024-07-20
+
+### Fixed
+- **Critical Printing Failure:** Resolved a "Could not find root element" error during printing by creating an isolated, sandboxed HTML document from a `Blob`. This prevents the main app's scripts from running in the print iframe and ensures reliable printing.
+- **Incomplete CSV Exports:** Re-engineered the CSV export functionality to handle all data types correctly. Implemented robust character escaping for commas and quotes, and added custom CSV generation for complex, grouped reports (Fee Collection, Defaulters) to ensure all data is exported accurately.
+- **Blank Attendance Chart:** Fixed the "Today's Attendance Snapshot" on the Admin dashboard to show all active students, correctly categorizing them as Present, Absent, Leave, or "Pending" if attendance has not been marked.
+
+### Added
+- **Interactive Dashboard Charts:** Made Admin Dashboard charts interactive for data exploration.
+  - Clicking a segment on the **Fee Status** doughnut chart now opens a modal showing a list of students and challans for that status.
+  - Clicking a bar on the **Attendance Snapshot** chart opens a modal displaying the list of students with that status.
+- **Enhanced Fee Collection Chart:** Added a toggle to the "Fee Collection (Last 30 Days)" chart on the Admin Dashboard, allowing users to switch between a **Line** and a **Bar** chart view for more versatile data analysis.
+
 ## [1.4.1] - 2024-07-19
 
 ### Fixed

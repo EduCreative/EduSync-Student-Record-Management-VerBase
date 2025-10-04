@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { exportToCsv } from '../../utils/csvHelper';
+import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
 
@@ -191,36 +191,26 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
     };
 
     const handleExport = () => {
-        const dataToExport: any[] = [];
+        const headers = ['Sr.', 'StdID', 'Student Name', 'Father Name', 'Amount Due', 'Discount', 'Paid', 'Balance', 'Date'];
+        const rows = [headers.join(',')];
+
+        const escapeRow = (arr: any[]) => arr.map(v => escapeCsvCell(v)).join(',');
+    
         reportData.forEach(classGroup => {
-            dataToExport.push({ 'Sr.': `CLASS: ${classGroup.className}` });
+            rows.push(escapeRow([`Class: ${classGroup.className}`]));
             classGroup.transactions.forEach(t => {
-                dataToExport.push({
-                    'Sr.': t.sr,
-                    'StdID': t.stdId,
-                    'Student Name': t.studentName,
-                    'Father Name': t.fatherName,
-                    'Amount Due': t.amountDue,
-                    'Discount': t.discount,
-                    'Paid': t.paid,
-                    'Balance': t.balance,
-                });
+                rows.push(escapeRow([t.sr, t.stdId, t.studentName, t.fatherName, t.amountDue, t.discount, t.paid, t.balance, t.date]));
             });
-            dataToExport.push({
-                'Father Name': 'Subtotal Paid',
-                'Paid': classGroup.subtotals.paid,
-            });
-            dataToExport.push({}); // Spacer row
+            rows.push(escapeRow(['', '', '', '', '', 'Subtotal Paid:', classGroup.subtotals.paid]));
+            rows.push(''); // Spacer row
         });
     
         if (reportData.length > 0) {
-            dataToExport.push({});
-            dataToExport.push({
-                'Father Name': 'Grand Total Paid',
-                'Paid': grandTotalPaid,
-            });
+            rows.push('');
+            rows.push(escapeRow(['', '', '', '', '', 'Grand Total Paid:', grandTotalPaid]));
         }
-        exportToCsv(dataToExport, 'fee_collection_report');
+
+        downloadCsvString(rows.join('\n'), 'fee_collection_report');
     };
 
     return (

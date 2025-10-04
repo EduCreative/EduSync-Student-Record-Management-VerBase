@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { exportToCsv } from '../../utils/csvHelper';
+import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
 
@@ -120,25 +120,32 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
 
     const handleExport = () => {
         const activeColumns = Object.entries(selectedColumns).filter(([, v]) => v).map(([k]) => k as ColumnKey);
-        const dataToExport: Record<string, any>[] = [];
+        
+        const headers = ['Sr.', 'Student Name', ...activeColumns.map(key => availableColumns[key])];
+        if (includeBlankColumn) {
+            headers.push('Notes');
+        }
+
+        const rows = [headers.join(',')];
+        const escapeRow = (arr: any[]) => arr.map(v => escapeCsvCell(v)).join(',');
         
         classGroups.forEach(group => {
-            dataToExport.push({ Class: group.className }); // Add class name as a separator
+            rows.push(escapeRow([`Class: ${group.className}`]));
             group.students.forEach((student, index) => {
-                const row: Record<string, any> = { 'Sr.': index + 1, 'Student Name': student.name };
+                const rowData: (string | number | undefined | null)[] = [index + 1, student.name];
                 activeColumns.forEach(key => {
-                    row[availableColumns[key]] = key === 'dateOfAdmission' ? formatDate(student[key]) : student[key];
+                    rowData.push(key === 'dateOfAdmission' ? formatDate(student[key]) : student[key]);
                 });
                 if (includeBlankColumn) {
-                    row['Notes'] = '';
+                    rowData.push('');
                 }
-                dataToExport.push(row);
+                rows.push(escapeRow(rowData));
             });
-            dataToExport.push({}); // Add a blank row between classes
+            rows.push(''); // Add a blank row between classes
         });
 
         const reportTitle = classId === 'all' ? 'class_lists' : `class_list_${classGroups[0]?.className.replace(/\s+/g, '_')}`;
-        exportToCsv(dataToExport, reportTitle);
+        downloadCsvString(rows.join('\n'), reportTitle);
     };
 
     const totalStudents = useMemo(() => classGroups.reduce((acc, group) => acc + group.students.length, 0), [classGroups]);

@@ -32,62 +32,54 @@ const PrintPreview: React.FC = () => {
             return;
         }
 
-        // Create a hidden iframe to avoid popup blockers and improve mobile compatibility
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.id = 'print-frame-id';
-        document.body.appendChild(iframe);
-        
-        // FIX: Add a null check for iframe.contentWindow to resolve TS18047
-        const printWindow = iframe.contentWindow;
-        if (!printWindow) {
-            console.error("Could not access the print iframe's window. This may be due to browser security settings.");
-            alert("There was a problem initializing the print preview.");
-            document.body.removeChild(iframe);
-            return;
-        }
+        const headTags = document.querySelectorAll('head > style, head > link[rel="stylesheet"]');
+        let headHTML = '';
+        headTags.forEach(tag => {
+            headHTML += tag.outerHTML;
+        });
 
-        const printDocument = printWindow.document;
-
-        // Copy all head elements to ensure styles are applied
-        const headContent = document.head.innerHTML;
-
-        // Write the full HTML document to the iframe
-        printDocument.open();
-        printDocument.write(`
+        const printHTML = `
             <!DOCTYPE html>
             <html lang="en" class="${document.documentElement.className}">
                 <head>
                     <meta charset="UTF-8" />
                     <title>${printTitle}</title>
-                    ${headContent}
+                    ${headHTML}
                 </head>
                 <body class="bg-white">
                     ${contentToPrint.innerHTML}
                 </body>
             </html>
-        `);
-        printDocument.close();
+        `;
 
-        // Wait for the iframe content to render before triggering print
-        setTimeout(() => {
+        const blob = new Blob([printHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.id = 'print-frame-id';
+        iframe.src = url;
+
+        iframe.onload = () => {
             try {
-                // FIX: Use the guarded printWindow variable
-                printWindow.focus();
-                printWindow.print();
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                } else {
+                     throw new Error("Could not access print window.");
+                }
             } catch (e) {
                 console.error("Printing failed:", e);
                 alert("There was a problem preparing the page for printing. Please try again.");
             } finally {
-                // Clean up by removing the iframe after a short delay
+                URL.revokeObjectURL(url);
                 setTimeout(() => {
-                    const frameToRemove = document.getElementById('print-frame-id');
-                    if (frameToRemove) {
-                        document.body.removeChild(frameToRemove);
-                    }
+                    document.body.removeChild(iframe);
                 }, 1000);
             }
-        }, 500);
+        };
+
+        document.body.appendChild(iframe);
     };
 
     const PrinterIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>;

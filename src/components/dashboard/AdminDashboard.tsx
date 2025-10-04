@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserRole, FeeChallan, Attendance } from '../../types';
+import { UserRole, FeeChallan, Attendance, Student } from '../../types';
 import DoughnutChart from '../charts/DoughnutChart';
 import BarChart from '../charts/BarChart';
 import StatCard from '../common/StatCard';
@@ -9,6 +9,8 @@ import { ActiveView } from '../layout/Layout';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
 import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 import LineChart from '../charts/LineChart';
+import Modal from '../common/Modal';
+import Avatar from '../common/Avatar';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -78,25 +80,45 @@ const getIconBgColor = (action: string) => {
     return 'bg-yellow-100 dark:bg-yellow-900/50';
 };
 
+const ChartHeaderWithToggle: React.FC<{ title: string; selected: 'line' | 'bar'; onChange: (type: 'line' | 'bar') => void; }> = ({ title, selected, onChange }) => (
+    <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <div className="flex items-center space-x-1 rounded-lg bg-secondary-100 dark:bg-secondary-700 p-1">
+            <button 
+                onClick={() => onChange('line')} 
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${selected === 'line' ? 'bg-white dark:bg-secondary-600 shadow-sm' : 'text-secondary-600 dark:text-secondary-300'}`}
+            >
+                Line
+            </button>
+            <button 
+                onClick={() => onChange('bar')} 
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${selected === 'bar' ? 'bg-white dark:bg-secondary-600 shadow-sm' : 'text-secondary-600 dark:text-secondary-300'}`}
+            >
+                Bar
+            </button>
+        </div>
+    </div>
+);
+
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
     const { users, students, getSchoolById, fees, attendance, loading, logs } = useData();
     
+    const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
+    const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
+
     if (!user) return null;
     
     const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
     const school = effectiveSchoolId != null ? getSchoolById(effectiveSchoolId) : null;
     
-    const schoolStudents = useMemo(() => students.filter(s => s.schoolId === effectiveSchoolId), [students, effectiveSchoolId]);
+    const schoolStudents = useMemo(() => students.filter(s => s.schoolId === effectiveSchoolId && s.status === 'Active'), [students, effectiveSchoolId]);
     const schoolTeachers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Teacher), [users, effectiveSchoolId]);
     const schoolUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.id !== user.id), [users, effectiveSchoolId, user.id]);
 
     const stats = useMemo(() => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const day = today.getDate().toString().padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
+        const todayStr = new Date().toISOString().split('T')[0];
 
         const feesCollectedToday = fees
             .filter(f => f.paidDate === todayStr && students.find(s => s.id === f.studentId)?.schoolId === effectiveSchoolId)
@@ -137,27 +159,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }, [fees, students, effectiveSchoolId]);
 
     const attendanceData = useMemo(() => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const day = today.getDate().toString().padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
-
-        const schoolStudentIds = new Set(schoolStudents.map(s => s.id));
-        
-        const todaysAttendance = attendance.filter(a => 
-            a.date === todayStr && schoolStudentIds.has(a.studentId)
-        );
-
-        const statusCounts = todaysAttendance.reduce((acc, att) => {
-            acc[att.status] = (acc[att.status] || 0) + 1;
-            return acc;
-        }, {} as Record<Attendance['status'], number>);
-
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todaysAttendance = attendance.filter(a => a.date === todayStr);
+        const attendanceMap = new Map(todaysAttendance.map(a => [a.studentId, a.status]));
+    
+        const statusCounts = { Present: 0, Absent: 0, Leave: 0, Pending: 0 };
+        schoolStudents.forEach(student => {
+            const status = attendanceMap.get(student.id);
+            if (status) {
+                statusCounts[status]++;
+            } else {
+                statusCounts.Pending++;
+            }
+        });
+    
         return [
-            { label: 'Present', value: statusCounts.Present || 0 },
-            { label: 'Absent', value: statusCounts.Absent || 0 },
-            { label: 'Leave', value: statusCounts.Leave || 0 },
+            { label: 'Present', value: statusCounts.Present, color: '#10b981' },
+            { label: 'Absent', value: statusCounts.Absent, color: '#ef4444' },
+            { label: 'Leave', value: statusCounts.Leave, color: '#f59e0b' },
+            { label: 'Pending', value: statusCounts.Pending, color: '#64748b' },
         ];
     }, [attendance, schoolStudents]);
 
@@ -187,6 +207,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
         return logs.slice(0, 5);
     }, [logs]);
 
+    const handleFeeStatusClick = (item: { label: string }) => {
+        const status = item.label as FeeChallan['status'];
+        const relevantChallans = fees.filter(f => {
+            const student = students.find(s => s.id === f.studentId);
+            return student?.schoolId === effectiveSchoolId && f.status === status;
+        });
+
+        const items = relevantChallans.map(c => {
+            const student = students.find(s => s.id === c.studentId);
+            return {
+                id: c.id,
+                avatar: <Avatar student={student} className="w-9 h-9" />,
+                primary: student?.name || 'Unknown Student',
+                secondary: `${c.month} ${c.year} - Balance: Rs. ${(c.totalAmount - c.discount - c.paidAmount).toLocaleString()}`,
+            };
+        });
+
+        setModalDetails({ title: `${status} Challans`, items });
+    };
+
+    const handleAttendanceClick = (item: { label: string }) => {
+        const status = item.label;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todaysAttendanceRecords = attendance.filter(a => a.date === todayStr);
+        const todaysAttendanceMap = new Map(todaysAttendanceRecords.map(a => [a.studentId, a.status]));
+
+        let relevantStudents: Student[] = [];
+        if (status === 'Pending') {
+            relevantStudents = schoolStudents.filter(s => !todaysAttendanceMap.has(s.id));
+        } else {
+            relevantStudents = schoolStudents.filter(s => todaysAttendanceMap.get(s.id) === (status as Attendance['status']));
+        }
+
+        const items = relevantStudents.map(s => ({
+            id: s.id,
+            avatar: <Avatar student={s} className="w-9 h-9" />,
+            primary: s.name,
+            secondary: `Roll No: ${s.rollNumber}`,
+        }));
+
+        setModalDetails({ title: `Students: ${status}`, items });
+    };
+
     if (loading) {
         return (
             <div className="space-y-8">
@@ -213,63 +276,95 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }
 
     return (
-        <div className="space-y-8">
-            <div>
-                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Admin Dashboard</h1>
-                 <p className="text-secondary-500 dark:text-secondary-400">Welcome back, {user.name}. Here's what's happening at {school?.name}.</p>
-            </div>
-           
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} />
-                <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} />
-                <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
-                <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
-            </div>
-
-            <div className="lg:col-span-2">
-                 <LineChart title="Fee Collection (Last 30 Days)" data={feeCollectionData} color="#f59e0b" />
-            </div>
+        <>
+            <Modal isOpen={!!modalDetails} onClose={() => setModalDetails(null)} title={modalDetails?.title || ''}>
+                <div className="max-h-[60vh] overflow-y-auto">
+                    <ul className="divide-y dark:divide-secondary-700">
+                        {modalDetails?.items.map(item => (
+                            <li key={item.id} className="py-3 flex items-center space-x-4">
+                                {item.avatar}
+                                <div>
+                                    <p className="font-medium text-secondary-800 dark:text-secondary-100">{item.primary}</p>
+                                    <p className="text-sm text-secondary-500">{item.secondary}</p>
+                                </div>
+                            </li>
+                        ))}
+                        {modalDetails?.items.length === 0 && (
+                            <p className="text-secondary-500 text-center py-4">No records found.</p>
+                        )}
+                    </ul>
+                </div>
+            </Modal>
+            <div className="space-y-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Admin Dashboard</h1>
+                    <p className="text-secondary-500 dark:text-secondary-400">Welcome back, {user.name}. Here's what's happening at {school?.name}.</p>
+                </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <DoughnutChart title="Fee Collection Status" data={feeStatusData} />
-                <BarChart title="Today's Attendance Snapshot" data={attendanceData} color="#6366f1" />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-                    <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
-                        <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'fees' })} />
-                        <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'attendance' })} />
-                        <QuickAction title="Manage Classes" icon={<SchoolIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'classes' })} />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} />
+                    <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} />
+                    <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
+                    <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
                 </div>
 
-                <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-                    <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-                    {recentLogs.length > 0 ? (
-                        <ul className="space-y-4">
-                            {recentLogs.map(log => (
-                                <li key={log.id} className="flex items-start space-x-3">
-                                    <div className={`${getIconBgColor(log.action)} p-2 rounded-full`}>
-                                        {getActivityIcon(log.action)}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-secondary-800 dark:text-secondary-100">{log.details}</p>
-                                        <p className="text-xs text-secondary-500">
-                                            {timeAgo(log.timestamp)} by {log.userName}
-                                        </p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                <div className="lg:col-span-2">
+                    {feeChartType === 'line' ? (
+                        <LineChart
+                            title={<ChartHeaderWithToggle title="Fee Collection (Last 30 Days)" selected={feeChartType} onChange={setFeeChartType} />}
+                            data={feeCollectionData}
+                            color="#f59e0b"
+                        />
                     ) : (
-                        <p className="text-sm text-center text-secondary-500 py-8">No recent activity to display.</p>
+                        <BarChart
+                            title={<ChartHeaderWithToggle title="Fee Collection (Last 30 Days)" selected={feeChartType} onChange={setFeeChartType} />}
+                            data={feeCollectionData}
+                            color="#f59e0b"
+                        />
                     )}
                 </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} />
+                    <BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
+                            <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'fees' })} />
+                            <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'attendance' })} />
+                            <QuickAction title="Manage Classes" icon={<SchoolIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'classes' })} />
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+                        {recentLogs.length > 0 ? (
+                            <ul className="space-y-4">
+                                {recentLogs.map(log => (
+                                    <li key={log.id} className="flex items-start space-x-3">
+                                        <div className={`${getIconBgColor(log.action)} p-2 rounded-full`}>
+                                            {getActivityIcon(log.action)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-secondary-800 dark:text-secondary-100">{log.details}</p>
+                                            <p className="text-xs text-secondary-500">
+                                                {timeAgo(log.timestamp)} by {log.userName}
+                                            </p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-center text-secondary-500 py-8">No recent activity to display.</p>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
