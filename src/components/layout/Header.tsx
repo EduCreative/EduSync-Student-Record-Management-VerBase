@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
     };
 
     return (
-        <header className="sticky top-0 bg-white/70 dark:bg-secondary-800/70 backdrop-blur-lg border-b border-secondary-200/50 dark:border-secondary-700/50 z-30 no-print">
+        <header className="sticky top-0 bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 z-30 no-print">
             <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16 -mb-px">
                     {/* Header: Left side */}

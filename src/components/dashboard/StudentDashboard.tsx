@@ -81,7 +81,7 @@ const StudentDashboard: React.FC = () => {
             
             <BarChart title="Recent Exam Performance (%)" data={recentExamPerformance} color="#1d4ed8" />
 
-            <div className="glass-card p-6">
+            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                  <h2 className="text-xl font-semibold mb-4">Announcements</h2>
                  <ul className="space-y-3 list-disc list-inside text-secondary-600 dark:text-secondary-400">
                     <li>Parent-Teacher Meeting scheduled for next Friday.</li>

@@ -20,7 +20,7 @@ const BarChart: React.FC<BarChartProps> = ({ title, data, color = '#3b82f6', onC
     const maxValue = Math.max(...data.map(item => item.value), 0);
     if (maxValue === 0) {
         return (
-             <div className="glass-card p-6 h-full">
+             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
                 <h2 className="text-xl font-semibold mb-2">{title}</h2>
                 <div className="flex items-center justify-center h-48 text-secondary-500">
                     No data to display
@@ -30,7 +30,7 @@ const BarChart: React.FC<BarChartProps> = ({ title, data, color = '#3b82f6', onC
     }
     
     return (
-        <div className="glass-card p-6">
+        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold mb-4">{title}</h2>
             <div className="flex justify-around items-end h-48 space-x-2">
                 {data.map((item, index) => (

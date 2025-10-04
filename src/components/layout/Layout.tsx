@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Dashboard from '../dashboard/Dashboard';
@@ -30,65 +30,10 @@ export interface ActiveView {
     payload?: any;
 }
 
-const SIDEBAR_WIDTH = 256; // w-64 in pixels
-const SWIPE_THRESHOLD = SIDEBAR_WIDTH / 2;
-const EDGE_THRESHOLD = 30; // pixels from the edge to start swipe
-
 const Layout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeView, setActiveView] = useState<ActiveView>({ view: 'dashboard' });
     const { effectiveRole } = useAuth();
-
-    // State for swipe gesture
-    const [isDragging, setIsDragging] = useState(false);
-    const [sidebarPosition, setSidebarPosition] = useState(-SIDEBAR_WIDTH);
-    const touchStartX = useRef(0);
-    const initialSidebarPos = useRef(0);
-
-    const handleTouchStart = useCallback((e: TouchEvent) => {
-        const startX = e.touches[0].clientX;
-        if (startX < EDGE_THRESHOLD || (sidebarOpen && startX < SIDEBAR_WIDTH)) {
-            setIsDragging(true);
-            touchStartX.current = startX;
-            initialSidebarPos.current = sidebarPosition;
-        }
-    }, [sidebarOpen, sidebarPosition]);
-    
-    const handleTouchMove = useCallback((e: TouchEvent) => {
-        if (!isDragging) return;
-        const currentX = e.touches[0].clientX;
-        const deltaX = currentX - touchStartX.current;
-        const newPos = initialSidebarPos.current + deltaX;
-        setSidebarPosition(Math.max(-SIDEBAR_WIDTH, Math.min(newPos, 0)));
-    }, [isDragging]);
-
-    const handleTouchEnd = useCallback(() => {
-        if (!isDragging) return;
-        setIsDragging(false);
-        if (sidebarPosition > -SWIPE_THRESHOLD) {
-            setSidebarOpen(true);
-        } else {
-            setSidebarOpen(false);
-        }
-    }, [isDragging, sidebarPosition]);
-
-    useEffect(() => {
-        window.addEventListener('touchstart', handleTouchStart);
-        window.addEventListener('touchmove', handleTouchMove);
-        window.addEventListener('touchend', handleTouchEnd);
-        return () => {
-            window.removeEventListener('touchstart', handleTouchStart);
-            window.removeEventListener('touchmove', handleTouchMove);
-            window.removeEventListener('touchend', handleTouchEnd);
-        };
-    }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
-
-    useEffect(() => {
-        if (!isDragging) {
-            setSidebarPosition(sidebarOpen ? 0 : -SIDEBAR_WIDTH);
-        }
-    }, [sidebarOpen, isDragging]);
-
 
     const renderContent = () => {
         switch (activeView.view) {
@@ -179,7 +124,7 @@ const Layout: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-gradient-to-br from-secondary-100 to-secondary-200 dark:from-secondary-900 dark:to-black text-secondary-800 dark:text-secondary-200 overflow-hidden">
+        <div className="flex h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200">
             <ToastContainer />
             <Sidebar 
                 sidebarOpen={sidebarOpen} 
@@ -187,8 +132,6 @@ const Layout: React.FC = () => {
                 activeView={activeView}
                 setActiveView={setActiveView}
                 effectiveRole={effectiveRole as UserRole}
-                isDragging={isDragging}
-                position={sidebarPosition}
             />
             <div className="flex flex-col flex-1 overflow-y-auto">
                 <Header setSidebarOpen={setSidebarOpen} setActiveView={setActiveView} />

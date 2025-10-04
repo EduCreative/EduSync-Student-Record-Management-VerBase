@@ -48,7 +48,7 @@ const ParentDashboard: React.FC = () => {
         return (
              <div>
                 <h1 className="text-3xl font-bold">Parent's Dashboard</h1>
-                <div className="mt-8 glass-card p-8 text-center">
+                <div className="mt-8 bg-white dark:bg-secondary-800 p-8 text-center rounded-lg">
                     <h2 className="text-xl font-semibold">No Children Linked</h2>
                     <p className="text-secondary-500 mt-2">Your account is not yet linked to any students. Please contact the school administration to link your children to your profile.</p>
                 </div>
@@ -88,7 +88,7 @@ const ChildCard: React.FC<{ student: Student; results: Result[] }> = ({ student,
     }, [results, student]);
 
     return (
-        <div className="glass-card p-6 space-y-4">
+        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg space-y-4">
             <div className="flex items-center space-x-4">
                 <Avatar student={student} className="w-16 h-16"/>
                 <div>

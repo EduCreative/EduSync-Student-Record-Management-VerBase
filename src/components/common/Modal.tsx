@@ -31,7 +31,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
             onClick={onClose}
         >
             <div 
-                className="bg-white/80 dark:bg-secondary-800/80 backdrop-blur-md rounded-lg shadow-xl w-full max-w-lg p-6 transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
+                className="bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full max-w-lg p-6 transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
                 onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
             >
                 <div className="flex justify-between items-center mb-4 border-b pb-3 dark:border-secondary-700">

@@ -123,7 +123,7 @@ const TeacherDashboard: React.FC = () => {
                 <BarChart title="Latest Exam Performance (Avg %)" data={subjectPerformance} color="#8b5cf6" />
             </div>
 
-            <div className="glass-card p-6">
+            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                 <h2 className="text-xl font-semibold mb-4">My Classes</h2>
                 <div className="space-y-4">
                     {assignedClasses.map(c => (

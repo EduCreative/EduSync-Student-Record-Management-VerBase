@@ -17,7 +17,7 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({ title, data, onClick }) =
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) {
         return (
-             <div className="glass-card p-6 h-full">
+             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
                 <h2 className="text-xl font-semibold mb-2">{title}</h2>
                 <div className="flex items-center justify-center h-48 text-secondary-500">
                     No data to display
@@ -61,7 +61,7 @@ const DoughnutChart: React.FC<DoughnutChartProps> = ({ title, data, onClick }) =
     }
     
     return (
-        <div className="glass-card p-6">
+        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold mb-4">{title}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                 <div className="relative w-48 h-48 mx-auto">

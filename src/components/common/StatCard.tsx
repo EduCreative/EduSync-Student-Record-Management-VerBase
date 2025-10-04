@@ -8,7 +8,7 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
-    <div className="glass-card p-6 flex items-center space-x-4 transition-all duration-300 hover:shadow-xl hover:border-white/40 dark:hover:border-secondary-600/60 hover:-translate-y-1">
+    <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg flex items-center space-x-4 border border-secondary-200 dark:border-secondary-700 transition-all duration-300 hover:shadow-xl hover:border-primary-300 dark:hover:border-primary-600 hover:-translate-y-1">
         <div className={`p-3 rounded-full ${color}`}>
             {React.cloneElement(icon as React.ReactElement<any>, { className: "w-6 h-6" })}
         </div>
