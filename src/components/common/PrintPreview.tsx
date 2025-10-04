@@ -37,8 +37,17 @@ const PrintPreview: React.FC = () => {
         iframe.style.display = 'none';
         iframe.id = 'print-frame-id';
         document.body.appendChild(iframe);
+        
+        // FIX: Add a null check for iframe.contentWindow to resolve TS18047
+        const printWindow = iframe.contentWindow;
+        if (!printWindow) {
+            console.error("Could not access the print iframe's window. This may be due to browser security settings.");
+            alert("There was a problem initializing the print preview.");
+            document.body.removeChild(iframe);
+            return;
+        }
 
-        const printDocument = iframe.contentWindow.document;
+        const printDocument = printWindow.document;
 
         // Copy all head elements to ensure styles are applied
         const headContent = document.head.innerHTML;
@@ -63,8 +72,9 @@ const PrintPreview: React.FC = () => {
         // Wait for the iframe content to render before triggering print
         setTimeout(() => {
             try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
+                // FIX: Use the guarded printWindow variable
+                printWindow.focus();
+                printWindow.print();
             } catch (e) {
                 console.error("Printing failed:", e);
                 alert("There was a problem preparing the page for printing. Please try again.");
