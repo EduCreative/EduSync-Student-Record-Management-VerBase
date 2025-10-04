@@ -51,7 +51,6 @@ interface DataContextType {
 
     // Data functions
     getSchoolById: (schoolId: string) => School | undefined;
-    addUser: (userData: Omit<User, 'id'>, password?: string) => Promise<void>;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
     addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
@@ -286,43 +285,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
-    const addUser = async (userData: Omit<User, 'id'>, password?: string) => {
-        // This function is largely superseded by bulkAddUsers but kept for potential direct use.
-        if (!password) {
-            return showToast('Error', 'A password is required to create a new user.', 'error');
-        }
-        
-        const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', userData.email).single();
-        if (existingUser) {
-            return showToast('Error', 'User with this email already exists.', 'error');
-        }
-
-        const newUserId = crypto.randomUUID();
-        const profileData = { ...userData, id: newUserId, password };
-
-        const { data: profileInsertData, error: profileError } = await supabase
-            .from('profiles')
-            .insert(toSnakeCase(profileData))
-            .select()
-            .single();
-        
-        if (profileError) {
-            console.error("Failed to create user profile:", profileError.message);
-            return showToast('Error', 'Profile creation failed.', 'error');
-        }
-        
-        if (profileInsertData) {
-            const newUser = toCamelCase(profileInsertData) as User;
-            setUsers(prev => [...prev, newUser]);
-            addLog('User Added', `New user created: ${newUser.name}.`);
-            showToast('Success', `User ${newUser.name} created.`);
-        }
-    };
-
     const updateUser = async (updatedUser: User) => {
         const oldUser = users.find(u => u.id === updatedUser.id);
         
-        // Exclude password from general update unless explicitly provided
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
         if (password) {
@@ -330,7 +295,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const { data, error } = await supabase.from('profiles').update(updateData).eq('id', updatedUser.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const updatedUserFromDB = toCamelCase(data) as User;
             setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
@@ -343,15 +311,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // FIX: Find user before DB operation for safer type narrowing and logic.
     const deleteUser = async (userId: string) => {
         const userToDelete = users.find(u => u.id === userId);
         if (!userToDelete) {
-            return console.warn(`User with ID ${userId} not found for deletion.`);
+            console.warn(`User with ID ${userId} not found for deletion.`);
+            return;
         }
     
         const { error } = await supabase.from('profiles').delete().eq('id', userId);
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
     
         setUsers(prev => prev.filter(u => u.id !== userId));
         addLog('User Deleted', `User profile deleted for ${userToDelete.name}.`);
@@ -363,7 +334,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
         if (error) {
             showToast('Error', error.message, 'error');
-            return;
+            throw new Error(error.message);
         }
         if (data) {
             const newStudentFromDB = toCamelCase(data) as Student;
@@ -377,7 +348,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
         if (error) {
             showToast('Error', error.message, 'error');
-            return;
+            throw new Error(error.message);
         }
         if (data) {
             const updatedStudentFromDB = toCamelCase(data) as Student;
@@ -394,7 +365,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { error } = await supabase.from('students').delete().eq('id', studentId);
         if (error) {
             showToast('Error', error.message, 'error');
-            return;
+            throw new Error(error.message);
         }
 
         setStudents(prev => prev.filter(s => s.id !== studentId));
@@ -404,7 +375,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addClass = async (classData: Omit<Class, 'id'>) => {
         const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const newClass = toCamelCase(data) as Class;
             setClasses(prev => [...prev, newClass]);
@@ -415,7 +389,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateClass = async (updatedClass: Class) => {
         const { data, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const updatedClassFromDB = toCamelCase(data) as Class;
             setClasses(prev => prev.map(c => c.id === updatedClass.id ? updatedClassFromDB : c));
@@ -429,7 +406,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!classToDelete) return;
 
         const { error } = await supabase.from('classes').delete().eq('id', classId);
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
 
         setClasses(prev => prev.filter(c => c.id !== classId));
         addLog('Class Deleted', `Class deleted: ${classToDelete.name}.`);
@@ -446,6 +426,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.from('attendance').upsert(recordsToUpsert, { onConflict: 'student_id, date' }).select();
         
         if (error) {
+            showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
         
@@ -464,7 +445,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const challan = fees.find(f => f.id === challanId);
         if (!challan) {
             showToast('Error', 'Challan not found.', 'error');
-            return;
+            throw new Error('Challan not found.');
         }
 
         const newPaidAmount = challan.paidAmount + amount;
@@ -479,7 +460,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (error) {
             showToast('Error', error.message, 'error');
-            return;
+            throw new Error(error.message);
         }
         if (data) {
             const updatedChallan = toCamelCase(data) as FeeChallan;
@@ -499,7 +480,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (error) {
             showToast('Error', error.message, 'error');
-            return 0;
+            throw new Error(error.message);
         }
         
         showToast('Success', `${count || 0} new challans were generated for ${month}, ${year}.`, 'success');
@@ -510,7 +491,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
         const { data, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const newFeeHead = toCamelCase(data) as FeeHead;
             setFeeHeads(prev => [...prev, newFeeHead]);
@@ -520,7 +504,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateFeeHead = async (updatedFeeHead: FeeHead) => {
         const { data, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const updatedFeeHeadFromDB = toCamelCase(data) as FeeHead;
             setFeeHeads(prev => prev.map(fh => fh.id === updatedFeeHead.id ? updatedFeeHeadFromDB : fh));
@@ -533,7 +520,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!feeHeadToDelete) return;
 
         const { error } = await supabase.from('fee_heads').delete().eq('id', feeHeadId);
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
 
         setFeeHeads(prev => prev.filter(fh => fh.id !== feeHeadId));
         addLog('Fee Head Deleted', `Fee head deleted: ${feeHeadToDelete.name}.`);
@@ -546,7 +536,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .select()
             .single();
 
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const updatedStudentFromDB = toCamelCase(data) as Student;
             setStudents(prev => prev.map(s => s.id === studentId ? updatedStudentFromDB : s));
@@ -560,7 +553,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         const { data, error } = await supabase.from('results').upsert(recordsToUpsert, { onConflict: 'student_id, class_id, exam, subject' }).select();
         
-        if (error) throw new Error(error.message);
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
 
         if (data) {
             const upsertedRecords = toCamelCase(data) as Result[];
@@ -576,7 +572,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addSchool = async (name: string, address: string, logoUrl?: string | null) => {
         const { data, error } = await supabase.from('schools').insert({ name, address, logo_url: logoUrl }).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const newSchool = toCamelCase(data) as School;
             setSchools(prev => [...prev, newSchool]);
@@ -586,7 +585,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateSchool = async (updatedSchool: School) => {
         const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const updatedSchoolFromDB = toCamelCase(data) as School;
             setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
@@ -599,7 +601,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!schoolToDelete) return;
 
         const { error } = await supabase.from('schools').delete().eq('id', schoolId);
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
 
         setSchools(prev => prev.filter(s => s.id !== schoolId));
         addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
@@ -607,7 +612,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const addEvent = async (eventData: Omit<SchoolEvent, 'id'>) => {
         const { data, error } = await supabase.from('school_events').insert(toSnakeCase(eventData)).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const newEvent = toCamelCase(data) as SchoolEvent;
             setEvents(prev => [...prev, newEvent]);
@@ -617,7 +625,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updateEvent = async (updatedEvent: SchoolEvent) => {
         const { data, error } = await supabase.from('school_events').update(toSnakeCase(updatedEvent)).eq('id', updatedEvent.id).select().single();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const updatedEventFromDB = toCamelCase(data) as SchoolEvent;
             setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEventFromDB : e));
@@ -630,7 +641,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!eventToDelete) return;
 
         const { error } = await supabase.from('school_events').delete().eq('id', eventId);
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
 
         setEvents(prev => prev.filter(e => e.id !== eventId));
         addLog('Event Deleted', `Event deleted: ${eventToDelete.title}.`);
@@ -639,7 +653,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const bulkAddStudents = async (studentsToAdd: Omit<Student, 'id' | 'status'>[]) => {
         const newStudents = studentsToAdd.map(s => ({ ...s, status: 'Active' as const }));
         const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudents)).select();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const addedStudents = toCamelCase(data) as Student[];
             setStudents(prev => [...prev, ...addedStudents]);
@@ -652,7 +669,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data, error } = await supabase.rpc('bulk_create_users', { users_data: usersToAdd });
 
         if (error) {
-            return showToast('Error', error.message, 'error');
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
         }
         
         const addedUsers = toCamelCase(data) as User[];
@@ -663,7 +681,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const bulkAddClasses = async (classesToAdd: Omit<Class, 'id'>[]) => {
         const { data, error } = await supabase.from('classes').insert(toSnakeCase(classesToAdd)).select();
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
         if (data) {
             const addedClasses = toCamelCase(data) as Class[];
             setClasses(prev => [...prev, ...addedClasses]);
@@ -673,7 +694,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const backupData = async () => {
-        // FIX: Define effectiveSchoolId to make it available in this function's scope.
         const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
         if (!effectiveSchoolId) {
             showToast('Error', 'No school context selected for backup.', 'error');
@@ -682,7 +702,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         const { data, error } = await supabase.rpc('backup_school_data', { p_school_id: effectiveSchoolId });
 
-        if (error) return showToast('Error', error.message, 'error');
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const schoolName = schools.find(s => s.id === effectiveSchoolId)?.name.replace(/\s+/g, '_') || 'school';
@@ -696,7 +719,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const restoreData = async (backupFile: File) => {
-        // FIX: Define effectiveSchoolId to make it available in this function's scope.
         const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
         if (!effectiveSchoolId) {
             showToast('Error', 'No school context selected for restore.', 'error');
@@ -719,12 +741,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
         } catch (err: any) {
             showToast('Restore Error', err.message || 'Invalid backup file format.', 'error');
+            throw new Error(err.message || 'Invalid backup file format.');
         }
     };
 
     const value = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
-        getSchoolById, addUser, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
+        getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,

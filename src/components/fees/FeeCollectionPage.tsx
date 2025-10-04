@@ -7,6 +7,8 @@ import FeePaymentModal from './FeePaymentModal';
 import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 
+const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 const FeeCollectionPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
     const { students, fees, classes } = useData();
@@ -31,7 +33,6 @@ const FeeCollectionPage: React.FC = () => {
             .sort((a, b) => new Date(a.year, months.indexOf(a.month)).getTime() - new Date(b.year, months.indexOf(b.month)).getTime());
     }, [fees, selectedStudent]);
     
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
     const handleSelectStudent = (student: Student) => {

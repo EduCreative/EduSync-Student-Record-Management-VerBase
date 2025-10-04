@@ -28,8 +28,6 @@ interface AuthContextType {
     activeSchoolId: string | null;
     switchSchoolContext: (schoolId: string | null) => void;
     effectiveRole: UserRole | null;
-    profileSetupNeeded: boolean;
-    completeProfileSetup: (name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
     hasPermission: (permission: Permission) => boolean;
     authEvent: AuthChangeEvent | null;
 }
@@ -187,11 +185,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // This is no longer needed
-    const completeProfileSetup = async (): Promise<{ success: boolean; error?: string }> => {
-        return { success: false, error: "This feature is deprecated." };
-    }
-
     const effectiveRole = user?.role === UserRole.Owner && activeSchoolId ? UserRole.Admin : user?.role || null;
 
     const hasPermission = (permission: Permission): boolean => {
@@ -207,7 +200,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, sendPasswordResetEmail, activeSchoolId, switchSchoolContext, effectiveRole, profileSetupNeeded: false, completeProfileSetup, hasPermission, authEvent }}>
+        <AuthContext.Provider value={{ user, login, logout, register, updateUserPassword, sendPasswordResetEmail, activeSchoolId, switchSchoolContext, effectiveRole, hasPermission, authEvent }}>
             {children}
         </AuthContext.Provider>
     );
