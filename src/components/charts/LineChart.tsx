@@ -14,7 +14,7 @@ interface LineChartProps {
 const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' }) => {
     if (!data || data.length === 0 || data.every(d => d.value === 0)) {
         return (
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
+            <div className="glass-card p-6 h-full">
                 <h2 className="text-xl font-semibold mb-2">{title}</h2>
                 <div className="flex items-center justify-center h-64 text-secondary-500">
                     No data to display
@@ -36,7 +36,7 @@ const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' })
     const areaPath = `M0,${chartHeight} ${points} L${chartWidth},${chartHeight} Z`;
 
     return (
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+        <div className="glass-card p-6">
             <h2 className="text-xl font-semibold mb-4">{title}</h2>
             <div className="w-full overflow-x-auto">
                 <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 30}`} className="min-w-[400px]">

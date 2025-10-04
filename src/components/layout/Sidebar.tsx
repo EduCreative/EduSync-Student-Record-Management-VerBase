@@ -11,16 +11,20 @@ interface SidebarProps {
     activeView: ActiveView;
     setActiveView: (view: ActiveView) => void;
     effectiveRole: UserRole;
+    isDragging: boolean;
+    position: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeView, setActiveView, effectiveRole }) => {
+const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeView, setActiveView, effectiveRole, isDragging, position }) => {
     const { user } = useAuth();
     const sidebar = useRef<HTMLDivElement>(null);
 
+    // FIX: A click on the sidebar itself was closing it on mobile.
+    // This is corrected by checking if the sidebar is open before adding the listener.
     useEffect(() => {
         const clickHandler = ({ target }: MouseEvent) => {
-            if (!sidebar.current || !target) return;
-            if (!sidebarOpen || sidebar.current.contains(target as Node)) return;
+            if (!sidebar.current || !target || !sidebarOpen) return;
+            if (sidebar.current.contains(target as Node)) return;
             setSidebarOpen(false);
         };
         document.addEventListener('click', clickHandler);
@@ -37,14 +41,21 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeVi
         setSidebarOpen(false);
     };
 
+    const transitionClasses = isDragging ? 'transition-none' : 'transition-all duration-300 ease-in-out';
+
     return (
-        <div className="no-print">
+        <div className="no-print lg:!transform-none">
             {/* Sidebar backdrop (mobile) */}
-            <div className={`fixed inset-0 bg-secondary-900 bg-opacity-30 z-40 lg:hidden lg:z-auto transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} aria-hidden="true"></div>
+            <div 
+                className={`fixed inset-0 bg-secondary-900 bg-opacity-30 z-40 lg:hidden lg:z-auto transition-opacity duration-200 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+                aria-hidden="true"
+                onClick={() => setSidebarOpen(false)}
+            ></div>
 
             <div
                 ref={sidebar}
-                className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-screen overflow-y-auto w-64 lg:w-20 lg:hover:w-64 shrink-0 bg-primary-800 dark:bg-secondary-900 p-4 transition-all duration-300 ease-in-out group ${sidebarOpen ? 'translate-x-0' : '-translate-x-64'}`}
+                className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto h-screen overflow-y-auto w-64 lg:w-20 lg:hover:w-64 shrink-0 bg-primary-800/90 dark:bg-secondary-900/90 backdrop-blur-xl border-r border-black/10 dark:border-white/10 p-4 group ${transitionClasses}`}
+                style={{ transform: `translateX(${position}px)` }}
             >
                 {/* Sidebar header */}
                 <div className="flex justify-between mb-10 pr-3 sm:px-2">

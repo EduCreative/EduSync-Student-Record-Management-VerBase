@@ -200,7 +200,7 @@ const SettingsPage: React.FC = () => {
             <div className="max-w-4xl mx-auto space-y-8">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Settings</h1>
 
-                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="glass-card p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Appearance</h2>
                     <div className="py-4 space-y-4">
                         <div className="flex items-center justify-between">
@@ -227,7 +227,7 @@ const SettingsPage: React.FC = () => {
                 </div>
                 
                 {canSeeNotifications && (
-                    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                    <div className="glass-card p-6">
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Notification Preferences</h2>
                         <div className="py-4 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -273,7 +273,7 @@ const SettingsPage: React.FC = () => {
                 )}
 
                 {effectiveRole === UserRole.Admin && school && (
-                    <form onSubmit={handleSchoolUpdate} className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                    <form onSubmit={handleSchoolUpdate} className="glass-card p-6">
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">School Details</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="md:col-span-1 flex flex-col items-center">
@@ -302,7 +302,7 @@ const SettingsPage: React.FC = () => {
                     </form>
                 )}
 
-                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                <div className="glass-card p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Account</h2>
                     <form onSubmit={handleProfileUpdate} className="py-4 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -343,7 +343,7 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 {effectiveRole === UserRole.Admin && (
-                    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                    <div className="glass-card p-6">
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Data Management</h2>
                         <div className="py-4 space-y-4">
                             <div className="flex items-center justify-between">

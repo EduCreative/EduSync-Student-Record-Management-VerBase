@@ -131,7 +131,7 @@ const AccountantDashboard: React.FC = () => {
                 <DoughnutChart title="Outstanding Fees" data={outstandingFees} />
             </div>
 
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+            <div className="glass-card p-6">
                 <h2 className="text-xl font-semibold mb-4">Financial Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <QuickAction title="Generate Challans" icon={<FilePlusIcon className="w-8 h-8"/>} />

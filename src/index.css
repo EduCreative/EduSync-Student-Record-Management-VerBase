@@ -25,7 +25,7 @@
 
   /* Centralized Input and Select Styles */
   .input-field {
-    @apply w-full p-2 border rounded-md transition-colors duration-200 bg-secondary-50 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-900 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-70 disabled:cursor-not-allowed;
+    @apply w-full p-2 border rounded-md transition-colors duration-200 bg-white/40 dark:bg-secondary-900/40 border-secondary-300 dark:border-secondary-600 text-secondary-900 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-70 disabled:cursor-not-allowed;
   }
   
   /* Centralized Label Styles */
@@ -45,5 +45,10 @@
   }
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  /* Glassmorphism Card Style */
+  .glass-card {
+    @apply bg-white/40 dark:bg-secondary-800/40 backdrop-blur-lg border border-white/20 dark:border-secondary-700/30 rounded-2xl shadow-lg;
   }
 }

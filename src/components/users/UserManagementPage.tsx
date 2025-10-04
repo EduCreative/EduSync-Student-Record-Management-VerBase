@@ -231,7 +231,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                     </div>
                 </div>
 
-                <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
+                <div className="p-4 glass-card">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                          <div className={currentUser?.role === UserRole.Owner ? 'sm:col-span-2 lg:col-span-1' : 'sm:col-span-2'}>
                             <label htmlFor="search-user" className="input-label">Search Users</label>
@@ -276,14 +276,14 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
+                <div className="glass-card">
                     {loading ? (
                         <TableSkeleton columns={skeletonColumns} rows={USERS_PER_PAGE} />
                     ) : (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
-                                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
+                                    <thead className="text-xs text-secondary-700 uppercase bg-black/5 dark:bg-white/5">
                                         <tr>
                                             <th scope="col" className="px-6 py-3">User</th>
                                             <th scope="col" className="px-6 py-3">Role</th>
@@ -306,7 +306,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                             })();
 
                                             return (
-                                                <tr key={user.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                                <tr key={user.id} className="border-b border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center space-x-3">
                                                             <Avatar user={user} className="h-10 w-10" />
@@ -351,7 +351,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                 </table>
                             </div>
                             {totalPages > 0 && (
-                                <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
+                                <div className="flex justify-between items-center p-4 border-t border-black/10 dark:border-white/10">
                                     <span className="text-sm text-secondary-700 dark:text-secondary-400">
                                         Showing {showingFrom} - {showingTo} of {filteredUsers.length} users
                                     </span>

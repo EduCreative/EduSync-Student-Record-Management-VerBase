@@ -236,7 +236,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                <div className="lg:col-span-1 glass-card p-6">
                     <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-2 gap-4">
                         <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
@@ -246,7 +246,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                     </div>
                 </div>
 
-                <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                <div className="lg:col-span-2 glass-card p-6">
                     <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
                     {recentLogs.length > 0 ? (
                         <ul className="space-y-4">
