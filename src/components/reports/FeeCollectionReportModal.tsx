@@ -26,6 +26,15 @@ const getFirstDayOfMonthString = () => {
     return `${year}-${month}-01`;
 }
 
+const availableColumns = {
+    stdId: "Std. ID",
+    fatherName: "Father's Name",
+    amountDue: "Amount Due",
+    discount: "Discount",
+    balance: "Balance"
+};
+type ColumnKey = keyof typeof availableColumns;
+
 const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isOpen, onClose }) => {
     const { user, activeSchoolId } = useAuth();
     const { fees, students, classes, getSchoolById } = useData();
@@ -33,6 +42,18 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
     const [startDate, setStartDate] = useState(getFirstDayOfMonthString());
     const [endDate, setEndDate] = useState(getTodayString());
+
+    const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
+        stdId: true,
+        fatherName: true,
+        amountDue: true,
+        discount: true,
+        balance: true,
+    });
+
+    const handleColumnToggle = (col: ColumnKey) => {
+        setSelectedColumns(prev => ({ ...prev, [col]: !prev[col] }));
+    };
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
@@ -112,6 +133,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
     const totalRecords = useMemo(() => reportData.reduce((sum, group) => sum + group.transactions.length, 0), [reportData]);
 
     const handleGenerate = () => {
+        const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
+        const subtotalColspan = 1 + (activeColumns.includes('stdId') ? 1 : 0) + (activeColumns.includes('fatherName') ? 1 : 0) + (activeColumns.includes('amountDue') ? 1 : 0) + (activeColumns.includes('discount') ? 1 : 0);
+
         const content = (
             <div className="printable-report p-4">
                 <div className="flex items-center justify-between pb-4 border-b mb-4">
@@ -121,9 +145,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                     </div>
                     <div className="h-16 w-16 flex items-center justify-center">
                         {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
                         ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
                         )}
                     </div>
                 </div>
@@ -138,34 +162,34 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                             <thead>
                                 <tr className="bg-secondary-200">
                                     <th className="p-1 border text-left">Sr.</th>
-                                    <th className="p-1 border text-left">StdID</th>
+                                    {activeColumns.includes('stdId') && <th className="p-1 border text-left">StdID</th>}
                                     <th className="p-1 border text-left">Student Name</th>
-                                    <th className="p-1 border text-left">Father Name</th>
-                                    <th className="p-1 border text-right">Amount Due</th>
-                                    <th className="p-1 border text-right">Discount</th>
+                                    {activeColumns.includes('fatherName') && <th className="p-1 border text-left">Father Name</th>}
+                                    {activeColumns.includes('amountDue') && <th className="p-1 border text-right">Amount Due</th>}
+                                    {activeColumns.includes('discount') && <th className="p-1 border text-right">Discount</th>}
                                     <th className="p-1 border text-right">Paid</th>
-                                    <th className="p-1 border text-right">Balance</th>
+                                    {activeColumns.includes('balance') && <th className="p-1 border text-right">Balance</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {classGroup.transactions.map(t => (
                                     <tr key={t.sr}>
                                         <td className="p-1 border">{t.sr}</td>
-                                        <td className="p-1 border">{t.stdId}</td>
+                                        {activeColumns.includes('stdId') && <td className="p-1 border">{t.stdId}</td>}
                                         <td className="p-1 border">{t.studentName}</td>
-                                        <td className="p-1 border">{t.fatherName}</td>
-                                        <td className="p-1 border text-right">{t.amountDue.toLocaleString()}</td>
-                                        <td className="p-1 border text-right">{t.discount.toLocaleString()}</td>
+                                        {activeColumns.includes('fatherName') && <td className="p-1 border">{t.fatherName}</td>}
+                                        {activeColumns.includes('amountDue') && <td className="p-1 border text-right">{t.amountDue.toLocaleString()}</td>}
+                                        {activeColumns.includes('discount') && <td className="p-1 border text-right">{t.discount.toLocaleString()}</td>}
                                         <td className="p-1 border text-right">{t.paid.toLocaleString()}</td>
-                                        <td className="p-1 border text-right">{t.balance.toLocaleString()}</td>
+                                        {activeColumns.includes('balance') && <td className="p-1 border text-right">{t.balance.toLocaleString()}</td>}
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="font-bold bg-secondary-100">
-                                    <td colSpan={6} className="p-1 border text-right">Subtotal Paid:</td>
+                                    <td colSpan={subtotalColspan} className="p-1 border text-right">Subtotal Paid:</td>
                                     <td className="p-1 border text-right">{classGroup.subtotals.paid.toLocaleString()}</td>
-                                    <td className="p-1 border"></td>
+                                    {activeColumns.includes('balance') && <td className="p-1 border"></td>}
                                 </tr>
                             </tfoot>
                         </table>
@@ -177,9 +201,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                         <table className="w-full text-sm">
                             <tbody>
                                 <tr className="font-bold text-lg bg-secondary-200">
-                                    <td colSpan={6} className="p-2 border text-right">Grand Total Paid:</td>
+                                    <td colSpan={subtotalColspan} className="p-2 border text-right">Grand Total Paid:</td>
                                     <td className="p-2 border text-right">Rs. {grandTotalPaid.toLocaleString()}</td>
-                                    <td className="p-2 border"></td>
+                                    {activeColumns.includes('balance') && <td className="p-2 border"></td>}
                                 </tr>
                             </tbody>
                         </table>
@@ -191,26 +215,47 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
     };
 
     const handleExport = () => {
-        const headers = ['Sr.', 'StdID', 'Student Name', 'Father Name', 'Amount Due', 'Discount', 'Paid', 'Balance', 'Date'];
-        const rows = [headers.join(',')];
+        const headers: string[] = ['Sr.', 'Student Name'];
+        if (selectedColumns.stdId) headers.push('StdID');
+        if (selectedColumns.fatherName) headers.push("Father's Name");
+        if (selectedColumns.amountDue) headers.push('Amount Due');
+        if (selectedColumns.discount) headers.push('Discount');
+        headers.push('Paid');
+        if (selectedColumns.balance) headers.push('Balance');
+        headers.push('Date');
 
-        const escapeRow = (arr: any[]) => arr.map(v => escapeCsvCell(v)).join(',');
-    
+        const csvRows = [headers.join(',')];
+
         reportData.forEach(classGroup => {
-            rows.push(escapeRow([`Class: ${classGroup.className}`]));
+            csvRows.push(escapeCsvCell(`Class: ${classGroup.className}`));
             classGroup.transactions.forEach(t => {
-                rows.push(escapeRow([t.sr, t.stdId, t.studentName, t.fatherName, t.amountDue, t.discount, t.paid, t.balance, t.date]));
+                const row: (string | number)[] = [t.sr, t.studentName];
+                if (selectedColumns.stdId) row.push(t.stdId);
+                if (selectedColumns.fatherName) row.push(t.fatherName);
+                if (selectedColumns.amountDue) row.push(t.amountDue);
+                if (selectedColumns.discount) row.push(t.discount);
+                row.push(t.paid);
+                if (selectedColumns.balance) row.push(t.balance);
+                row.push(t.date);
+                csvRows.push(row.map(escapeCsvCell).join(','));
             });
-            rows.push(escapeRow(['', '', '', '', '', 'Subtotal Paid:', classGroup.subtotals.paid]));
-            rows.push(''); // Spacer row
+
+            const subtotalRow = Array(headers.length).fill('');
+            subtotalRow[headers.indexOf('Paid') - 1] = 'Subtotal Paid:';
+            subtotalRow[headers.indexOf('Paid')] = classGroup.subtotals.paid;
+            csvRows.push(subtotalRow.join(','));
+            csvRows.push('');
         });
     
         if (reportData.length > 0) {
-            rows.push('');
-            rows.push(escapeRow(['', '', '', '', '', 'Grand Total Paid:', grandTotalPaid]));
+            csvRows.push('');
+            const grandTotalRow = Array(headers.length).fill('');
+            grandTotalRow[headers.indexOf('Paid') - 1] = 'Grand Total Paid:';
+            grandTotalRow[headers.indexOf('Paid')] = grandTotalPaid;
+            csvRows.push(grandTotalRow.join(','));
         }
 
-        downloadCsvString(rows.join('\n'), 'fee_collection_report');
+        downloadCsvString(csvRows.join('\n'), 'fee_collection_report');
     };
 
     return (
@@ -224,6 +269,17 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                     <div>
                         <label htmlFor="end-date" className="input-label">End Date</label>
                         <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="input-field" />
+                    </div>
+                </div>
+                 <div>
+                    <label className="input-label">Include Columns</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 border rounded-md dark:border-secondary-600">
+                        {Object.entries(availableColumns).map(([key, label]) => (
+                            <label key={key} className="flex items-center space-x-2">
+                                <input type="checkbox" checked={selectedColumns[key as ColumnKey]} onChange={() => handleColumnToggle(key as ColumnKey)} className="rounded" />
+                                <span className="text-sm">{label}</span>
+                            </label>
+                        ))}
                     </div>
                 </div>
                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-md text-center">

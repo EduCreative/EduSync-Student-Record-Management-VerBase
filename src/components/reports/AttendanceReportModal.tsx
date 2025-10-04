@@ -92,9 +92,9 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                     </div>
                     <div className="h-16 w-16 flex items-center justify-center">
                         {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
                         ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
                         )}
                     </div>
                 </div>
