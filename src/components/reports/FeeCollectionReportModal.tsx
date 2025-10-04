@@ -28,7 +28,7 @@ const getFirstDayOfMonthString = () => {
 
 const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isOpen, onClose }) => {
     const { user, activeSchoolId } = useAuth();
-    const { fees, students, classes, getSchoolById } = useData();
+    const { fees, students, getSchoolById } = useData();
     const { showPrintPreview } = usePrint();
 
     const [startDate, setStartDate] = useState(getFirstDayOfMonthString());
