@@ -11,7 +11,7 @@ import { supabase } from '../../lib/supabaseClient';
 interface UserFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (user: User | (Omit<User, 'id' | 'lastLogin' | 'disabledNavLinks'> & { disabledNavLinks?: string[], password?: string })) => void;
+    onSave: (user: User | (Omit<User, 'id' | 'lastLogin' | 'disabledNavLinks'> & { disabledNavLinks?: string[], password?: string })) => Promise<void>;
     userToEdit?: User | null;
     defaultRole?: UserRole;
     lockRole?: boolean;
@@ -36,6 +36,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
         avatarUrl: null as string | null | undefined,
     });
     const [password, setPassword] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
     const [isSendingReset, setIsSendingReset] = useState(false);
     const [disabledLinks, setDisabledLinks] = useState<Record<string, boolean>>({});
     const [errors, setErrors] = useState<{ name?: string; email?: string; role?: string; schoolId?: string; password?: string; }>({});
@@ -144,21 +145,29 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
         setIsSendingReset(false);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validate()) {
             return;
         }
-        const disabledNavLinks = Object.entries(disabledLinks)
-            .filter(([, isDisabled]) => isDisabled)
-            .map(([path]) => path);
 
-        if (userToEdit) {
-            onSave({ ...userToEdit, ...formData, disabledNavLinks });
-        } else {
-            onSave({ ...formData, password, disabledNavLinks });
+        setIsSaving(true);
+        try {
+            const disabledNavLinks = Object.entries(disabledLinks)
+                .filter(([, isDisabled]) => isDisabled)
+                .map(([path]) => path);
+
+            if (userToEdit) {
+                await onSave({ ...userToEdit, ...formData, disabledNavLinks });
+            } else {
+                await onSave({ ...formData, password, disabledNavLinks });
+            }
+            onClose();
+        } catch (error) {
+            console.error("Failed to save user:", error);
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     const availableRoles = useMemo(() => {
@@ -256,7 +265,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 )}
                 <div className="flex justify-end space-x-3 pt-4">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button type="submit" className="btn-primary">Save User</button>
+                    <button type="submit" className="btn-primary" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save User'}
+                    </button>
                 </div>
 
                 {userToEdit && (currentUser?.role === UserRole.Owner || currentUser?.role === UserRole.Admin) && (

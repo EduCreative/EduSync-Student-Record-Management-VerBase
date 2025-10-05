@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC, ReactNode } from 'react';
 
 // FIX: Export the BarChartData interface so it can be used in other components.
 export interface BarChartData {
@@ -9,13 +9,13 @@ export interface BarChartData {
 }
 
 interface BarChartProps {
-    title: React.ReactNode;
+    title: ReactNode;
     data: BarChartData[];
     color?: string;
     onClick?: (item: BarChartData) => void;
 }
 
-const BarChart: React.FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick }) => {
+const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick }) => {
     const maxValue = Math.max(...data.map(item => item.value), 0);
     if (data.length === 0 || maxValue === 0) {
         return (

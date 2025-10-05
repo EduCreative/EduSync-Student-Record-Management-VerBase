@@ -1,6 +1,7 @@
 
 
-import React from 'react';
+
+import type { FC } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import OwnerDashboard from './OwnerDashboard';
@@ -15,7 +16,7 @@ interface DashboardProps {
     setActiveView: (view: ActiveView) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ setActiveView }) => {
+const Dashboard: FC<DashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
 
     if (!user) {

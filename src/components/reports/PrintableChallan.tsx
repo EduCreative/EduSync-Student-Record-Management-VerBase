@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { FeeChallan, Student, School } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
 
@@ -9,16 +9,16 @@ interface PrintableChallanProps {
     studentClass?: string;
 }
 
-const ChallanRow: React.FC<{ label: string; value: string | number; bold?: boolean }> = ({ label, value, bold }) => (
+const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> = ({ label, value, bold }) => (
     <div className={`flex justify-between items-baseline py-1 px-2 ${bold ? 'font-bold' : ''}`}>
         <span className="text-xs">{label}</span>
         <span className="text-xs text-right">{typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}</span>
     </div>
 );
 
-const PrintableChallan: React.FC<PrintableChallanProps> = ({ challan, student, school, studentClass }) => {
+const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school, studentClass }) => {
     
-    const ChallanBody: React.FC = () => (
+    const ChallanBody: FC = () => (
         <>
             <div className="text-center p-2 border-b">
                 <div className="h-8 w-full flex items-center justify-center mb-1">

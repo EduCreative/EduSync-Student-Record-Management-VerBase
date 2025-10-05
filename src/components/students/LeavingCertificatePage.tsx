@@ -71,7 +71,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                 </div>
             </div>
         );
-        showPrintPreview(certificateContent, `Leaving Certificate - ${student.name}`);
+        showPrintPreview(certificateContent, `EduSync - Leaving Certificate - ${student.name}`);
     };
 
     return (

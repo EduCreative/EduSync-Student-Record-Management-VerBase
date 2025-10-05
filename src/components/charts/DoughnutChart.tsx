@@ -1,5 +1,6 @@
 
-import React from 'react';
+
+import type { FC } from 'react';
 
 interface ChartDataItem {
     label: string;
@@ -13,7 +14,7 @@ interface DoughnutChartProps {
     onClick?: (item: ChartDataItem) => void;
 }
 
-const DoughnutChart: React.FC<DoughnutChartProps> = ({ title, data, onClick }) => {
+const DoughnutChart: FC<DoughnutChartProps> = ({ title, data, onClick }) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) {
         return (

@@ -43,7 +43,7 @@ const StudentIdCardModal: React.FC<StudentIdCardModalProps> = ({ isOpen, onClose
                 ))}
             </div>
         );
-        showPrintPreview(content, `ID Cards - ${classMap.get(classId)}`);
+        showPrintPreview(content, `EduSync - ID Cards - ${classMap.get(classId)}`);
     };
 
     return (

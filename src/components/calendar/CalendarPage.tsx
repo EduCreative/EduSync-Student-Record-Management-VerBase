@@ -69,13 +69,13 @@ const CalendarPage: React.FC = () => {
         setSelectedDate(null);
     };
 
-    const handleSaveEvent = (eventData: Omit<SchoolEvent, 'id' | 'schoolId'> | SchoolEvent) => {
+    const handleSaveEvent = async (eventData: Omit<SchoolEvent, 'id' | 'schoolId'> | SchoolEvent) => {
         if (!effectiveSchoolId) return;
 
         if ('id' in eventData) {
-            updateEvent(eventData);
+            await updateEvent(eventData);
         } else {
-            addEvent({ ...eventData, schoolId: effectiveSchoolId });
+            await addEvent({ ...eventData, schoolId: effectiveSchoolId });
         }
     };
 

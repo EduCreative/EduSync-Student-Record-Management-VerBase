@@ -137,14 +137,19 @@ const SettingsPage: React.FC = () => {
         }
         
         setIsPasswordSaving(true);
-        const { success, error } = await updateUserPassword(password.new);
-        if (success) {
-            showToast('Success', 'Password changed successfully!', 'success');
-            setPassword({ new: '', confirm: '' });
-        } else {
-            showToast('Error', error || 'Failed to change password.', 'error');
+        try {
+            const { success, error } = await updateUserPassword(password.new);
+            if (success) {
+                showToast('Success', 'Password changed successfully!', 'success');
+                setPassword({ new: '', confirm: '' });
+            } else {
+                showToast('Error', error || 'Failed to change password.', 'error');
+            }
+        } catch (e) {
+            showToast('Error', 'An unexpected error occurred while changing password.', 'error');
+        } finally {
+            setIsPasswordSaving(false);
         }
-        setIsPasswordSaving(false);
     };
 
     const handleSchoolUpdate = async (e: React.FormEvent) => {

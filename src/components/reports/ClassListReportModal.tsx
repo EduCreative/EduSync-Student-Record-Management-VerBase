@@ -28,160 +28,127 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
     const { students, classes, getSchoolById } = useData();
     const { showPrintPreview } = usePrint();
 
-    const [classId, setClassId] = useState('');
+    const [classId, setClassId] = useState('all');
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         rollNumber: true,
         fatherName: true,
         caste: false,
-        contactNumber: false,
+        contactNumber: true,
         dateOfAdmission: false,
         address: false,
     });
-    const [includeBlankColumn, setIncludeBlankColumn] = useState(false);
-
-    const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
-    const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
-    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
-
-    const classGroups = useMemo(() => {
-        if (!classId) return [];
-
-        if (classId === 'all') {
-            return schoolClasses
-                .map(c => ({
-                    classId: c.id,
-                    className: c.name,
-                    students: students.filter(s => s.classId === c.id && s.status === 'Active').sort((a, b) => a.name.localeCompare(b.name))
-                }))
-                .filter(group => group.students.length > 0)
-                .sort((a, b) => a.className.localeCompare(b.className));
-        } else {
-            const className = schoolClasses.find(c => c.id === classId)?.name || '';
-            const classStudents = students.filter(s => s.classId === classId && s.status === 'Active').sort((a, b) => a.name.localeCompare(b.name));
-            return classStudents.length > 0 ? [{ classId, className, students: classStudents }] : [];
-        }
-    }, [students, classId, schoolClasses]);
 
     const handleColumnToggle = (col: ColumnKey) => {
         setSelectedColumns(prev => ({ ...prev, [col]: !prev[col] }));
     };
 
+    const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+    const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
+    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+
+    const reportData = useMemo(() => {
+        return students
+            .filter(s =>
+                s.schoolId === effectiveSchoolId &&
+                (classId === 'all' || s.classId === classId) &&
+                s.status === 'Active'
+            )
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [students, classId, effectiveSchoolId]);
+
     const handleGenerate = () => {
-        const activeColumns = Object.entries(selectedColumns).filter(([, v]) => v).map(([k]) => k as ColumnKey);
+        const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
         
         const content = (
-            <div className="printable-report p-4">
+            <div className="printable-report p-4 font-sans">
                 <div className="flex items-center justify-between pb-4 border-b mb-4">
                     <div className="text-left">
                         <h1 className="text-2xl font-bold">{school?.name}</h1>
                         <p className="text-sm">{school?.address}</p>
                     </div>
-                    <div className="h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
-                        )}
-                    </div>
                 </div>
-
-                <h1 className="text-2xl font-bold mb-4 text-center">Class List</h1>
-
-                {classGroups.map(group => (
-                    <div key={group.classId} className="mb-6" style={{ pageBreakInside: 'avoid' }}>
-                        <h2 className="text-lg font-bold bg-secondary-100 p-2 my-2">{group.className}</h2>
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-secondary-200">
-                                    <th className="p-2 border text-left">Sr.</th>
-                                    <th className="p-2 border text-left">Student Name</th>
-                                    {activeColumns.map(key => <th key={key} className="p-2 border text-left">{availableColumns[key]}</th>)}
-                                    {includeBlankColumn && <th className="p-2 border text-left" style={{minWidth: '100px'}}></th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {group.students.map((student, index) => (
-                                    <tr key={student.id}>
-                                        <td className="p-2 border">{index + 1}</td>
-                                        <td className="p-2 border">{student.name}</td>
-                                        {activeColumns.map(key => <td key={key} className="p-2 border">{key === 'dateOfAdmission' ? formatDate(student[key]) : student[key]}</td>)}
-                                        {includeBlankColumn && <td className="p-2 border"></td>}
-                                    </tr>
+                <h2 className="text-xl font-bold mb-2 text-center">Class List</h2>
+                <p className="text-center mb-4">Class: {classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}</p>
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="bg-secondary-200">
+                            <th className="p-1 border text-left">Sr.</th>
+                            <th className="p-1 border text-left">Student Name</th>
+                            {activeColumns.map(col => <th key={col} className="p-1 border text-left">{availableColumns[col]}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {reportData.map((student, index) => (
+                            <tr key={student.id}>
+                                <td className="p-1 border">{index + 1}</td>
+                                <td className="p-1 border">{student.name}</td>
+                                {activeColumns.map(col => (
+                                    <td key={col} className="p-1 border">
+                                        {col === 'dateOfAdmission' ? formatDate(student[col]) : student[col as keyof typeof student] || 'N/A'}
+                                    </td>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         );
-        const reportTitle = classId === 'all' ? 'Class Lists' : `Class List - ${classGroups[0]?.className}`;
-        showPrintPreview(content, reportTitle);
+        showPrintPreview(content, `EduSync - Class List - ${schoolClasses.find(c => c.id === classId)?.name || 'All Classes'}`);
     };
-
+    
     const handleExport = () => {
-        const activeColumns = Object.entries(selectedColumns).filter(([, v]) => v).map(([k]) => k as ColumnKey);
+        const headers = ["Sr.", "Student Name", ...Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]).map(k => availableColumns[k as ColumnKey])];
         
-        const headers = ['Sr.', 'Student Name', ...activeColumns.map(key => availableColumns[key])];
-        if (includeBlankColumn) {
-            headers.push('Notes');
-        }
-
-        const rows = [headers.join(',')];
-        const escapeRow = (arr: any[]) => arr.map(v => escapeCsvCell(v)).join(',');
+        const csvRows = [headers.join(',')];
         
-        classGroups.forEach(group => {
-            rows.push(escapeRow([`Class: ${group.className}`]));
-            group.students.forEach((student, index) => {
-                const rowData: (string | number | undefined | null)[] = [index + 1, student.name];
-                activeColumns.forEach(key => {
-                    rowData.push(key === 'dateOfAdmission' ? formatDate(student[key]) : student[key]);
-                });
-                if (includeBlankColumn) {
-                    rowData.push('');
-                }
-                rows.push(escapeRow(rowData));
-            });
-            rows.push(''); // Add a blank row between classes
+        reportData.forEach((student, index) => {
+            const row = [
+                index + 1,
+                student.name,
+                ...Object.keys(selectedColumns)
+                    .filter(k => selectedColumns[k as ColumnKey])
+                    .map(col => {
+                        const key = col as ColumnKey;
+                        const value = student[key];
+                        return key === 'dateOfAdmission' ? formatDate(value) : value;
+                    })
+            ];
+            csvRows.push(row.map(escapeCsvCell).join(','));
         });
-
-        const reportTitle = classId === 'all' ? 'class_lists' : `class_list_${classGroups[0]?.className.replace(/\s+/g, '_')}`;
-        downloadCsvString(rows.join('\n'), reportTitle);
+        
+        downloadCsvString(csvRows.join('\n'), 'class_list_report');
     };
-
-    const totalStudents = useMemo(() => classGroups.reduce((acc, group) => acc + group.students.length, 0), [classGroups]);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Generate Printable Class List">
             <div className="space-y-4">
                 <div>
-                    <label htmlFor="class-select" className="input-label">Select Class</label>
-                    <select id="class-select" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
-                        <option value="">-- Choose a class --</option>
+                    <label htmlFor="class-filter-list" className="input-label">Select Class</label>
+                    <select id="class-filter-list" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                         <option value="all">All Classes</option>
                         {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
+
                 <div>
                     <label className="input-label">Include Columns</label>
-                    <div className="grid grid-cols-2 gap-2 p-3 border rounded-md dark:border-secondary-600">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 border rounded-md dark:border-secondary-600">
                         {Object.entries(availableColumns).map(([key, label]) => (
                             <label key={key} className="flex items-center space-x-2">
                                 <input type="checkbox" checked={selectedColumns[key as ColumnKey]} onChange={() => handleColumnToggle(key as ColumnKey)} className="rounded" />
                                 <span className="text-sm">{label}</span>
                             </label>
                         ))}
-                        <label className="flex items-center space-x-2">
-                            <input type="checkbox" checked={includeBlankColumn} onChange={() => setIncludeBlankColumn(p => !p)} className="rounded" />
-                            <span className="text-sm">Add Blank Column</span>
-                        </label>
                     </div>
                 </div>
-                <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-md text-center">
-                    <p className="text-sm">Found <strong className="text-lg">{totalStudents}</strong> students for the selected criteria.</p>
+
+                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-md text-center">
+                    <p className="text-sm">Found <strong className="text-lg">{reportData.length}</strong> students for the selected class(es).</p>
                 </div>
+
                 <div className="flex justify-end space-x-3 pt-2">
-                    <button onClick={handleExport} className="btn-secondary" disabled={!classId || totalStudents === 0}>Export CSV</button>
-                    <button onClick={handleGenerate} className="btn-primary" disabled={!classId || totalStudents === 0}>Print Preview</button>
+                    <button onClick={handleExport} className="btn-secondary" disabled={reportData.length === 0}>Export CSV</button>
+                    <button onClick={handleGenerate} className="btn-primary" disabled={reportData.length === 0}>Print Preview</button>
                 </div>
             </div>
         </Modal>

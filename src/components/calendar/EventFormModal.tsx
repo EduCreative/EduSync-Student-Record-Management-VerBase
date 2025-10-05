@@ -5,7 +5,7 @@ import Modal from '../common/Modal';
 interface EventFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (eventData: Omit<SchoolEvent, 'id' | 'schoolId'> | SchoolEvent) => void;
+    onSave: (eventData: Omit<SchoolEvent, 'id' | 'schoolId'> | SchoolEvent) => Promise<void>;
     onDelete: (eventId: string) => void;
     eventToEdit?: SchoolEvent | null;
     selectedDate?: string;
@@ -30,6 +30,7 @@ const EventFormModal: React.FC<EventFormModalProps> = ({ isOpen, onClose, onSave
     });
     
     const [formData, setFormData] = useState(getInitialFormData());
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -51,16 +52,23 @@ const EventFormModal: React.FC<EventFormModalProps> = ({ isOpen, onClose, onSave
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isReadOnly) return;
+        if (isReadOnly || !formData.title.trim()) return;
         
-        if (eventToEdit) {
-            onSave({ ...eventToEdit, ...formData });
-        } else {
-            onSave(formData);
+        setIsSaving(true);
+        try {
+            if (eventToEdit) {
+                await onSave({ ...eventToEdit, ...formData });
+            } else {
+                await onSave(formData);
+            }
+            onClose();
+        } catch (error) {
+            console.error("Failed to save event:", error);
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     const handleDelete = () => {
@@ -104,7 +112,9 @@ const EventFormModal: React.FC<EventFormModalProps> = ({ isOpen, onClose, onSave
                     </div>
                     <div className="flex space-x-3">
                         <button type="button" onClick={onClose} className="btn-secondary">Close</button>
-                        {!isReadOnly && <button type="submit" className="btn-primary">Save Event</button>}
+                        {!isReadOnly && <button type="submit" className="btn-primary" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save Event'}
+                        </button>}
                     </div>
                 </div>
             </form>

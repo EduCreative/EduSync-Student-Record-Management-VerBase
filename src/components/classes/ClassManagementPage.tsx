@@ -49,11 +49,11 @@ const ClassManagementPage: React.FC = () => {
         setIsFormModalOpen(false);
     };
 
-    const handleSaveClass = (data: Class | Omit<Class, 'id'>) => {
+    const handleSaveClass = async (data: Class | Omit<Class, 'id'>) => {
         if ('id' in data) {
-            updateClass(data);
+            await updateClass(data);
         } else {
-            addClass(data);
+            await addClass(data);
         }
     };
     

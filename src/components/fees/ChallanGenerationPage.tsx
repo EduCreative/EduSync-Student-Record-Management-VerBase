@@ -72,8 +72,14 @@ const ChallanGenerationPage: React.FC = () => {
         }
 
         setIsGenerating(true);
-        await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
-        setIsGenerating(false);
+        try {
+            await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
+        } catch (error) {
+            console.error('Failed to generate challans:', error);
+            // Error toast is shown in DataContext
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     return (

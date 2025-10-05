@@ -52,7 +52,7 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({ isOpen, onClose }) =>
                 ))}
             </div>
         );
-        showPrintPreview(content, `Report Cards - ${classMap.get(classId)} - ${exam}`);
+        showPrintPreview(content, `EduSync - Report Cards - ${classMap.get(classId)} - ${exam}`);
     };
 
     return (

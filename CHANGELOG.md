@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2024-07-21
+
+### Fixed
+- **Application Hanging on Save:** Resolved a critical bug where action buttons (e.g., "Save", "Update", "Generate") would get stuck in a loading state if the underlying operation encountered an error. All asynchronous actions now correctly use `finally` blocks to reset their loading state, ensuring the UI remains responsive and interactive even when errors occur.
+
+### Added
+- **Loading State Feedback:** Added loading indicators ("Saving...", "Updating...") to several forms (User, Class, Fee Head, Event modals) that were missing them. This provides better user feedback during data submission and prevents accidental double-clicks.
+
 ## [1.4.2] - 2024-07-20
 
 ### Fixed

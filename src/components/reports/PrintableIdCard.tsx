@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { Student, School } from '../../types';
 import Avatar from '../common/Avatar';
 
@@ -8,7 +8,7 @@ interface PrintableIdCardProps {
     studentClass?: string;
 }
 
-const PrintableIdCard: React.FC<PrintableIdCardProps> = ({ student, school, studentClass }) => {
+const PrintableIdCard: FC<PrintableIdCardProps> = ({ student, school, studentClass }) => {
     return (
         <div className="id-card">
             <div className="id-card-header">

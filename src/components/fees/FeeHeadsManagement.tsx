@@ -27,13 +27,13 @@ const FeeHeadsManagement: React.FC = () => {
         setIsFormModalOpen(false);
     };
 
-    const handleSaveFeeHead = (data: Omit<FeeHead, 'id' | 'schoolId'> | FeeHead) => {
+    const handleSaveFeeHead = async (data: Omit<FeeHead, 'id' | 'schoolId'> | FeeHead) => {
         if (!effectiveSchoolId) return;
 
         if ('id' in data) {
-            updateFeeHead(data);
+            await updateFeeHead(data);
         } else {
-            addFeeHead({ ...data, schoolId: effectiveSchoolId });
+            await addFeeHead({ ...data, schoolId: effectiveSchoolId });
         }
     };
 

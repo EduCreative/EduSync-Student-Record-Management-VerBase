@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext';
 interface ClassFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (classData: Class | Omit<Class, 'id'>) => void;
+    onSave: (classData: Class | Omit<Class, 'id'>) => Promise<void>;
     classToEdit?: Class | null;
 }
 
@@ -19,6 +19,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
 
     const [formData, setFormData] = useState({ name: '', teacherId: '' });
     const [error, setError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
 
@@ -37,7 +38,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
         }
     }, [classToEdit, isOpen]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         if (!formData.name.trim()) {
@@ -52,18 +53,25 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
             return;
         }
         
-        const saveData = {
-            ...formData,
-            teacherId: formData.teacherId || null,
-            schoolId: effectiveSchoolId,
-        };
+        setIsSaving(true);
+        try {
+            const saveData = {
+                ...formData,
+                teacherId: formData.teacherId || null,
+                schoolId: effectiveSchoolId,
+            };
 
-        if (classToEdit) {
-            onSave({ ...classToEdit, ...saveData });
-        } else {
-            onSave(saveData);
+            if (classToEdit) {
+                await onSave({ ...classToEdit, ...saveData });
+            } else {
+                await onSave(saveData);
+            }
+            onClose();
+        } catch (error) {
+            console.error("Failed to save class:", error);
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     return (
@@ -85,7 +93,9 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button type="submit" className="btn-primary">Save Class</button>
+                    <button type="submit" className="btn-primary" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Class'}
+                    </button>
                 </div>
             </form>
         </Modal>

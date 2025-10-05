@@ -1,12 +1,12 @@
 
-import React from 'react';
+import type { FC, ReactNode } from 'react';
 
 interface BadgeProps {
-    children: React.ReactNode;
+    children: ReactNode;
     color?: 'primary' | 'secondary' | 'green' | 'red' | 'yellow' | 'blue' | 'indigo' | 'purple' | 'pink';
 }
 
-const Badge: React.FC<BadgeProps> = ({ children, color = 'primary' }) => {
+const Badge: FC<BadgeProps> = ({ children, color = 'primary' }) => {
     const colorClasses: Record<string, string> = {
         primary: 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300',
         secondary: 'bg-secondary-100 text-secondary-800 dark:bg-secondary-700 dark:text-secondary-300',

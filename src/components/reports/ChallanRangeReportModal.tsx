@@ -65,7 +65,7 @@ const ChallanRangeReportModal: React.FC<ChallanRangeReportModalProps> = ({ isOpe
                 ))}
             </div>
         );
-        showPrintPreview(content, `Fee Challans - Range`);
+        showPrintPreview(content, `EduSync - Fee Challans - Range`);
     };
 
     return (

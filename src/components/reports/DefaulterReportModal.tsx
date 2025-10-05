@@ -152,13 +152,13 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         <h1 className="text-2xl font-bold">{school?.name}</h1>
                         <p className="text-sm">{school?.address}</p>
                     </div>
-                    <div className="h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
-                        )}
-                    </div>
+                    // <div className="h-16 w-16 flex items-center justify-center">
+                    //     {school?.logoUrl ? (
+                    //         <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
+                    //     ) : (
+                    //         <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
+                    //     )}
+                    // </div>
                 </div>
 
                 <h2 className="text-xl font-bold mb-2 text-center">Fee Defaulter Report</h2>
@@ -220,7 +220,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 )}
             </div>
         );
-        showPrintPreview(content, "Fee Defaulter Report");
+        showPrintPreview(content, "EduSync - Fee Defaulter Report");
     };
 
     const handleExport = () => {

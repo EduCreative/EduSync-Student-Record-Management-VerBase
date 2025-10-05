@@ -211,7 +211,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                 )}
             </div>
         );
-        showPrintPreview(content, "Fee Collection Report");
+        showPrintPreview(content, "EduSync - Fee Collection Report");
     };
 
     const handleExport = () => {

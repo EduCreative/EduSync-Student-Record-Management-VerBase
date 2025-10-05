@@ -43,11 +43,11 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
         setIsSubmitting(true);
         try {
             await recordFeePayment(challan.id, amount, discount, paidDate);
+            onClose();
         } catch (error) {
             console.error("Failed to record payment:", error);
         } finally {
             setIsSubmitting(false);
-            onClose();
         }
     };
 

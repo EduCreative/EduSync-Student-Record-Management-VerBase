@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { User, Student } from '../../types';
 
 interface AvatarProps {
@@ -7,7 +7,7 @@ interface AvatarProps {
     className?: string;
 }
 
-const Avatar: React.FC<AvatarProps> = ({ user, student, className = 'h-10 w-10' }) => {
+const Avatar: FC<AvatarProps> = ({ user, student, className = 'h-10 w-10' }) => {
     const target = user || student;
 
     if (!target) {

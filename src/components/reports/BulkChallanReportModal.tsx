@@ -67,7 +67,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                 ))}
             </div>
         );
-        showPrintPreview(content, `Fee Challans - ${classMap.get(classId)} - ${month} ${year}`);
+        showPrintPreview(content, `EduSync - Fee Challans - ${classMap.get(classId)} - ${month} ${year}`);
     };
 
     return (

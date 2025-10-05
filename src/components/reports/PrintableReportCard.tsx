@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { Student, School, Result } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
 
@@ -10,7 +10,7 @@ interface PrintableReportCardProps {
     school: School;
 }
 
-const PrintableReportCard: React.FC<PrintableReportCardProps> = ({ student, studentClass, results, exam, school }) => {
+const PrintableReportCard: FC<PrintableReportCardProps> = ({ student, studentClass, results, exam, school }) => {
     
     const getTotalMarks = () => results.reduce((sum, r) => sum + r.marks, 0);
     const getTotalMaxMarks = () => results.reduce((sum, r) => sum + r.totalMarks, 0);

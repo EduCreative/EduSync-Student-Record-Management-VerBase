@@ -93,11 +93,11 @@
 
         /* FIX: Constrain report logos to prevent them from becoming oversized on print. */
         .printable-report .report-logo,
-        .printable-result-card .report-logo {
-          max-width: 4rem !important; /* 64px */
-          max-height: 4rem !important; /* 64px */
+        .printable-result-card .report-logo,
+        .school-copy img, .school-copy svg,
+        .parent-copy img, .parent-copy svg {
+          height: 2.5rem !important; /* 40px */
           width: auto !important;
-          height: auto !important;
           object-fit: contain !important;
         }
 

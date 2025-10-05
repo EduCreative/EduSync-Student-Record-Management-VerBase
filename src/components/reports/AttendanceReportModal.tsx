@@ -140,7 +140,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                 </table>
             </div>
         );
-        showPrintPreview(content, "Attendance Report");
+        showPrintPreview(content, "EduSync - Attendance Report");
     };
 
     return (

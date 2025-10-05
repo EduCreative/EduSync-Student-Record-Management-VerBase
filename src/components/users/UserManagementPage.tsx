@@ -97,14 +97,14 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
         setIsModalOpen(false);
     };
 
-    const handleSaveUser = (userData: User | (Omit<User, 'id'> & { password?: string })) => {
+    const handleSaveUser = async (userData: User | (Omit<User, 'id'> & { password?: string })) => {
         if ('id' in userData) {
-            updateUser(userData as User);
+            await updateUser(userData as User);
         } else {
              // This path is now handled by bulkAddUsers for CSV import, but we keep it for the single Add User form.
             const { password, ...profileData } = userData;
             const singleUserData = { ...profileData, schoolId: profileData.schoolId || effectiveSchoolId || ''};
-            bulkAddUsers([{...singleUserData, password}]);
+            await bulkAddUsers([{...singleUserData, password}]);
         }
     };
 

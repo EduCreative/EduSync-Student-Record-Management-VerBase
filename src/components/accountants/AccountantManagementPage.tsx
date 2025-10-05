@@ -60,12 +60,12 @@ const AccountantManagementPage: React.FC = () => {
         setIsModalOpen(false);
     };
 
-    const handleSaveUser = (userData: User | (Omit<User, 'id'> & { password?: string })) => {
+    const handleSaveUser = async (userData: User | (Omit<User, 'id'> & { password?: string })) => {
         if ('id' in userData) {
-            updateUser(userData as User);
+            await updateUser(userData as User);
         } else {
             const { password, ...profileData } = userData;
-            bulkAddUsers([{...profileData, password} as (Omit<User, 'id'> & { password?: string })]);
+            await bulkAddUsers([{...profileData, password} as (Omit<User, 'id'> & { password?: string })]);
         }
     };
 

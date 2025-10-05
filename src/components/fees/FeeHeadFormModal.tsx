@@ -5,7 +5,7 @@ import Modal from '../common/Modal';
 interface FeeHeadFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (feeHead: Omit<FeeHead, 'id' | 'schoolId'> | FeeHead) => void;
+    onSave: (feeHead: Omit<FeeHead, 'id' | 'schoolId'> | FeeHead) => Promise<void>;
     feeHeadToEdit: FeeHead | null;
 }
 
@@ -17,6 +17,7 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
 
     const [formData, setFormData] = useState(getInitialState());
     const [error, setError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -25,7 +26,7 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
         }
     }, [isOpen, feeHeadToEdit]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name.trim()) {
             setError('Fee head name is required.');
@@ -36,12 +37,19 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
             return;
         }
 
-        if (feeHeadToEdit) {
-            onSave({ ...feeHeadToEdit, ...formData });
-        } else {
-            onSave(formData);
+        setIsSaving(true);
+        try {
+            if (feeHeadToEdit) {
+                await onSave({ ...feeHeadToEdit, ...formData });
+            } else {
+                await onSave(formData);
+            }
+            onClose();
+        } catch (error) {
+            console.error("Failed to save fee head:", error);
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     return (
@@ -73,7 +81,9 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button type="submit" className="btn-primary">Save Fee Head</button>
+                    <button type="submit" className="btn-primary" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Fee Head'}
+                    </button>
                 </div>
             </form>
         </Modal>

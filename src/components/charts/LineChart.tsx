@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC, ReactNode } from 'react';
 
 export interface LineChartData {
     label: string;
@@ -6,12 +6,12 @@ export interface LineChartData {
 }
 
 interface LineChartProps {
-    title: React.ReactNode;
+    title: ReactNode;
     data: LineChartData[];
     color?: string;
 }
 
-const LineChart: React.FC<LineChartProps> = ({ title, data, color = '#3b82f6' }) => {
+const LineChart: FC<LineChartProps> = ({ title, data, color = '#3b82f6' }) => {
     if (!data || data.length === 0 || data.every(d => d.value === 0)) {
         return (
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
