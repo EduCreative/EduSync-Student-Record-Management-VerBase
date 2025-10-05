@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Student, UserRole, FeeChallan } from '../../types';
+import { Student, UserRole, FeeChallan, Class } from '../../types';
 import Avatar from '../common/Avatar';
 import FeePaymentModal from './FeePaymentModal';
 import { formatDate } from '../../constants';
@@ -20,7 +20,7 @@ const FeeCollectionPage: React.FC = () => {
     
     const filteredStudents = useMemo(() => {
         if (!searchTerm) return [];
-        return students.filter(s =>
+        return students.filter((s: Student) =>
             s.schoolId === effectiveSchoolId &&
             (s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.rollNumber.includes(searchTerm))
         ).slice(0, 10); // Limit results for performance
@@ -29,11 +29,11 @@ const FeeCollectionPage: React.FC = () => {
     const studentChallans = useMemo(() => {
         if (!selectedStudent) return [];
         return fees
-            .filter(f => f.studentId === selectedStudent.id && (f.status === 'Unpaid' || f.status === 'Partial'))
+            .filter((f: FeeChallan) => f.studentId === selectedStudent.id && (f.status === 'Unpaid' || f.status === 'Partial'))
             .sort((a, b) => new Date(a.year, months.indexOf(a.month)).getTime() - new Date(b.year, months.indexOf(b.month)).getTime());
     }, [fees, selectedStudent]);
     
-    const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
+    const classMap = useMemo(() => new Map(classes.map((c: Class) => [c.id, c.name])), [classes]);
 
     const handleSelectStudent = (student: Student) => {
         setSelectedStudent(student);

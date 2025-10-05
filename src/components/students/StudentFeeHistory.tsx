@@ -14,7 +14,7 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
 
     const studentChallans = useMemo(() => {
         return fees
-            .filter(f => f.studentId === studentId)
+            .filter((f: FeeChallan) => f.studentId === studentId)
             .sort((a, b) => {
                 const dateA = new Date(a.year, months.indexOf(a.month));
                 const dateB = new Date(b.year, months.indexOf(b.month));
@@ -33,9 +33,10 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
             <h3 className="text-lg font-medium text-secondary-900 dark:text-white mb-4">Fee Payment History</h3>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700">
+                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                         <tr>
                             <th className="px-4 py-2">Month/Year</th>
+                            <th className="px-4 py-2">Challan #</th>
                             <th className="px-4 py-2 text-right">Total Due</th>
                             <th className="px-4 py-2 text-right">Amount Paid</th>
                             <th className="px-4 py-2 text-right">Balance</th>
@@ -51,6 +52,7 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
                             return (
                                 <tr key={challan.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
                                     <td className="px-4 py-3 font-medium">{challan.month} {challan.year}</td>
+                                    <td className="px-4 py-3">{challan.challanNumber}</td>
                                     <td className="px-4 py-3 text-right">Rs. {totalDue.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-right">Rs. {challan.paidAmount.toLocaleString()}</td>
                                     <td className={`px-4 py-3 text-right font-semibold ${balance > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>Rs. {balance.toLocaleString()}</td>

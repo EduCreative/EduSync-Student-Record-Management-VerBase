@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { UserRole } from '../../types';
+import { UserRole, Student, Result } from '../../types';
 import PrintableReportCard from './PrintableReportCard';
 
 interface ReportCardModalProps {
@@ -24,13 +24,13 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({ isOpen, onClose }) =>
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
-    const examTypes = useMemo(() => [...new Set(results.map(r => r.exam))], [results]);
+    const examTypes = useMemo(() => [...new Set(results.map((r: Result) => r.exam))], [results]);
 
     const reportData = useMemo(() => {
         if (!classId || !exam) return [];
-        const classStudents = students.filter(s => s.classId === classId && s.status === 'Active');
+        const classStudents = students.filter((s: Student) => s.classId === classId && s.status === 'Active');
         return classStudents.map(student => {
-            const studentResults = results.filter(r => r.studentId === student.id && r.exam === exam);
+            const studentResults = results.filter((r: Result) => r.studentId === student.id && r.exam === exam);
             return { student, results: studentResults };
         });
     }, [students, results, classId, exam]);

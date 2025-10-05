@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
+import { Attendance } from '../../types';
 
 interface StudentAttendanceProps {
     studentId: string;
@@ -10,7 +11,7 @@ const StudentAttendance: React.FC<StudentAttendanceProps> = ({ studentId }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const eventsByDate = useMemo(() => {
-        return attendance.reduce((acc, att) => {
+        return attendance.reduce((acc, att: Attendance) => {
             if (att.studentId === studentId) {
                 acc[att.date] = att.status;
             }

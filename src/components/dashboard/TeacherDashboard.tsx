@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { Class, Student, Attendance, Result } from '../../types';
 import StatCard from '../common/StatCard';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
 import DoughnutChart from '../charts/DoughnutChart';
@@ -13,26 +14,26 @@ const TeacherDashboard: React.FC = () => {
 
     if (!user) return null;
 
-    const assignedClasses = useMemo(() => classes.filter(c => c.teacherId === user.id), [classes, user.id]);
+    const assignedClasses = useMemo(() => classes.filter((c: Class) => c.teacherId === user.id), [classes, user.id]);
     
     const studentsInMyClasses = useMemo(() => {
         const classIds = new Set(assignedClasses.map(c => c.id));
-        return students.filter(s => classIds.has(s.classId));
+        return students.filter((s: Student) => classIds.has(s.classId));
     }, [assignedClasses, students]);
 
     const stats = useMemo(() => {
         const studentIds = new Set(studentsInMyClasses.map(s => s.id));
         
         // Average Attendance
-        const relevantAttendance = attendance.filter(a => studentIds.has(a.studentId));
+        const relevantAttendance = attendance.filter((a: Attendance) => studentIds.has(a.studentId));
         const presentCount = relevantAttendance.filter(a => a.status === 'Present').length;
         const averageAttendance = relevantAttendance.length > 0
             ? `${Math.round((presentCount / relevantAttendance.length) * 100)}%`
             : 'N/A';
         
         // Subjects Taught
-        const relevantResults = results.filter(r => studentIds.has(r.studentId));
-        const subjectsTaught = new Set(relevantResults.map(r => r.subject)).size;
+        const relevantResults = results.filter((r: Result) => studentIds.has(r.studentId));
+        const subjectsTaught = new Set(relevantResults.map((r: Result) => r.subject)).size;
 
         return {
             averageAttendance,
@@ -42,7 +43,7 @@ const TeacherDashboard: React.FC = () => {
 
     const attendanceSummary = useMemo(() => {
         const studentIds = new Set(studentsInMyClasses.map(s => s.id));
-        const recentAttendance = attendance.filter(a => studentIds.has(a.studentId));
+        const recentAttendance = attendance.filter((a: Attendance) => studentIds.has(a.studentId));
         const summary = { Present: 0, Absent: 0, Leave: 0 };
         recentAttendance.forEach(att => {
             summary[att.status]++;
@@ -56,12 +57,12 @@ const TeacherDashboard: React.FC = () => {
     
     const subjectPerformance = useMemo(() => {
         const studentIds = new Set(studentsInMyClasses.map(s => s.id));
-        const allExams = [...new Set(results.filter(r => studentIds.has(r.studentId)).map(r => r.exam))];
+        const allExams = [...new Set(results.filter((r: Result) => studentIds.has(r.studentId)).map((r: Result) => r.exam))];
         if (allExams.length === 0) return [];
 
         const latestExam = allExams.sort().pop();
         
-        const latestExamResults = results.filter(r => studentIds.has(r.studentId) && r.exam === latestExam);
+        const latestExamResults = results.filter((r: Result) => studentIds.has(r.studentId) && r.exam === latestExam);
         const performanceBySubject: Record<string, { total: number, count: number }> = {};
     
         latestExamResults.forEach(r => {
@@ -130,7 +131,7 @@ const TeacherDashboard: React.FC = () => {
                         <div key={c.id} className="p-4 border dark:border-secondary-700 rounded-lg flex justify-between items-center">
                             <div>
                                 <p className="font-semibold text-secondary-800 dark:text-secondary-100">{c.name}</p>
-                                <p className="text-sm text-secondary-500">{students.filter(s => s.classId === c.id).length} Students</p>
+                                <p className="text-sm text-secondary-500">{students.filter((s: Student) => s.classId === c.id).length} Students</p>
                             </div>
                             <div className="flex space-x-2">
                                 <button className="px-3 py-1 text-sm font-medium text-primary-700 bg-primary-100 dark:bg-primary-900 dark:text-primary-200 rounded-md hover:bg-primary-200">Take Attendance</button>

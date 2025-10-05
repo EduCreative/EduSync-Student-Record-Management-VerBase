@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 // FIX: Import UserRole to resolve 'Cannot find name' error.
-import { Result, UserRole } from '../../types';
+import { Student, Result, UserRole } from '../../types';
 
 const ResultsViewer: React.FC = () => {
     const { user } = useAuth();
@@ -11,11 +11,11 @@ const ResultsViewer: React.FC = () => {
     const myChildren = useMemo(() => {
         if (!user) return [];
         if (user.role === UserRole.Student) {
-            const studentProfile = students.find(s => s.userId === user.id);
+            const studentProfile = students.find((s: Student) => s.userId === user.id);
             return studentProfile ? [studentProfile] : [];
         }
         if (user.role === UserRole.Parent && user.childStudentIds) {
-            return students.filter(s => user.childStudentIds!.includes(s.id));
+            return students.filter((s: Student) => user.childStudentIds!.includes(s.id));
         }
         return [];
     }, [user, students]);
@@ -24,16 +24,17 @@ const ResultsViewer: React.FC = () => {
 
     const groupedResults = useMemo(() => {
         if (!selectedChildId) return {};
+        // FIX: Explicitly type the accumulator in `reduce` to prevent `examResults` from being inferred as `unknown`.
         return results
-            .filter(r => r.studentId === selectedChildId)
-            .reduce((acc, result) => {
+            .filter((r: Result) => r.studentId === selectedChildId)
+            .reduce((acc: Record<string, Result[]>, result: Result) => {
                 const exam = result.exam;
                 if (!acc[exam]) {
                     acc[exam] = [];
                 }
                 acc[exam].push(result);
                 return acc;
-            }, {} as Record<string, Result[]>);
+            }, {});
     }, [results, selectedChildId]);
     
     const getGrade = (marks: number, totalMarks: number) => {
@@ -84,8 +85,7 @@ const ResultsViewer: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y dark:divide-secondary-700">
-                                        {/* FIX: Cast examResults to Result[] to resolve 'map does not exist on type unknown' error. */}
-                                        {(examResults as Result[]).map(result => (
+                                        {examResults.map(result => (
                                             <tr key={result.id}>
                                                 <td className="px-6 py-4 font-medium">{result.subject}</td>
                                                 <td className="px-6 py-4 text-center">{result.marks}</td>

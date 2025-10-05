@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Student } from '../../types';
+import { Student, FeeHead } from '../../types';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -27,7 +27,7 @@ const StudentFeeStructure: React.FC<StudentFeeStructureProps> = ({ student }) =>
     const assignedFeeHeadIds = useMemo(() => new Set(structure.map(item => item.feeHeadId)), [structure]);
 
     const unassignedFeeHeads = useMemo(() => {
-        return feeHeads.filter(fh => !assignedFeeHeadIds.has(fh.id));
+        return feeHeads.filter((fh: FeeHead) => !assignedFeeHeadIds.has(fh.id));
     }, [feeHeads, assignedFeeHeadIds]);
     
     const handleAddFeeHead = () => {

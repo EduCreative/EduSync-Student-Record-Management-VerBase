@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-import { UserRole } from '../../types';
+import { UserRole, Student } from '../../types';
 import { formatDate } from '../../constants';
 
 interface ClassListReportModalProps {
@@ -48,7 +48,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
 
     const reportData = useMemo(() => {
         return students
-            .filter(s =>
+            .filter((s: Student) =>
                 s.schoolId === effectiveSchoolId &&
                 (classId === 'all' || s.classId === classId) &&
                 s.status === 'Active'

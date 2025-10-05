@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
+import { UserRole, FeeHead } from '../../types';
 import { useToast } from '../../context/ToastContext';
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
@@ -23,7 +23,7 @@ const ChallanGenerationPage: React.FC = () => {
     // FIX: Changed useMemo to useEffect to prevent side-effects in a memoized function.
     useEffect(() => {
         const newMap = new Map<string, { selected: boolean; amount: number }>();
-        feeHeads.forEach(fh => {
+        feeHeads.forEach((fh: FeeHead) => {
             newMap.set(fh.id, { selected: true, amount: fh.defaultAmount });
         });
         setSelectedFeeHeads(newMap);

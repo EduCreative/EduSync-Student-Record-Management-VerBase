@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { School } from '../../types';
+import { School, Student, Class } from '../../types';
 import Modal from '../common/Modal';
 import ImageUpload from '../common/ImageUpload';
 import { useAuth } from '../../context/AuthContext';
@@ -150,8 +150,8 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
         const stats = new Map<string, { studentCount: number; classCount: number }>();
         schools.forEach(school => {
             stats.set(school.id, {
-                studentCount: students.filter(s => s.schoolId === school.id).length,
-                classCount: classes.filter(c => c.schoolId === school.id).length,
+                studentCount: students.filter((s: Student) => s.schoolId === school.id).length,
+                classCount: classes.filter((c: Class) => c.schoolId === school.id).length,
             });
         });
         return stats;

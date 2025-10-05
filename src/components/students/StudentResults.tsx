@@ -10,16 +10,17 @@ const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
     const { results } = useData();
 
     const groupedResults = useMemo(() => {
+        // FIX: Explicitly type the accumulator in `reduce` to prevent `examResults` from being inferred as `unknown`.
         return results
-            .filter(r => r.studentId === studentId)
-            .reduce((acc, result) => {
+            .filter((r: Result) => r.studentId === studentId)
+            .reduce((acc: Record<string, Result[]>, result: Result) => {
                 const exam = result.exam;
                 if (!acc[exam]) {
                     acc[exam] = [];
                 }
                 acc[exam].push(result);
                 return acc;
-            }, {} as Record<string, Result[]>);
+            }, {});
     }, [results, studentId]);
 
     const getGrade = (marks: number, totalMarks: number) => {
@@ -38,10 +39,8 @@ const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
             <h3 className="text-lg font-medium text-secondary-900 dark:text-white">Academic Results</h3>
             {Object.entries(groupedResults).length > 0 ? (
                 Object.entries(groupedResults).map(([exam, examResults]) => {
-                    // FIX: Cast examResults to Result[] to resolve 'reduce does not exist on type unknown' error.
-                    const totalMarks = (examResults as Result[]).reduce((sum, r) => sum + r.marks, 0);
-                    // FIX: Cast examResults to Result[] to resolve 'reduce does not exist on type unknown' error.
-                    const totalMaxMarks = (examResults as Result[]).reduce((sum, r) => sum + r.totalMarks, 0);
+                    const totalMarks = examResults.reduce((sum, r) => sum + r.marks, 0);
+                    const totalMaxMarks = examResults.reduce((sum, r) => sum + r.totalMarks, 0);
                     const percentage = totalMaxMarks > 0 ? (totalMarks / totalMaxMarks) * 100 : 0;
 
                     return (
@@ -58,8 +57,7 @@ const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y dark:divide-secondary-700">
-                                        {/* FIX: Cast examResults to Result[] to resolve 'map does not exist on type unknown' error. */}
-                                        {(examResults as Result[]).map(result => (
+                                        {examResults.map(result => (
                                             <tr key={result.id}>
                                                 <td className="px-4 py-3 font-medium">{result.subject}</td>
                                                 <td className="px-4 py-3 text-center">{result.marks}</td>

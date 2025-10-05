@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { Student, Class, Result } from '../../types';
 import Avatar from '../common/Avatar';
 import StatCard from '../common/StatCard';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
@@ -16,23 +17,23 @@ const StudentDashboard: React.FC = () => {
         if (!user) return undefined;
         // In a real app, the user object for a student would have a direct link.
         // We find the student profile linked by our new userId field.
-        return students.find(s => s.userId === user.id);
+        return students.find((s: Student) => s.userId === user.id);
     }, [students, user]);
     
-    const studentClass = studentProfile ? classes.find(c => c.id === studentProfile.classId) : null;
+    const studentClass = studentProfile ? classes.find((c: Class) => c.id === studentProfile.classId) : null;
 
     const recentExamPerformance = useMemo(() => {
         if (!studentProfile) return [];
         
-        const studentResults = results.filter(r => r.studentId === studentProfile.id);
-        const allExams = [...new Set(studentResults.map(r => r.exam))];
+        const studentResults = results.filter((r: Result) => r.studentId === studentProfile.id);
+        const allExams = [...new Set(studentResults.map((r: Result) => r.exam))];
         if (allExams.length === 0) return [];
 
         const latestExam = allExams.sort().pop();
     
         return studentResults
-            .filter(r => r.exam === latestExam)
-            .map(r => ({
+            .filter((r: Result) => r.exam === latestExam)
+            .map((r: Result) => ({
                 label: r.subject,
                 value: r.totalMarks > 0 ? Math.round((r.marks / r.totalMarks) * 100) : 0
             }));

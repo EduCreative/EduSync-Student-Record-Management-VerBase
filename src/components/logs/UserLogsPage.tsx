@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { formatDateTime } from '../../constants';
+import { User } from '../../types';
 import Avatar from '../common/Avatar';
 
 const UserLogsPage: React.FC = () => {
@@ -8,7 +9,7 @@ const UserLogsPage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const LOGS_PER_PAGE = 15;
 
-    const userMap = new Map(users.map(u => [u.id, u]));
+    const userMap = new Map(users.map((u: User) => [u.id, u]));
 
     const totalPages = Math.ceil(logs.length / LOGS_PER_PAGE);
     const paginatedLogs = logs.slice((currentPage - 1) * LOGS_PER_PAGE, currentPage * LOGS_PER_PAGE);

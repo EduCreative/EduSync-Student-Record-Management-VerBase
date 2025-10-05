@@ -12,7 +12,7 @@ const ParentDashboard: React.FC = () => {
 
     const myChildren = useMemo(() => {
         if (!user || !user.childStudentIds) return [];
-        return students.filter(s => user.childStudentIds!.includes(s.id));
+        return students.filter((s: Student) => user.childStudentIds!.includes(s.id));
     }, [user, students]);
     
     if (loading) {
@@ -71,15 +71,15 @@ const ParentDashboard: React.FC = () => {
 const ChildCard: React.FC<{ student: Student; results: Result[] }> = ({ student, results }) => {
     
     const recentExamPerformance = useMemo(() => {
-        const studentResults = results.filter(r => r.studentId === student.id);
-        const allExams = [...new Set(studentResults.map(r => r.exam))];
+        const studentResults = results.filter((r: Result) => r.studentId === student.id);
+        const allExams = [...new Set(studentResults.map((r: Result) => r.exam))];
         if (allExams.length === 0) return { data: [], title: "No Exam Data" };
         
         const latestExam = allExams.sort().pop() || "Recent Exam";
     
         const data = studentResults
-            .filter(r => r.exam === latestExam)
-            .map(r => ({
+            .filter((r: Result) => r.exam === latestExam)
+            .map((r: Result) => ({
                 label: r.subject,
                 value: r.totalMarks > 0 ? Math.round((r.marks / r.totalMarks) * 100) : 0,
             }));
