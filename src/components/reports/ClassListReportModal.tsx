@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { formatDate } from '../../constants';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -84,7 +84,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                                 <td className="p-1 border">{student.name}</td>
                                 {activeColumns.map(col => (
                                     <td key={col} className="p-1 border">
-                                        {col === 'dateOfAdmission' ? formatDate(student[col]) : student[col as keyof typeof student] || 'N/A'}
+                                        {col === 'dateOfAdmission' ? formatDate(student[col]) : student[col as ColumnKey] || 'N/A'}
                                     </td>
                                 ))}
                             </tr>

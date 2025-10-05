@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
-import { EduSyncLogo } from '../../constants';
 
 interface DefaulterReportModalProps {
     isOpen: boolean;
