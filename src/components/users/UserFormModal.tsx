@@ -165,6 +165,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
             onClose();
         } catch (error) {
             console.error("Failed to save user:", error);
+            // The toast is likely shown in the onSave implementation in DataContext
         } finally {
             setIsSaving(false);
         }

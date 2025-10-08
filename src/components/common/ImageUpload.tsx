@@ -8,32 +8,97 @@ interface ImageUploadProps {
   bucketName?: 'avatars' | 'logos';
 }
 
+const compressImage = (file: File, quality = 0.7, maxWidth = 1024, maxHeight = 1024): Promise<File> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                let { width, height } = img;
+
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round(height * (maxWidth / width));
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round(width * (maxHeight / height));
+                        height = maxHeight;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    return reject(new Error('Failed to get canvas context'));
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            return reject(new Error('Image compression failed.'));
+                        }
+                        const outputFileName = file.name.replace(/\.[^/.]+$/, ".jpeg");
+                        const newFile = new File([blob], outputFileName, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        resolve(newFile);
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
+
+
 const ImageUpload: React.FC<ImageUploadProps> = ({ imageUrl, onChange, bucketName = 'avatars' }) => {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { showToast } = useToast();
 
     const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        let filePath = '';
         try {
             setUploading(true);
             if (!event.target.files || event.target.files.length === 0) {
                 throw new Error('You must select an image to upload.');
             }
 
-            const file = event.target.files[0];
+            const originalFile = event.target.files[0];
+            const file = await compressImage(originalFile);
+            
             const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            const fileName = `${crypto.randomUUID()}.${fileExt}`;
+            filePath = `${fileName}`;
 
-            let { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, file);
+            const uploadPromise = supabase.storage.from(bucketName).upload(filePath, file);
 
-            if (uploadError) {
-                throw uploadError;
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Upload timed out after 30 seconds.')), 30000)
+            );
+
+            const uploadResponse = await Promise.race([uploadPromise, timeoutPromise]) as { data: { path: string } | null; error: any | null; };
+
+            if (uploadResponse.error) {
+                throw uploadResponse.error;
             }
 
             const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
             
             if (!data.publicUrl) {
+                // Attempt to remove the uploaded file if we can't get a URL, to avoid orphans.
+                await supabase.storage.from(bucketName).remove([filePath]);
                 throw new Error('Could not get public URL for the uploaded image.');
             }
             
@@ -41,6 +106,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ imageUrl, onChange, bucketNam
             showToast('Success', 'Image uploaded successfully.');
 
         } catch (error: any) {
+            // If an error occurred and a file was potentially uploaded, try to clean it up.
+            if (filePath) {
+                await supabase.storage.from(bucketName).remove([filePath]);
+            }
             showToast('Upload Error', error.message, 'error');
         } finally {
             setUploading(false);

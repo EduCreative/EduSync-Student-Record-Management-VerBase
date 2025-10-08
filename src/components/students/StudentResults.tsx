@@ -10,17 +10,20 @@ const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
     const { results } = useData();
 
     const groupedResults = useMemo(() => {
-        // FIX: Explicitly type the accumulator in `reduce` to prevent `examResults` from being inferred as `unknown`.
+        // FIX: Re-implemented grouping logic using reduce with a properly typed initial accumulator to ensure correct type inference.
+        if (!results) {
+            return {};
+        }
         return results
             .filter((r: Result) => r.studentId === studentId)
-            .reduce((acc: Record<string, Result[]>, result: Result) => {
+            .reduce((acc, result: Result) => {
                 const exam = result.exam;
                 if (!acc[exam]) {
                     acc[exam] = [];
                 }
                 acc[exam].push(result);
                 return acc;
-            }, {});
+            }, {} as Record<string, Result[]>);
     }, [results, studentId]);
 
     const getGrade = (marks: number, totalMarks: number) => {

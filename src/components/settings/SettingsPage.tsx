@@ -36,6 +36,7 @@ const SettingsPage: React.FC = () => {
 
     // State for Profile Update
     const [name, setName] = useState(user?.name || '');
+    const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl);
     const [isProfileSaving, setIsProfileSaving] = useState(false);
 
     // State for Password Change
@@ -66,6 +67,7 @@ const SettingsPage: React.FC = () => {
     useEffect(() => {
         if (user) {
             setName(user.name);
+            setAvatarUrl(user.avatarUrl);
             if (user.notificationPreferences) {
                 setPrefs({
                     feeDeadlines: { ...defaultPrefs.feeDeadlines, ...user.notificationPreferences.feeDeadlines },
@@ -113,7 +115,7 @@ const SettingsPage: React.FC = () => {
 
         setIsProfileSaving(true);
         try {
-            await updateUser({ ...user, name });
+            await updateUser({ ...user, name, avatarUrl });
             showToast('Success', 'Profile updated successfully!', 'success');
         } catch (error) {
             showToast('Error', 'Failed to update profile.', 'error');

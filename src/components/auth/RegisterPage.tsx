@@ -28,6 +28,26 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+    </svg>
+);
+
+const EyeOffIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+        <line x1="2" x2="22" y1="2" y2="22" />
+    </svg>
+);
+
+const BriefcaseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+);
+
 const isValidEmail = (email: string): boolean => {
     if (!email) return false;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -38,15 +58,18 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [role, setRole] = useState<UserRole>(UserRole.Owner);
     const [error, setError] = useState('');
-    const [formErrors, setFormErrors] = useState<{ name?: string, email?: string; password?: string }>({});
+    const [formErrors, setFormErrors] = useState<{ name?: string, email?: string; password?: string, confirmPassword?: string }>({});
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const { register } = useAuth();
 
     const validate = () => {
-        const newErrors: { name?: string, email?: string; password?: string } = {};
+        const newErrors: { name?: string, email?: string; password?: string, confirmPassword?: string } = {};
         if (!name.trim()) {
             newErrors.name = 'Full Name is required.';
         }
@@ -57,6 +80,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
         }
         if (password.length < 6) {
             newErrors.password = 'Password must be at least 6 characters long.';
+        }
+        if (password !== confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match.';
         }
         setFormErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -144,7 +170,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="name">Full Name</label>
                             <div className="relative">
                                 <UserIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
-                                <input id="name" type="text" value={name} onChange={handleInputChange(setName, 'name')} className="input-auth" required />
+                                <input id="name" type="text" value={name} onChange={handleInputChange(setName, 'name')} className="input-auth" placeholder="John Doe" required />
                             </div>
                              {formErrors.name && <p className="text-red-400 text-xs mt-1">{formErrors.name}</p>}
                         </div>
@@ -152,26 +178,43 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="email">Email Address</label>
                              <div className="relative">
                                 <MailIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
-                                <input id="email" type="email" value={email} onChange={handleInputChange(setEmail, 'email')} className="input-auth" required />
+                                <input id="email" type="email" value={email} onChange={handleInputChange(setEmail, 'email')} className="input-auth" placeholder="you@example.com" required />
                             </div>
                             {formErrors.email && <p className="text-red-400 text-xs mt-1">{formErrors.email}</p>}
                         </div>
                         <div>
                             <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="password">Password</label>
-                             <div className="relative">
+                            <div className="relative">
                                 <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
-                                <input id="password" type="password" value={password} onChange={handleInputChange(setPassword, 'password')} className="input-auth" required />
+                                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={handleInputChange(setPassword, 'password')} className="input-auth" placeholder="••••••••••••" required />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-golden-200/80 hover:text-white" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                                    {showPassword ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+                                </button>
                             </div>
                             {formErrors.password && <p className="text-red-400 text-xs mt-1">{formErrors.password}</p>}
                         </div>
                         <div>
+                            <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="confirmPassword">Confirm Password</label>
+                            <div className="relative">
+                                <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
+                                <input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={handleInputChange(setConfirmPassword, 'confirmPassword')} className="input-auth" placeholder="••••••••••••" required />
+                                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-golden-200/80 hover:text-white" aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}>
+                                    {showConfirmPassword ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
+                                </button>
+                            </div>
+                            {formErrors.confirmPassword && <p className="text-red-400 text-xs mt-1">{formErrors.confirmPassword}</p>}
+                        </div>
+                        <div>
                             <label className="block text-golden-200 text-sm font-bold mb-2" htmlFor="role">I am a...</label>
-                            <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-auth">
-                                <option value={UserRole.Owner}>School Owner</option>
-                                <option value={UserRole.Parent}>Parent</option>
-                                <option value={UserRole.Student}>Student</option>
-                                <option value={UserRole.Teacher}>Teacher</option>
-                            </select>
+                            <div className="relative">
+                                <BriefcaseIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
+                                <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-auth">
+                                    <option className="text-black" value={UserRole.Owner}>School Owner</option>
+                                    <option className="text-black" value={UserRole.Parent}>Parent</option>
+                                    <option className="text-black" value={UserRole.Student}>Student</option>
+                                    <option className="text-black" value={UserRole.Teacher}>Teacher</option>
+                                </select>
+                            </div>
                         </div>
                         <div className="pt-2">
                             <button type="submit" disabled={loading} className="w-full bg-white text-golden-800 font-bold py-3 px-4 rounded-lg hover:bg-golden-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">

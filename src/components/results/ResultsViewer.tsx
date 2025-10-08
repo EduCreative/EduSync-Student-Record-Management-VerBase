@@ -23,18 +23,20 @@ const ResultsViewer: React.FC = () => {
     const [selectedChildId, setSelectedChildId] = useState<string>(myChildren[0]?.id || '');
 
     const groupedResults = useMemo(() => {
-        if (!selectedChildId) return {};
-        // FIX: Explicitly type the accumulator in `reduce` to prevent `examResults` from being inferred as `unknown`.
+        // FIX: Grouped results by exam using reduce with a properly typed initial accumulator to resolve type errors.
+        if (!selectedChildId || !results) {
+            return {};
+        }
         return results
             .filter((r: Result) => r.studentId === selectedChildId)
-            .reduce((acc: Record<string, Result[]>, result: Result) => {
+            .reduce((acc, result: Result) => {
                 const exam = result.exam;
                 if (!acc[exam]) {
                     acc[exam] = [];
                 }
                 acc[exam].push(result);
                 return acc;
-            }, {});
+            }, {} as Record<string, Result[]>);
     }, [results, selectedChildId]);
     
     const getGrade = (marks: number, totalMarks: number) => {
