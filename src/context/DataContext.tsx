@@ -340,7 +340,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // 2. Sign up the new user
         const { name, email, password, role, schoolId, status, avatarUrl } = userData;
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
             email: email!,
             password: password!,
             options: {
