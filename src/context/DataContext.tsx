@@ -53,6 +53,7 @@ interface DataContextType {
     getSchoolById: (schoolId: string) => School | undefined;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
+    addUserByAdmin: (userData: (Omit<User, 'id'> & { password?: string })) => Promise<void>;
     addStudent: (studentData: Omit<Student, 'id' | 'status'>) => Promise<void>;
     updateStudent: (updatedStudent: Student) => Promise<void>;
     deleteStudent: (studentId: string) => Promise<void>;
@@ -329,6 +330,55 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `${userToDelete.name}'s profile has been deleted.`);
     };
     
+    const addUserByAdmin = async (userData: (Omit<User, 'id'> & { password?: string })) => {
+        // 1. Preserve admin session
+        const { data: { session: adminSession } } = await supabase.auth.getSession();
+        if (!adminSession) {
+            showToast('Error', 'Your session has expired. Please log in again.', 'error');
+            throw new Error("Admin session not found.");
+        }
+
+        // 2. Sign up the new user
+        const { name, email, password, role, schoolId, status, avatarUrl } = userData;
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: email!,
+            password: password!,
+            options: {
+                data: toSnakeCase({
+                    name,
+                    role,
+                    schoolId,
+                    status: status || 'Pending Approval',
+                    avatarUrl
+                })
+            }
+        });
+
+        // 3. Immediately restore admin session to prevent being logged out.
+        const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: adminSession.access_token,
+            refresh_token: adminSession.refresh_token,
+        });
+
+        // 4. Handle errors after session is restored.
+        if (setSessionError) {
+            showToast('Critical Error', 'Could not restore your session. Please log in again.', 'error');
+            // This is a critical failure. Force a reload to the login page.
+            window.location.reload();
+            throw setSessionError;
+        }
+
+        if (signUpError) {
+            showToast('Error Creating User', signUpError.message, 'error');
+            throw signUpError;
+        }
+
+        // 5. Success: Refresh data and notify.
+        await fetchData();
+        addLog('User Added', `New user created: ${name}.`);
+        showToast('Success', `User ${name} created successfully.`, 'success');
+    };
+
     const addStudent = async (studentData: Omit<Student, 'id' | 'status'>) => {
         const newStudent = { ...studentData, status: 'Active' as const };
         const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudent)).select().single();
@@ -751,7 +801,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
-        bulkAddClasses, backupData, restoreData,
+        bulkAddClasses, backupData, restoreData, addUserByAdmin,
     };
 
     return (

@@ -14,6 +14,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
       // FIX: Typed the options parameter as RequestInit to fix error on `options.signal`.
       fetch: async (url, options: RequestInit = {}) => {
+        // FIX: Bypass the aggressive 15s timeout for storage uploads, as they can be long-running.
+        // The storage client has its own internal timeout handling for uploads.
+        if (typeof url === 'string' && url.includes('/storage/v1/object/')) {
+            return fetch(url, options);
+        }
+
         // Do not apply timeout to requests that already have a signal, e.g., from realtime.
         if (options.signal) {
           return fetch(url, options);

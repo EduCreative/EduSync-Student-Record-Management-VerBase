@@ -22,14 +22,15 @@ const ResultsViewer: React.FC = () => {
 
     const [selectedChildId, setSelectedChildId] = useState<string>(myChildren[0]?.id || '');
 
-    const groupedResults = useMemo(() => {
-        // FIX: Grouped results by exam using reduce with a properly typed initial accumulator to resolve type errors.
+    // FIX: Explicitly type `groupedResults` as `Record<string, Result[]>` to correct type inference issues with `Object.entries`.
+    const groupedResults: Record<string, Result[]> = useMemo(() => {
         if (!selectedChildId || !results) {
             return {};
         }
+        // FIX: Grouped results by exam using reduce with a properly typed initial accumulator to resolve type errors.
         return results
             .filter((r: Result) => r.studentId === selectedChildId)
-            .reduce((acc, result: Result) => {
+            .reduce((acc: Record<string, Result[]>, result: Result) => {
                 const exam = result.exam;
                 if (!acc[exam]) {
                     acc[exam] = [];

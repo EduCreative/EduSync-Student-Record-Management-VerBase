@@ -91,9 +91,9 @@ const PrintPreview: React.FC = () => {
                 <h2 className="text-lg font-bold text-secondary-900 dark:text-white">{printTitle}</h2>
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center rounded-lg bg-secondary-100 dark:bg-secondary-700">
-                        <button onClick={() => handleZoom('out')} className="p-2 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-600 rounded-l-lg" aria-label="Zoom out"><ZoomOutIcon className="w-4 h-4" /></button>
-                        <button onClick={() => handleZoom('reset')} className="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 border-x dark:border-secondary-600">{(zoom * 100).toFixed(0)}%</button>
-                        <button onClick={() => handleZoom('in')} className="p-2 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-600 rounded-r-lg" aria-label="Zoom in"><ZoomInIcon className="w-4 h-4" /></button>
+                        <button onClick={() => handleZoom('out')} className="p-2 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-600 rounded-l-lg" aria-label="Zoom out" title="Zoom out"><ZoomOutIcon className="w-4 h-4" /></button>
+                        <button onClick={() => handleZoom('reset')} className="px-3 py-2 text-sm font-medium text-secondary-700 dark:text-secondary-200 border-x dark:border-secondary-600" title="Reset zoom">{(zoom * 100).toFixed(0)}%</button>
+                        <button onClick={() => handleZoom('in')} className="p-2 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-600 rounded-r-lg" aria-label="Zoom in" title="Zoom in"><ZoomInIcon className="w-4 h-4" /></button>
                     </div>
                     <div className="flex items-center space-x-2">
                         <button 

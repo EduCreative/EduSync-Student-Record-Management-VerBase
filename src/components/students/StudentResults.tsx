@@ -9,14 +9,15 @@ interface StudentResultsProps {
 const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
     const { results } = useData();
 
-    const groupedResults = useMemo(() => {
-        // FIX: Re-implemented grouping logic using reduce with a properly typed initial accumulator to ensure correct type inference.
+    // FIX: Explicitly type `groupedResults` as `Record<string, Result[]>` to correct type inference issues with `Object.entries`.
+    const groupedResults: Record<string, Result[]> = useMemo(() => {
         if (!results) {
             return {};
         }
+        // FIX: Re-implemented grouping logic using reduce with a properly typed initial accumulator to ensure correct type inference.
         return results
             .filter((r: Result) => r.studentId === studentId)
-            .reduce((acc, result: Result) => {
+            .reduce((acc: Record<string, Result[]>, result: Result) => {
                 const exam = result.exam;
                 if (!acc[exam]) {
                     acc[exam] = [];
@@ -72,8 +73,8 @@ const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
                                     <tfoot>
                                         <tr className="font-bold bg-secondary-50 dark:bg-secondary-700/50">
                                             <td className="px-4 py-3 text-right">Total</td>
-                                            <td className="px-4 py-3 text-center">{totalMarks}</td>
                                             <td className="px-4 py-3 text-center">{totalMaxMarks}</td>
+                                            <td className="px-4 py-3 text-center">{totalMarks}</td>
                                             <td className="px-4 py-3 text-center"></td>
                                         </tr>
                                         <tr className="font-bold bg-secondary-100 dark:bg-secondary-700">

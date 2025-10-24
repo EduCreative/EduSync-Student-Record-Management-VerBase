@@ -190,6 +190,7 @@ const AttendanceMarker: React.FC = () => {
                                                         <button 
                                                             onClick={() => handleStatusChange(student.id)}
                                                             className={`px-3 py-1 text-sm rounded-md transition-colors w-24 text-center ${getStatusBtnClass(status)}`}
+                                                            title="Click to cycle status (Present, Absent, Leave)"
                                                         >
                                                             {status || '...'}
                                                         </button>
@@ -226,6 +227,7 @@ const AttendanceMarker: React.FC = () => {
                                                         : 'bg-secondary-200 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-300 dark:hover:bg-secondary-600'
                                                     }`}
                                                     aria-label={`Mark as ${s}`}
+                                                    title={`Mark as ${s}`}
                                                 >
                                                     {s[0]}
                                                 </button>

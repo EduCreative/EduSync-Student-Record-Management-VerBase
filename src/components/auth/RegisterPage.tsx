@@ -187,7 +187,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <div className="relative">
                                 <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={handleInputChange(setPassword, 'password')} className="input-auth" placeholder="••••••••••••" required />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-golden-200/80 hover:text-white" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-golden-200/80 hover:text-white" aria-label={showPassword ? 'Hide password' : 'Show password'} title={showPassword ? 'Hide password' : 'Show password'}>
                                     {showPassword ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
                                 </button>
                             </div>
@@ -198,7 +198,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <div className="relative">
                                 <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={handleInputChange(setConfirmPassword, 'confirmPassword')} className="input-auth" placeholder="••••••••••••" required />
-                                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-golden-200/80 hover:text-white" aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}>
+                                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-golden-200/80 hover:text-white" aria-label={showConfirmPassword ? 'Hide password' : 'Show password'} title={showConfirmPassword ? 'Hide password' : 'Show password'}>
                                     {showConfirmPassword ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
                                 </button>
                             </div>
@@ -210,9 +210,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                                 <BriefcaseIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-auth">
                                     <option className="text-black" value={UserRole.Owner}>School Owner</option>
+                                    <option className="text-black" value={UserRole.Admin}>Admin</option>
+                                    <option className="text-black" value={UserRole.Accountant}>Accountant</option>
+                                    <option className="text-black" value={UserRole.Teacher}>Teacher</option>
                                     <option className="text-black" value={UserRole.Parent}>Parent</option>
                                     <option className="text-black" value={UserRole.Student}>Student</option>
-                                    <option className="text-black" value={UserRole.Teacher}>Teacher</option>
                                 </select>
                             </div>
                         </div>
@@ -232,7 +234,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 </div>
             </div>
             <style>{`.input-auth {
-                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-white/20 text-white placeholder-golden-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-golden-400;
+                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-golden-200/70 border-golden-400/50 leading-tight focus:outline-none focus:ring-2 focus:ring-golden-400;
             }`}</style>
         </div>
     );

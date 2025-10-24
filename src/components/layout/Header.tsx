@@ -30,6 +30,7 @@ const NotificationBell: React.FC = () => {
             <button
                 onClick={(e) => { e.stopPropagation(); setIsOpen(prev => !prev); }}
                 className="relative p-2 rounded-full text-secondary-500 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                title="Notifications"
             >
                 <BellIcon className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -132,6 +133,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                                 e.stopPropagation();
                                 setSidebarOpen((old) => !old);
                             }}
+                            title="Open sidebar"
                         >
                             <span className="sr-only">Open sidebar</span>
                             <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -195,7 +197,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
 
                     {/* Header: Right side */}
                     <div className="flex items-center space-x-2 sm:space-x-4">
-                        <button onClick={toggleTheme} className="p-2 rounded-full text-secondary-500 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-700">
+                        <button onClick={toggleTheme} className="p-2 rounded-full text-secondary-500 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-700" title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
                            {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}
                         </button>
                         
@@ -205,6 +207,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                              <button
                                 className="flex items-center space-x-2"
                                 onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }}
+                                title="Open user menu"
                             >
                                 <Avatar user={user} className="h-9 w-9" />
                                 <div className="hidden md:block text-left">

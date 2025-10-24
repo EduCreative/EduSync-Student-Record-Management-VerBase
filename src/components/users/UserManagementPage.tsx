@@ -18,7 +18,7 @@ interface UserManagementPageProps {
 
 const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
     const { user: currentUser, activeSchoolId, hasPermission } = useAuth();
-    const { users, schools, getSchoolById, bulkAddUsers, updateUser, deleteUser, loading } = useData();
+    const { users, schools, getSchoolById, bulkAddUsers, updateUser, deleteUser, loading, addUserByAdmin } = useData();
     
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
     const isOwnerGlobalView = currentUser?.role === UserRole.Owner && !activeSchoolId;
@@ -97,14 +97,12 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
         setIsModalOpen(false);
     };
 
-    const handleSaveUser = async (userData: User | (Omit<User, 'id'> & { password?: string })) => {
+    const handleSaveUser = async (userData: User | (Omit<User, 'id' | 'lastLogin' | 'disabledNavLinks'> & { disabledNavLinks?: string[], password?: string })) => {
         if ('id' in userData) {
             await updateUser(userData as User);
         } else {
-             // This path is now handled by bulkAddUsers for CSV import, but we keep it for the single Add User form.
-            const { password, ...profileData } = userData;
-            const singleUserData = { ...profileData, schoolId: profileData.schoolId || effectiveSchoolId || ''};
-            await bulkAddUsers([{...singleUserData, password}]);
+            const singleUserData = { ...userData, schoolId: userData.schoolId || effectiveSchoolId || ''};
+            await addUserByAdmin(singleUserData);
         }
     };
 
