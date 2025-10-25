@@ -521,6 +521,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => {
+        // NOTE: If this function fails with a "schema cache" error, it may be because the `generate_monthly_challans`
+        // function was recently updated in the database. A hard refresh of the browser or restarting the application
+        // usually forces the Supabase client to refresh its cache and resolve the issue.
         const { data: count, error } = await supabase.rpc('generate_monthly_challans', {
             p_school_id: schoolId,
             p_month: month,

@@ -164,16 +164,21 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
         if (!userToEdit) return;
     
         setIsSendingReset(true);
-        const { error } = await supabase.auth.resetPasswordForEmail(userToEdit.email, {
-            redirectTo: window.location.origin, // Redirect user back to the app after reset
-        });
-    
-        if (error) {
-            showToast('Error', error.message, 'error');
-        } else {
-            showToast('Success', `Password reset instructions sent to ${userToEdit.email}.`, 'success');
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(userToEdit.email, {
+                redirectTo: window.location.origin, // Redirect user back to the app after reset
+            });
+        
+            if (error) {
+                showToast('Error', error.message, 'error');
+            } else {
+                showToast('Success', `Password reset instructions sent to ${userToEdit.email}.`, 'success');
+            }
+        } catch (e: any) {
+            showToast('Error', e.message || 'An unexpected error occurred.', 'error');
+        } finally {
+            setIsSendingReset(false);
         }
-        setIsSendingReset(false);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

@@ -4,7 +4,8 @@ import React, { type FC, type ReactElement } from 'react';
 interface StatCardProps {
     title: string;
     value: string;
-    icon: ReactElement;
+    // FIX: Changed icon type to ReactElement<any> to allow passing props like `className` via `cloneElement`.
+    icon: ReactElement<any>;
     color: string;
 }
 

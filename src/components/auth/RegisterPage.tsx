@@ -61,7 +61,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [role, setRole] = useState<UserRole>(UserRole.Owner);
+    const [role, setRole] = useState<UserRole>(UserRole.Admin);
     const [error, setError] = useState('');
     const [formErrors, setFormErrors] = useState<{ name?: string, email?: string; password?: string, confirmPassword?: string }>({});
     const [loading, setLoading] = useState(false);
@@ -209,7 +209,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <div className="relative">
                                 <BriefcaseIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-golden-200/80"/>
                                 <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-auth">
-                                    <option className="text-black" value={UserRole.Owner}>School Owner</option>
                                     <option className="text-black" value={UserRole.Admin}>Admin</option>
                                     <option className="text-black" value={UserRole.Accountant}>Accountant</option>
                                     <option className="text-black" value={UserRole.Teacher}>Teacher</option>
@@ -234,7 +233,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 </div>
             </div>
             <style>{`.input-auth {
-                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-golden-200/70 border-golden-400/50 leading-tight focus:outline-none focus:ring-2 focus:ring-golden-400;
+                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-golden-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-golden-400;
             }`}</style>
         </div>
     );
