@@ -82,27 +82,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ imageUrl, onChange, bucketNam
             const fileName = `${crypto.randomUUID()}.${fileExt}`;
             filePath = `${fileName}`;
 
-            const uploadPromise = supabase.storage.from(bucketName).upload(filePath, file);
+            // FIX: Removed the custom Promise.race timeout which was causing the upload to hang.
+            // Directly await the Supabase client upload method and use its native error handling.
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from(bucketName)
+                .upload(filePath, file);
 
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Upload timed out after 30 seconds.')), 30000)
-            );
-
-            const uploadResponse = await Promise.race([uploadPromise, timeoutPromise]) as { data: { path: string } | null; error: any | null; };
-
-            if (uploadResponse.error) {
-                throw uploadResponse.error;
+            if (uploadError) {
+                throw uploadError;
             }
 
-            const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+            if (!uploadData) {
+                throw new Error("Upload completed but no data was returned from Supabase.");
+            }
+
+            const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl(filePath);
             
-            if (!data.publicUrl) {
+            if (!publicUrlData.publicUrl) {
                 // Attempt to remove the uploaded file if we can't get a URL, to avoid orphans.
                 await supabase.storage.from(bucketName).remove([filePath]);
                 throw new Error('Could not get public URL for the uploaded image.');
             }
             
-            onChange(data.publicUrl);
+            onChange(publicUrlData.publicUrl);
             showToast('Success', 'Image uploaded successfully.');
 
         } catch (error: any) {

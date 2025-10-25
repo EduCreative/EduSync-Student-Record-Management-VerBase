@@ -351,43 +351,54 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', 'Your session has expired. Please log in again.', 'error');
             throw new Error("Admin session not found.");
         }
-
+    
         // 2. Sign up the new user
         const { name, email, password, role, schoolId, status, avatarUrl } = userData;
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: email!,
             password: password!,
-            options: {
-                data: toSnakeCase({
-                    name,
-                    role,
-                    schoolId,
-                    status: status || 'Pending Approval',
-                    avatarUrl
-                })
-            }
         });
-
+    
         // 3. Immediately restore admin session to prevent being logged out.
         const { error: setSessionError } = await supabase.auth.setSession({
             access_token: adminSession.access_token,
             refresh_token: adminSession.refresh_token,
         });
-
+        
         // 4. Handle errors after session is restored.
         if (setSessionError) {
             showToast('Critical Error', 'Could not restore your session. Please log in again.', 'error');
-            // This is a critical failure. Force a reload to the login page.
             window.location.reload();
             throw setSessionError;
         }
-
+    
         if (signUpError) {
             showToast('Error Creating User', signUpError.message, 'error');
             throw signUpError;
         }
-
-        // 5. Success: Refresh data and notify.
+    
+        if (!signUpData || !signUpData.user) {
+            throw new Error("User creation failed unexpectedly.");
+        }
+        
+        // 5. Manually insert the profile data.
+        const { error: profileError } = await supabase.from('profiles').insert(toSnakeCase({
+            id: signUpData.user.id,
+            name,
+            email,
+            role,
+            schoolId,
+            status: status || 'Pending Approval',
+            avatarUrl
+        }));
+    
+        if (profileError) {
+            showToast('Error Creating Profile', `User authenticated, but profile creation failed: ${profileError.message}`, 'error');
+            // A robust solution would clean up the auth user here.
+            throw profileError;
+        }
+    
+        // 6. Success: Refresh data and notify.
         await fetchData();
         addLog('User Added', `New user created: ${name}.`);
         showToast('Success', `User ${name} created successfully.`, 'success');

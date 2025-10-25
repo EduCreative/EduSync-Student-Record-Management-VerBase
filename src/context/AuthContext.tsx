@@ -117,16 +117,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password: pass,
         });
-
-        if (error) {
-            return { success: false, error: error.message };
+    
+        if (signInError) {
+            return { success: false, error: signInError.message };
         }
-
-        // The onAuthStateChange listener will handle setting the user state.
+        
+        if (signInData.user) {
+            // After successful sign-in, check the profile status.
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('status')
+                .eq('id', signInData.user.id)
+                .single();
+    
+            if (profileError || !profile) {
+                await supabase.auth.signOut();
+                return { success: false, error: 'Could not find user profile. Please contact support.' };
+            }
+    
+            if (profile.status === 'Pending Approval') {
+                await supabase.auth.signOut();
+                return { success: false, error: 'Your account is pending approval from an administrator.' };
+            }
+            
+            if (profile.status === 'Suspended' || profile.status === 'Inactive') {
+                await supabase.auth.signOut();
+                return { success: false, error: 'Your account is inactive or has been suspended.' };
+            }
+        }
+    
+        // The onAuthStateChange listener will handle setting the user state for a valid user.
         return { success: true };
     };
     
@@ -138,23 +162,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const register = async (name: string, email: string, pass: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
-        const { error } = await supabase.auth.signUp({
+        // A public sign-up should not interfere with any existing (e.g. admin) session,
+        // but signUp itself logs the new user in. So we must sign them out after.
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email,
             password: pass,
-            options: {
-                data: {
-                    name,
-                    role,
-                }
-            }
         });
-
-        if (error) {
-            return { success: false, error: error.message };
+    
+        if (signUpError) {
+            return { success: false, error: signUpError.message };
+        }
+    
+        if (!signUpData.user) {
+            return { success: false, error: "Registration failed: could not create user." };
+        }
+    
+        // Manually insert into the profiles table, bypassing the potentially failing DB trigger.
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+                id: signUpData.user.id,
+                name: name,
+                email: email,
+                role: role,
+                status: 'Pending Approval', // All new public registrations are pending approval
+            });
+    
+        if (profileError) {
+            // This is a problematic state: auth user exists but profile doesn't.
+            console.error("CRITICAL: Auth user created but profile insertion failed.", profileError);
+            // Ideally, clean up the created auth user here.
+            return { success: false, error: "Your account was created but profile setup failed. Please contact support." };
         }
         
-        // The DB trigger (handle_new_user) will create the profile.
-        // A success message is shown to the user, who then can log in.
+        // After successful sign-up and profile creation, sign the user out immediately.
+        // They cannot use the app until an admin approves their account.
+        await supabase.auth.signOut();
+    
         return { success: true };
     };
     
