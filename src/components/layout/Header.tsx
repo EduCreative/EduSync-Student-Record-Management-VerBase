@@ -120,133 +120,135 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
     };
 
     return (
-        <header className="sticky top-0 bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 z-30 no-print">
-            <div className="px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16 -mb-px">
-                    {/* Header: Left side */}
-                    <div className="flex items-center">
-                        {/* Hamburger button */}
-                        <button
-                            className="text-secondary-500 hover:text-secondary-600 lg:hidden"
-                            aria-controls="sidebar"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSidebarOpen((old) => !old);
-                            }}
-                            title="Open sidebar"
-                        >
-                            <span className="sr-only">Open sidebar</span>
-                            <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="4" y="5" width="16" height="2" />
-                                <rect x="4" y="11" width="16" height="2" />
-                                <rect x="4" y="17" width="16" height="2" />
-                            </svg>
-                        </button>
-                        <div className="hidden lg:flex items-center ml-4 space-x-3">
-                           {user?.role === UserRole.Owner ? (
-                                activeSchoolId ? (
-                                    <>
-                                        {school?.logoUrl ? (
-                                            <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
-                                        ) : (
-                                            <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
-                                        )}
-                                        <h1 className="text-xl font-semibold">{school?.name}</h1>
-                                        <button onClick={handleReturnToOwnerView} className="text-sm text-primary-600 hover:underline">
-                                            &larr; Back to Owner View
-                                        </button>
-                                    </>
-                                ) : (
-                                    <div className="relative" ref={schoolSwitcherRef}>
-                                        <button 
-                                            className="flex items-center space-x-2 text-xl font-semibold text-secondary-800 dark:text-secondary-200"
-                                            onClick={() => setSchoolSwitcherOpen(prev => !prev)}
-                                        >
-                                            <span>Owner Overview</span>
-                                            <ChevronDownIcon className={`w-5 h-5 transition-transform ${schoolSwitcherOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        {schoolSwitcherOpen && (
-                                            <div className="origin-top-left absolute left-0 mt-2 w-64 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                                <div className="px-4 py-2 text-xs text-secondary-500 uppercase font-semibold">Switch School View</div>
-                                                {schools.map(s => (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={() => handleSchoolSelect(s.id)}
-                                                        className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
-                                                    >
-                                                        {s.logoUrl ? <img src={s.logoUrl} alt={`${s.name} logo`} className="w-6 h-6 object-contain rounded-sm bg-white" /> : <div className="w-6 h-6 bg-secondary-200 dark:bg-secondary-700 rounded-sm flex items-center justify-center text-xs">?</div>}
-                                                        <span>{s.name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            ) : (
+        <header className="sticky top-0 z-30 border-b border-secondary-200 bg-white dark:border-secondary-700 dark:bg-secondary-800 no-print">
+            <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+                {/* Header: Left side */}
+                <div className="flex items-center gap-4">
+                    {/* Hamburger button */}
+                    <button
+                        className="text-secondary-500 hover:text-secondary-600 lg:hidden"
+                        aria-controls="sidebar"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSidebarOpen((old) => !old);
+                        }}
+                        title="Open sidebar"
+                    >
+                        <span className="sr-only">Open sidebar</span>
+                        <svg className="h-6 w-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="5" width="16" height="2" />
+                            <rect x="4" y="11" width="16" height="2" />
+                            <rect x="4" y="17" width="16" height="2" />
+                        </svg>
+                    </button>
+
+                    {/* Logo and School Name / Switcher */}
+                    <div className="flex items-center gap-3">
+                        {user?.role === UserRole.Owner ? (
+                            activeSchoolId ? (
                                 <>
                                     {school?.logoUrl ? (
                                         <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
-                                     ) : (
+                                    ) : (
                                         <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
                                     )}
-                                    <h1 className="text-xl font-semibold">{school?.name || 'EduSync'}</h1>
+                                    <div className="flex flex-col">
+                                        <h1 className="text-lg font-semibold leading-tight">{school?.name}</h1>
+                                        <button onClick={handleReturnToOwnerView} className="text-xs text-primary-600 hover:underline text-left">
+                                            &larr; Owner View
+                                        </button>
+                                    </div>
                                 </>
-                            )}
-                        </div>
+                            ) : (
+                                <div className="relative" ref={schoolSwitcherRef}>
+                                    <button 
+                                        className="flex items-center gap-2 text-xl font-semibold text-secondary-800 dark:text-secondary-200"
+                                        onClick={() => setSchoolSwitcherOpen(prev => !prev)}
+                                    >
+                                        <span>Owner Overview</span>
+                                        <ChevronDownIcon className={`h-5 w-5 transition-transform ${schoolSwitcherOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {schoolSwitcherOpen && (
+                                        <div className="origin-top-left absolute left-0 mt-2 w-64 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                            <div className="px-4 py-2 text-xs text-secondary-500 uppercase font-semibold">Switch School View</div>
+                                            {schools.map(s => (
+                                                <button
+                                                    key={s.id}
+                                                    onClick={() => handleSchoolSelect(s.id)}
+                                                    className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
+                                                >
+                                                    {s.logoUrl ? <img src={s.logoUrl} alt={`${s.name} logo`} className="w-6 h-6 object-contain rounded-sm bg-white" /> : <div className="w-6 h-6 bg-secondary-200 dark:bg-secondary-700 rounded-sm flex items-center justify-center text-xs">?</div>}
+                                                    <span>{s.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        ) : (
+                            <>
+                                {school?.logoUrl ? (
+                                    <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                 ) : (
+                                    <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
+                                )}
+                                <h1 className="text-xl font-semibold">{school?.name || 'EduSync'}</h1>
+                            </>
+                        )}
                     </div>
+                </div>
 
-                    {/* Header: Right side */}
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                        <button onClick={toggleTheme} className="p-2 rounded-full text-secondary-500 dark:text-secondary-400 hover:bg-secondary-100 dark:hover:bg-secondary-700" title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-                           {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}
+                {/* Header: Right side */}
+                <div className="flex items-center gap-4">
+                    <button onClick={toggleTheme} className="p-2 rounded-full text-secondary-500 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700" title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                       {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}
+                    </button>
+                    
+                    <NotificationBell />
+                    
+                    <div className="relative" ref={profileDropdownRef}>
+                         <button
+                            className="flex items-center gap-2"
+                            onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }}
+                            title="Open user menu"
+                        >
+                            <Avatar user={user} className="h-9 w-9" />
+                            <div className="hidden md:block text-left">
+                                <span className="font-semibold text-sm">{user?.name}</span>
+                                <span className="block text-xs text-secondary-500">{user?.role}</span>
+                            </div>
                         </button>
-                        
-                        <NotificationBell />
-                        
-                        <div className="relative" ref={profileDropdownRef}>
-                             <button
-                                className="flex items-center space-x-2"
-                                onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }}
-                                title="Open user menu"
-                            >
-                                <Avatar user={user} className="h-9 w-9" />
-                                <div className="hidden md:block text-left">
-                                    <span className="font-semibold text-sm">{user?.name}</span>
-                                    <span className="block text-xs text-secondary-500">{user?.role}</span>
-                                </div>
-                            </button>
-                            {profileOpen && (
-                                <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                    <button
-                                        onClick={() => {
-                                            setActiveView({ view: 'userProfile' });
-                                            setProfileOpen(false);
-                                        }}
-                                        className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-                                    >
-                                        My Profile
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setActiveView({ view: 'settings' });
-                                            setProfileOpen(false);
-                                        }}
-                                        className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-                                    >
-                                        Settings
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            logout();
-                                            setProfileOpen(false);
-                                        }}
-                                        className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-secondary-100 dark:hover:bg-secondary-700"
-                                    >
-                                        Logout
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {profileOpen && (
+                            <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <button
+                                    onClick={() => {
+                                        setActiveView({ view: 'userProfile' });
+                                        setProfileOpen(false);
+                                    }}
+                                    className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                >
+                                    My Profile
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveView({ view: 'settings' });
+                                        setProfileOpen(false);
+                                    }}
+                                    className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                >
+                                    Settings
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        logout();
+                                        setProfileOpen(false);
+                                    }}
+                                    className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
