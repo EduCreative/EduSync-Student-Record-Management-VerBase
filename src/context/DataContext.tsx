@@ -124,11 +124,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             let query = supabase.from(tableName).select('*');
             
             if (options.filterBySchool) {
+                // For Admin or Owner-as-Admin views, we need to include unassigned users for approval.
+                // This logic specifically applies when fetching the 'profiles' table.
+                const isAdminManagingUsers = (tableName === 'profiles' && (user.role === UserRole.Admin || (user.role === UserRole.Owner && activeSchoolId)));
+        
                 if (effectiveSchoolId) {
-                    query = query.eq('school_id', effectiveSchoolId);
-                } else if (user.role !== UserRole.Owner && user.schoolId) {
+                    if (isAdminManagingUsers) {
+                        // When managing users, fetch users from the current school OR unassigned ones.
+                        query = query.or(`school_id.eq.${effectiveSchoolId},school_id.is.null`);
+                    } else {
+                        // For all other data (students, classes, etc.), filter strictly by school.
+                        query = query.eq('school_id', effectiveSchoolId);
+                    }
+                } else if (user.role === UserRole.Owner) {
+                    // This is the Owner's global view (no specific school selected). No filter is applied, which is correct.
+                } else if (user.schoolId) {
+                    // This handles other roles like Teacher, Accountant. They only see their own school's data.
                     query = query.eq('school_id', user.schoolId);
-                } else if (user.role !== UserRole.Owner && !user.schoolId) {
+                } else {
+                    // A non-owner with no schoolId assigned should not see any school-specific data.
                     return [];
                 }
             }
