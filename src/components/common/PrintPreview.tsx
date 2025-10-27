@@ -32,10 +32,17 @@ const PrintPreview: React.FC = () => {
             return;
         }
 
+        // Correctly capture all styles, including linked stylesheets with absolute paths.
         const headTags = document.querySelectorAll('head > style, head > link[rel="stylesheet"]');
         let headHTML = '';
         headTags.forEach(tag => {
-            headHTML += tag.outerHTML;
+             if (tag.tagName === 'LINK') {
+                // The .href property on a link element gives the full absolute URL,
+                // which is crucial for it to work inside a blob-based iframe.
+                headHTML += `<link rel="stylesheet" href="${(tag as HTMLLinkElement).href}">`;
+            } else {
+                headHTML += tag.outerHTML;
+            }
         });
 
         const printHTML = `
@@ -58,12 +65,20 @@ const PrintPreview: React.FC = () => {
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.id = 'print-frame-id';
-        iframe.src = url;
+        
+        const cleanup = () => {
+            URL.revokeObjectURL(url);
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        };
 
         iframe.onload = () => {
             try {
                 if (iframe.contentWindow) {
                     iframe.contentWindow.focus();
+                    // Use `afterprint` event for reliable cleanup after the print dialog closes.
+                    iframe.contentWindow.addEventListener('afterprint', cleanup);
                     iframe.contentWindow.print();
                 } else {
                      throw new Error("Could not access print window.");
@@ -71,14 +86,11 @@ const PrintPreview: React.FC = () => {
             } catch (e) {
                 console.error("Printing failed:", e);
                 alert("There was a problem preparing the page for printing. Please try again.");
-            } finally {
-                URL.revokeObjectURL(url);
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 1000);
+                cleanup(); // Ensure cleanup happens even if printing fails.
             }
         };
-
+        
+        iframe.src = url;
         document.body.appendChild(iframe);
     };
 

@@ -69,11 +69,11 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
 
     return (
         <>
-            <div className="school-copy flex flex-col p-1 border-r h-full">
+            <div className="school-copy flex flex-col p-1 border-r h-full w-1/2">
                 <ChallanBody />
                  <p className="text-[8px] font-bold text-center p-1">School Copy</p>
             </div>
-            <div className="parent-copy flex flex-col p-1 h-full">
+            <div className="parent-copy flex flex-col p-1 h-full w-1/2">
                 <ChallanBody />
                 <p className="text-[8px] font-bold text-center p-1">Parent/Student Copy</p>
             </div>
