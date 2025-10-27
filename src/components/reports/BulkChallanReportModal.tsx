@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole, FeeChallan } from '../../types';
-import PrintableChallan from './PrintableChallan';
+import { formatDate, EduSyncLogo } from '../../constants';
 
 interface BulkChallanReportModalProps {
     isOpen: boolean;
@@ -38,33 +38,58 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
         });
     }, [fees, studentMap, classId, month, year]);
 
-    const chunk = <T,>(arr: T[], size: number): T[][] =>
-        Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-            arr.slice(i * size, i * size + size)
-    );
-
     const handleGenerate = () => {
         if (!school) return;
-        const challanChunks = chunk(reportData, 3);
-
+        
         const content = (
-            <div className="challan-print-container">
-                {challanChunks.map((chunk, pageIndex) => (
-                    <div key={pageIndex} className="challan-page">
-                        {/* FIX: Explicitly type 'challan' to resolve 'unknown' type error. */}
-                        {chunk.map((challan: FeeChallan) => {
+            <div className="printable-report p-4">
+                <div className="flex items-center gap-4 pb-4 border-b mb-4">
+                     <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
+                        {school?.logoUrl ? (
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                        ) : (
+                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                        )}
+                    </div>
+                    <div className="text-left">
+                        <h1 className="text-2xl font-bold">{school?.name}</h1>
+                        <p className="text-sm">{school?.address}</p>
+                    </div>
+                </div>
+                <h1 className="text-xl font-bold mb-4 text-center">
+                    Fee Challan List for {classMap.get(classId)} - {month} {year}
+                </h1>
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr>
+                            <th className="p-1 text-left">Sr.</th>
+                            <th className="p-1 text-left">Challan #</th>
+                            <th className="p-1 text-left">Student Name</th>
+                            <th className="p-1 text-left">Father's Name</th>
+                            <th className="p-1 text-right">Amount Due</th>
+                            <th className="p-1 text-center">Status</th>
+                            <th className="p-1 text-center">Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {reportData.map((challan, index) => {
                             const student = studentMap.get(challan.studentId);
-                            const studentClass = student ? classMap.get(student.classId) : undefined;
                             if (!student) return null;
-
+                            const amountDue = challan.totalAmount - challan.discount;
                             return (
-                                <div key={challan.id} className="challan-print-instance">
-                                    <PrintableChallan challan={challan} student={student} school={school} studentClass={studentClass} />
-                                </div>
+                                <tr key={challan.id}>
+                                    <td className="p-1">{index + 1}</td>
+                                    <td className="p-1">{challan.challanNumber}</td>
+                                    <td className="p-1">{student.name}</td>
+                                    <td className="p-1">{student.fatherName}</td>
+                                    <td className="p-1 text-right">Rs. {amountDue.toLocaleString()}</td>
+                                    <td className="p-1 text-center">{challan.status}</td>
+                                    <td className="p-1 text-center">{formatDate(challan.dueDate)}</td>
+                                </tr>
                             );
                         })}
-                    </div>
-                ))}
+                    </tbody>
+                </table>
             </div>
         );
         showPrintPreview(content, `EduSync - Fee Challans - ${classMap.get(classId)} - ${month} ${year}`);

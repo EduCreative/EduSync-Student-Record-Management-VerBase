@@ -546,16 +546,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => {
-        // This function is a client-side implementation to replace a faulty/missing `generate_monthly_challans` RPC.
         try {
-            // 1. Get all 'Active' students for the school
             const activeStudents = students.filter(s => s.schoolId === schoolId && s.status === 'Active');
-
-            // 2. Get existing challans for the selected month/year to find who already has one
             const existingChallansForMonth = fees.filter(f => f.month === month && f.year === year);
             const studentsWithChallan = new Set(existingChallansForMonth.map(f => f.studentId));
-
-            // 3. Filter students who need a new challan
             const studentsToGenerate = activeStudents.filter(s => !studentsWithChallan.has(s.id));
 
             if (studentsToGenerate.length === 0) {
@@ -563,47 +557,45 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return 0;
             }
 
-            // Pre-process all fees for the school for efficient balance calculation
             const feesByStudent = fees.reduce((acc, fee) => {
-                if (!acc[fee.studentId]) {
-                    acc[fee.studentId] = [];
-                }
+                if (!acc[fee.studentId]) acc[fee.studentId] = [];
                 acc[fee.studentId].push(fee);
                 return acc;
             }, {} as Record<string, FeeChallan[]>);
 
-            const newChallansToInsert = [];
-            const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const monthIndex = (months.indexOf(month) + 1).toString().padStart(2, '0');
+            const prefix = `${year}${monthIndex}-`;
 
+            let maxN = 0;
+            fees.forEach(f => {
+                if (f.year === year && f.month === month && f.challanNumber.startsWith(prefix)) {
+                    const nPart = f.challanNumber.substring(prefix.length);
+                    const n = parseInt(nPart, 10);
+                    if (!isNaN(n) && n > maxN) {
+                        maxN = n;
+                    }
+                }
+            });
+            let currentN = maxN + 1;
+
+            const newChallansToInsert = [];
             for (const student of studentsToGenerate) {
-                // 4. Calculate previous balance for each student
                 const studentChallans = feesByStudent[student.id] || [];
                 const previousBalance = studentChallans.reduce((balance, challan) => {
                     return balance + (challan.totalAmount - challan.discount - challan.paidAmount);
                 }, student.openingBalance || 0);
 
-                // 5. Prepare fee items
-                const feeItems = selectedFeeHeads.map(fh => {
-                    const feeHead = feeHeads.find(h => h.id === fh.feeHeadId);
-                    return {
-                        description: feeHead?.name || 'Unknown Fee',
-                        amount: fh.amount
-                    };
-                });
+                const feeItems = selectedFeeHeads.map(fh => ({
+                    description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown Fee',
+                    amount: fh.amount
+                }));
                 const currentMonthFee = feeItems.reduce((sum, item) => sum + item.amount, 0);
-
-                // 6. Calculate total amount
                 const totalAmount = currentMonthFee + previousBalance;
-
-                // 7. Generate a unique challan number
-                const uniquePart = Date.now().toString().slice(-4) + Math.random().toString().slice(2, 5);
-                const monthIndex = (months.indexOf(month) + 1).toString().padStart(2, '0');
-                const challanNumber = `CHN-${year}${monthIndex}-${student.rollNumber}-${uniquePart}`;
-                
-                // 8. Set due date (e.g., 10th of the month)
                 const dueDate = new Date(year, months.indexOf(month), 10).toISOString().split('T')[0];
+                const challanNumber = `${prefix}${currentN++}`;
 
-                const newChallan = {
+                newChallansToInsert.push({
                     studentId: student.id,
                     classId: student.classId,
                     month,
@@ -617,21 +609,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     discount: 0,
                     paidAmount: 0,
                     paidDate: null,
-                };
-                newChallansToInsert.push(newChallan);
+                });
             }
 
-            // 9. Bulk insert the newly created challans
             const { data, error } = await supabase.from('fee_challans').insert(toSnakeCase(newChallansToInsert)).select();
 
-            if (error) {
-                throw new Error(error.message);
-            }
+            if (error) throw new Error(error.message);
             
             const count = data?.length || 0;
             showToast('Success', `${count} new challans were generated for ${month}, ${year}.`, 'success');
             addLog('Challans Generated', `${count} challans generated for ${month}, ${year}.`);
-            await fetchData(); // Refresh all data to reflect new challans
+            await fetchData();
             return count;
 
         } catch (error: any) {

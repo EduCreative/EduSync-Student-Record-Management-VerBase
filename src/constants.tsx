@@ -92,7 +92,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
         { name: 'Class Management', path: '/classes', icon: <SchoolIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
-        { name: 'Challan Scanner', path: '/challan-scanner', icon: <ScanIcon /> },
+        { name: 'Scan & Pay', path: '/scan-pay', icon: <ScanIcon /> },
         { name: 'Attendance', path: '/attendance', icon: <CheckCircleIcon /> },
         { name: 'Results', path: '/results', icon: <BarChartIcon /> },
         { name: 'Reports', path: '/reports', icon: <FileTextIcon /> },
@@ -103,7 +103,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     [UserRole.Accountant]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
-        { name: 'Challan Scanner', path: '/challan-scanner', icon: <ScanIcon /> },
+        { name: 'Scan & Pay', path: '/scan-pay', icon: <ScanIcon /> },
         { name: 'Reports', path: '/reports', icon: <FileTextIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
     ],
