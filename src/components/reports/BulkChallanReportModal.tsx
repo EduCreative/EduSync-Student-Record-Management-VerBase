@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { UserRole, FeeChallan } from '../../types';
+import { UserRole } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
 
 interface BulkChallanReportModalProps {
