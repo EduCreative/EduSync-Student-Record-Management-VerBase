@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { FeeChallan, Student, School } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
+import Barcode from '../common/Barcode';
 
 interface PrintableChallanProps {
     challan: FeeChallan;
@@ -33,8 +34,12 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                     <p className="text-xs">Fee Challan</p>
                 </div>
             </div>
+            
+            <div className="barcode-container py-1 border-b">
+                <Barcode value={challan.challanNumber} height={30} barWidth={1.2} />
+            </div>
+
             <div className="p-1 text-xs">
-                <div className="flex justify-between"><span>Challan #:</span><span>{challan.challanNumber}</span></div>
                 <div className="flex justify-between"><span>Issue Date:</span><span>{formatDate(new Date())}</span></div>
                 <div className="flex justify-between"><span>Due Date:</span><span className="font-bold">{formatDate(challan.dueDate)}</span></div>
             </div>

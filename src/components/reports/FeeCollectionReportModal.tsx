@@ -31,6 +31,7 @@ const availableColumns = {
     fatherName: "Father's Name",
     amountDue: "Amount Due",
     discount: "Discount",
+    paymentDate: "Payment Date",
     balance: "Balance"
 };
 type ColumnKey = keyof typeof availableColumns;
@@ -48,6 +49,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         fatherName: true,
         amountDue: true,
         discount: true,
+        paymentDate: true,
         balance: true,
     });
 
@@ -134,7 +136,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
     const handleGenerate = () => {
         const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
-        const subtotalColspan = 1 + (activeColumns.includes('stdId') ? 1 : 0) + (activeColumns.includes('fatherName') ? 1 : 0) + (activeColumns.includes('amountDue') ? 1 : 0) + (activeColumns.includes('discount') ? 1 : 0);
+        const subtotalColspan = 2 + (activeColumns.includes('stdId') ? 1 : 0) + (activeColumns.includes('fatherName') ? 1 : 0) + (activeColumns.includes('amountDue') ? 1 : 0) + (activeColumns.includes('discount') ? 1 : 0);
 
         const content = (
             <div className="printable-report p-4">
@@ -168,6 +170,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                     {activeColumns.includes('amountDue') && <th className="p-1 text-right">Amount Due</th>}
                                     {activeColumns.includes('discount') && <th className="p-1 text-right">Discount</th>}
                                     <th className="p-1 text-right">Paid</th>
+                                    {activeColumns.includes('paymentDate') && <th className="p-1 text-left">Payment Date</th>}
                                     {activeColumns.includes('balance') && <th className="p-1 text-right">Balance</th>}
                                 </tr>
                             </thead>
@@ -181,6 +184,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                         {activeColumns.includes('amountDue') && <td className="p-1 text-right">{t.amountDue.toLocaleString()}</td>}
                                         {activeColumns.includes('discount') && <td className="p-1 text-right">{t.discount.toLocaleString()}</td>}
                                         <td className="p-1 text-right">{t.paid.toLocaleString()}</td>
+                                        {activeColumns.includes('paymentDate') && <td className="p-1">{formatDate(t.date)}</td>}
                                         {activeColumns.includes('balance') && <td className="p-1 text-right">{t.balance.toLocaleString()}</td>}
                                     </tr>
                                 ))}
@@ -189,6 +193,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                 <tr className="font-bold bg-secondary-100">
                                     <td colSpan={subtotalColspan} className="p-1 text-right">Subtotal Paid:</td>
                                     <td className="p-1 text-right">{classGroup.subtotals.paid.toLocaleString()}</td>
+                                    {activeColumns.includes('paymentDate') && <td className="p-1"></td>}
                                     {activeColumns.includes('balance') && <td className="p-1"></td>}
                                 </tr>
                             </tfoot>
@@ -203,6 +208,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                 <tr className="font-bold text-lg bg-secondary-200">
                                     <td colSpan={subtotalColspan} className="p-2 text-right">Grand Total Paid:</td>
                                     <td className="p-2 text-right">Rs. {grandTotalPaid.toLocaleString()}</td>
+                                    {activeColumns.includes('paymentDate') && <td className="p-2"></td>}
                                     {activeColumns.includes('balance') && <td className="p-2"></td>}
                                 </tr>
                             </tbody>
@@ -215,34 +221,37 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
     };
 
     const handleExport = () => {
-        const headers: string[] = ['Sr.', 'Student Name'];
+        const headers: string[] = ['Sr.'];
         if (selectedColumns.stdId) headers.push('StdID');
+        headers.push('Student Name');
         if (selectedColumns.fatherName) headers.push("Father's Name");
         if (selectedColumns.amountDue) headers.push('Amount Due');
         if (selectedColumns.discount) headers.push('Discount');
         headers.push('Paid');
+        if (selectedColumns.paymentDate) headers.push('Payment Date');
         if (selectedColumns.balance) headers.push('Balance');
-        headers.push('Date');
 
         const csvRows = [headers.join(',')];
 
         reportData.forEach(classGroup => {
             csvRows.push(escapeCsvCell(`Class: ${classGroup.className}`));
             classGroup.transactions.forEach(t => {
-                const row: (string | number)[] = [t.sr, t.studentName];
+                const row: (string | number)[] = [t.sr];
                 if (selectedColumns.stdId) row.push(t.stdId);
+                row.push(t.studentName);
                 if (selectedColumns.fatherName) row.push(t.fatherName);
                 if (selectedColumns.amountDue) row.push(t.amountDue);
                 if (selectedColumns.discount) row.push(t.discount);
                 row.push(t.paid);
+                if (selectedColumns.paymentDate) row.push(t.date);
                 if (selectedColumns.balance) row.push(t.balance);
-                row.push(t.date);
                 csvRows.push(row.map(escapeCsvCell).join(','));
             });
 
             const subtotalRow = Array(headers.length).fill('');
-            subtotalRow[headers.indexOf('Paid') - 1] = 'Subtotal Paid:';
-            subtotalRow[headers.indexOf('Paid')] = classGroup.subtotals.paid;
+            const paidIndex = headers.indexOf('Paid');
+            subtotalRow[paidIndex - 1] = 'Subtotal Paid:';
+            subtotalRow[paidIndex] = classGroup.subtotals.paid;
             csvRows.push(subtotalRow.join(','));
             csvRows.push('');
         });
@@ -250,8 +259,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         if (reportData.length > 0) {
             csvRows.push('');
             const grandTotalRow = Array(headers.length).fill('');
-            grandTotalRow[headers.indexOf('Paid') - 1] = 'Grand Total Paid:';
-            grandTotalRow[headers.indexOf('Paid')] = grandTotalPaid;
+            const paidIndex = headers.indexOf('Paid');
+            grandTotalRow[paidIndex - 1] = 'Grand Total Paid:';
+            grandTotalRow[paidIndex] = grandTotalPaid;
             csvRows.push(grandTotalRow.join(','));
         }
 

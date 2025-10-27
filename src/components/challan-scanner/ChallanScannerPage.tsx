@@ -31,6 +31,12 @@ const ChallanScannerPage: React.FC = () => {
 
     const feesMap = useMemo(() => new Map(fees.map(f => [f.challanNumber, f])), [fees]);
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
+    
+    // Create refs to hold the latest maps to avoid re-triggering the useEffect hook
+    const feesMapRef = useRef(feesMap);
+    feesMapRef.current = feesMap;
+    const studentMapRef = useRef(studentMap);
+    studentMapRef.current = studentMap;
 
     const startScan = useCallback(async () => {
         setError(null);
@@ -76,16 +82,16 @@ const ChallanScannerPage: React.FC = () => {
                     const barcodes = await detectorRef.current.detect(videoRef.current);
                     if (barcodes.length > 0) {
                         const challanNumber = barcodes[0].rawValue;
-                        const challan = feesMap.get(challanNumber);
+                        const challan = feesMapRef.current.get(challanNumber);
 
                         if (challan) {
-                            const student = studentMap.get(challan.studentId);
+                            const student = studentMapRef.current.get(challan.studentId);
                             setScannedChallan(challan);
                             setScannedStudent(student || null);
                             showToast('Success', `Challan #${challanNumber} found!`, 'success');
                             stopScan();
                         } else {
-                            showToast('Not Found', `Challan #${challanNumber} not found.`, 'error');
+                            showToast('Not Found', `Challan #${challanNumber} not found.`, 'info');
                         }
                     }
                 } catch (e) {
@@ -103,7 +109,7 @@ const ChallanScannerPage: React.FC = () => {
             cancelAnimationFrame(animationFrameId);
             stopScan();
         };
-    }, [isScanning, feesMap, studentMap, stopScan, showToast]);
+    }, [isScanning, stopScan, showToast]);
 
     return (
         <>

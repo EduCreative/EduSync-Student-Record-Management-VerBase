@@ -3,17 +3,17 @@ import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
-import { UserRole } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { UserRole, FeeChallan } from '../../types';
+import PrintableChallan from './PrintableChallan';
+
+const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 interface BulkChallanReportModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
-
-const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen, onClose }) => {
     const { user, activeSchoolId } = useAuth();
@@ -42,54 +42,22 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
         if (!school) return;
         
         const content = (
-            <div className="printable-report p-4">
-                <div className="flex items-center gap-4 pb-4 border-b mb-4">
-                     <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
-                        )}
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-bold">{school?.name}</h1>
-                        <p className="text-sm">{school?.address}</p>
-                    </div>
-                </div>
-                <h1 className="text-xl font-bold mb-4 text-center">
-                    Fee Challan List for {classMap.get(classId)} - {month} {year}
-                </h1>
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr>
-                            <th className="p-1 text-left">Sr.</th>
-                            <th className="p-1 text-left">Challan #</th>
-                            <th className="p-1 text-left">Student Name</th>
-                            <th className="p-1 text-left">Father's Name</th>
-                            <th className="p-1 text-right">Amount Due</th>
-                            <th className="p-1 text-center">Status</th>
-                            <th className="p-1 text-center">Due Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {reportData.map((challan, index) => {
-                            const student = studentMap.get(challan.studentId);
-                            if (!student) return null;
-                            const amountDue = challan.totalAmount - challan.discount;
-                            return (
-                                <tr key={challan.id}>
-                                    <td className="p-1">{index + 1}</td>
-                                    <td className="p-1">{challan.challanNumber}</td>
-                                    <td className="p-1">{student.name}</td>
-                                    <td className="p-1">{student.fatherName}</td>
-                                    <td className="p-1 text-right">Rs. {amountDue.toLocaleString()}</td>
-                                    <td className="p-1 text-center">{challan.status}</td>
-                                    <td className="p-1 text-center">{formatDate(challan.dueDate)}</td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+            <div className="printable-challan-container">
+                {reportData.map((challan) => {
+                    const student = studentMap.get(challan.studentId);
+                    if (!student) return null;
+
+                    return (
+                        <div key={challan.id} className="challan-wrapper">
+                            <PrintableChallan
+                                challan={challan}
+                                student={student}
+                                school={school}
+                                studentClass={classMap.get(student.classId)}
+                            />
+                        </div>
+                    );
+                })}
             </div>
         );
         showPrintPreview(content, `EduSync - Fee Challans - ${classMap.get(classId)} - ${month} ${year}`);
