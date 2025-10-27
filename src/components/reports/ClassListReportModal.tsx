@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
-import { formatDate } from '../../constants';
+import { formatDate, EduSyncLogo } from '../../constants';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -61,7 +61,14 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
         
         const content = (
             <div className="printable-report p-4 font-sans">
-                <div className="flex items-center justify-between pb-4 border-b mb-4">
+                <div className="flex items-center gap-4 pb-4 border-b mb-4">
+                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
+                        {school?.logoUrl ? (
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                        ) : (
+                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                        )}
+                    </div>
                     <div className="text-left">
                         <h1 className="text-2xl font-bold">{school?.name}</h1>
                         <p className="text-sm">{school?.address}</p>
@@ -71,19 +78,19 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                 <p className="text-center mb-4">Class: {classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}</p>
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="bg-secondary-200">
-                            <th className="p-1 border text-left">Sr.</th>
-                            <th className="p-1 border text-left">Student Name</th>
-                            {activeColumns.map(col => <th key={col} className="p-1 border text-left">{availableColumns[col]}</th>)}
+                        <tr>
+                            <th className="p-1 text-left">Sr.</th>
+                            <th className="p-1 text-left">Student Name</th>
+                            {activeColumns.map(col => <th key={col} className="p-1 text-left">{availableColumns[col]}</th>)}
                         </tr>
                     </thead>
                     <tbody>
                         {reportData.map((student, index) => (
                             <tr key={student.id}>
-                                <td className="p-1 border">{index + 1}</td>
-                                <td className="p-1 border">{student.name}</td>
+                                <td className="p-1">{index + 1}</td>
+                                <td className="p-1">{student.name}</td>
                                 {activeColumns.map(col => (
-                                    <td key={col} className="p-1 border">
+                                    <td key={col} className="p-1">
                                         {col === 'dateOfAdmission' ? formatDate(student[col]) : student[col as ColumnKey] || 'N/A'}
                                     </td>
                                 ))}

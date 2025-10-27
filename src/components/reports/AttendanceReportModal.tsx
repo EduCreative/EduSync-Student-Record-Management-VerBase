@@ -85,17 +85,17 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
         const selectedClass = schoolClasses.find(c => c.id === classId);
         const content = (
             <div className="printable-report p-4">
-                <div className="flex items-center justify-between pb-4 border-b mb-4">
+                <div className="flex items-center gap-4 pb-4 border-b mb-4">
+                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
+                        {school?.logoUrl ? (
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                        ) : (
+                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                        )}
+                    </div>
                     <div className="text-left">
                         <h1 className="text-2xl font-bold">{school?.name}</h1>
                         <p className="text-sm">{school?.address}</p>
-                    </div>
-                    <div className="h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
-                        )}
                     </div>
                 </div>
 
@@ -104,24 +104,24 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                 <p className="text-center mb-4">From: {formatDate(startDate)} To: {formatDate(endDate)}</p>
                 <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
                     <thead>
-                        <tr className="bg-secondary-200">
-                            <th className="p-1 border text-left" style={{ width: '120px' }}>Student</th>
-                            <th className="p-1 border text-left" style={{ width: '50px' }}>Roll #</th>
+                        <tr>
+                            <th className="p-1 text-left" style={{ width: '120px' }}>Student</th>
+                            <th className="p-1 text-left" style={{ width: '50px' }}>Roll #</th>
                             {datesInRange.map(date => (
-                                <th key={date} className="p-1 border text-center align-bottom" style={{ width: '30px', height: '100px', whiteSpace: 'nowrap' }}>
+                                <th key={date} className="p-1 text-center align-bottom" style={{ width: '30px', height: '100px', whiteSpace: 'nowrap' }}>
                                     <span className="inline-block origin-bottom-left" style={{ transform: 'translate(10px, -5px) rotate(-75deg)' }}>{formatDate(date).slice(0,6)}</span>
                                 </th>
                             ))}
-                            <th className="p-1 border text-center font-bold bg-green-200">P</th>
-                            <th className="p-1 border text-center font-bold bg-red-200">A</th>
-                            <th className="p-1 border text-center font-bold bg-yellow-200">L</th>
+                            <th className="p-1 text-center font-bold bg-green-200">P</th>
+                            <th className="p-1 text-center font-bold bg-red-200">A</th>
+                            <th className="p-1 text-center font-bold bg-yellow-200">L</th>
                         </tr>
                     </thead>
                     <tbody>
                         {reportData.map(({ student, attendanceData, summary }) => (
                             <tr key={student.id}>
-                                <td className="p-1 border whitespace-nowrap overflow-hidden text-ellipsis">{student.name}</td>
-                                <td className="p-1 border text-center">{student.rollNumber}</td>
+                                <td className="p-1 whitespace-nowrap overflow-hidden text-ellipsis">{student.name}</td>
+                                <td className="p-1 text-center">{student.rollNumber}</td>
                                 {datesInRange.map(date => {
                                     const status = attendanceData[date];
                                     let statusChar = '-';
@@ -129,11 +129,11 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                                     if (status === 'Present') { statusChar = 'P'; bgColor = 'bg-green-100'; }
                                     if (status === 'Absent') { statusChar = 'A'; bgColor = 'bg-red-100'; }
                                     if (status === 'Leave') { statusChar = 'L'; bgColor = 'bg-yellow-100'; }
-                                    return <td key={date} className={`p-1 border text-center ${bgColor}`}>{statusChar}</td>;
+                                    return <td key={date} className={`p-1 text-center ${bgColor}`}>{statusChar}</td>;
                                 })}
-                                <td className="p-1 border text-center font-bold bg-green-50">{summary.P}</td>
-                                <td className="p-1 border text-center font-bold bg-red-50">{summary.A}</td>
-                                <td className="p-1 border text-center font-bold bg-yellow-50">{summary.L}</td>
+                                <td className="p-1 text-center font-bold bg-green-50">{summary.P}</td>
+                                <td className="p-1 text-center font-bold bg-red-50">{summary.A}</td>
+                                <td className="p-1 text-center font-bold bg-yellow-50">{summary.L}</td>
                             </tr>
                         ))}
                     </tbody>

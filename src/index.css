@@ -46,4 +46,71 @@
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
   }
+
+  /* Print Styles for Reports */
+  .printable-report table,
+  .printable-report th,
+  .printable-report td {
+    @apply border border-secondary-300;
+  }
+  
+  .printable-report th {
+    @apply bg-secondary-100;
+  }
+
+  /* Specific styles for better print appearance */
+  @media print {
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .printable-report th {
+      background-color: #f1f5f9 !important; /* Tailwind secondary-100 */
+    }
+  }
+
+  /* ID Card Styles */
+  .printable-id-card-container {
+    @apply grid grid-cols-2 gap-4;
+  }
+  .id-card {
+    @apply w-[3.375in] h-[2.125in] border-2 border-secondary-300 rounded-lg flex flex-col bg-white text-black p-2 shadow-lg;
+    page-break-inside: avoid;
+  }
+  .id-card-header {
+    @apply flex items-center gap-2 pb-1 border-b border-secondary-200;
+  }
+  .id-card-logo {
+    @apply h-10 w-10 object-contain;
+  }
+  .id-card-logo-placeholder {
+    @apply h-10 w-10 bg-secondary-200 rounded;
+  }
+  .id-card-school-name {
+    @apply font-bold text-sm leading-tight;
+  }
+  .id-card-school-address {
+    @apply text-[8px] leading-tight;
+  }
+  .id-card-body {
+    @apply flex items-center gap-2 pt-2 flex-1;
+  }
+  .id-card-photo-container {
+    @apply w-20 h-20 border-2 border-primary-500 rounded-md p-0.5 flex-shrink-0;
+  }
+  .id-card-photo {
+    @apply w-full h-full object-cover rounded-sm;
+  }
+  .id-card-info {
+    @apply text-[9px] leading-snug;
+  }
+  .id-card-info strong {
+    @apply font-semibold;
+  }
+  .id-card-student-name {
+    @apply font-extrabold text-base text-primary-700 -mt-1 mb-1;
+  }
+  .id-card-footer {
+    @apply bg-primary-700 text-white text-[8px] font-bold text-center py-0.5 rounded-b-md -m-2 mt-2;
+  }
 }

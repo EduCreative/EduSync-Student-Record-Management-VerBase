@@ -10,7 +10,7 @@ interface PrintableChallanProps {
 }
 
 const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> = ({ label, value, bold }) => (
-    <div className={`flex justify-between items-baseline py-1 px-2 ${bold ? 'font-bold' : ''}`}>
+    <div className={`flex justify-between items-baseline py-1 px-2 border-b border-gray-200 ${bold ? 'font-bold' : ''}`}>
         <span className="text-xs">{label}</span>
         <span className="text-xs text-right">{typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}</span>
     </div>
@@ -20,16 +20,18 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
     
     const ChallanBody: FC = () => (
         <>
-            <div className="text-center p-2 border-b">
-                <div className="h-8 w-full flex items-center justify-center mb-1">
+            <div className="flex items-center gap-2 p-2 border-b">
+                <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center">
                     {school.logoUrl ? (
-                        <img src={school.logoUrl} alt="logo" className="max-h-8 max-w-full object-contain" />
+                        <img src={school.logoUrl} alt="logo" className="max-h-10 max-w-10 object-contain" />
                     ) : (
                         <EduSyncLogo className="h-8 text-primary-700" />
                     )}
                 </div>
-                <h3 className="font-bold text-sm">{school.name}</h3>
-                <p className="text-xs">Fee Challan</p>
+                <div className="text-left">
+                    <h3 className="font-bold text-sm leading-tight">{school.name}</h3>
+                    <p className="text-xs">Fee Challan</p>
+                </div>
             </div>
             <div className="p-1 text-xs">
                 <div className="flex justify-between"><span>Challan #:</span><span>{challan.challanNumber}</span></div>
@@ -42,8 +44,8 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 <div className="flex justify-between"><span>Class:</span><span>{studentClass}</span></div>
                 <div className="flex justify-between"><span>Roll #:</span><span>{student.rollNumber}</span></div>
             </div>
-            <div className="py-1">
-                <div className="flex justify-between items-baseline py-1 px-2 bg-secondary-200">
+            <div className="border-x border-gray-300">
+                <div className="flex justify-between items-baseline py-1 px-2 bg-secondary-200 border-b border-gray-300">
                     <span className="font-bold text-xs">PARTICULARS</span>
                     <span className="font-bold text-xs">AMOUNT</span>
                 </div>
@@ -52,7 +54,7 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 ))}
                 {challan.previousBalance > 0 && <ChallanRow label="Arrears" value={challan.previousBalance} />}
             </div>
-            <div className="border-t mt-auto">
+            <div className="border border-t-0 border-gray-300 mt-auto">
                 <ChallanRow label="Sub Total" value={challan.totalAmount} bold />
                 {challan.discount > 0 && <ChallanRow label="Discount" value={-challan.discount} />}
                 <ChallanRow label="Grand Total" value={challan.totalAmount - challan.discount} bold />

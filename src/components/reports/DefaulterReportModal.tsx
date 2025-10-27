@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
+import { EduSyncLogo } from '../../constants';
 
 interface DefaulterReportModalProps {
     isOpen: boolean;
@@ -146,18 +147,18 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
         const content = (
             <div className="printable-report p-4 font-sans">
                 {/* School Header */}
-                <div className="flex items-center justify-between pb-4 border-b mb-4">
+                <div className="flex items-center gap-4 pb-4 border-b mb-4">
+                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
+                        {school?.logoUrl ? (
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                        ) : (
+                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                        )}
+                    </div>
                     <div className="text-left">
                         <h1 className="text-2xl font-bold">{school?.name}</h1>
                         <p className="text-sm">{school?.address}</p>
                     </div>
-                    {/* <div className="h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
-                        )}
-                    </div> */}
                 </div>
 
                 <h2 className="text-xl font-bold mb-2 text-center">Fee Defaulter Report</h2>
@@ -168,35 +169,35 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         <h3 className="text-lg font-bold bg-secondary-100 p-2 my-2">{classGroup.className}</h3>
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-secondary-200">
-                                    <th className="p-1 border text-left">Sr.</th>
-                                    <th className="p-1 border text-left">Student Name</th>
-                                    {activeColumns.includes('stdId') && <th className="p-1 border text-left">StdID</th>}
-                                    {activeColumns.includes('fatherName') && <th className="p-1 border text-left">Father Name</th>}
-                                    {activeColumns.includes('amountDue') && <th className="p-1 border text-right">Amount Due</th>}
-                                    {activeColumns.includes('paid') && <th className="p-1 border text-right">Paid</th>}
-                                    <th className="p-1 border text-right">Balance</th>
+                                <tr>
+                                    <th className="p-1 text-left">Sr.</th>
+                                    <th className="p-1 text-left">Student Name</th>
+                                    {activeColumns.includes('stdId') && <th className="p-1 text-left">StdID</th>}
+                                    {activeColumns.includes('fatherName') && <th className="p-1 text-left">Father Name</th>}
+                                    {activeColumns.includes('amountDue') && <th className="p-1 text-right">Amount Due</th>}
+                                    {activeColumns.includes('paid') && <th className="p-1 text-right">Paid</th>}
+                                    <th className="p-1 text-right">Balance</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {classGroup.students.map((student, index) => (
                                     <tr key={student.studentId}>
-                                        <td className="p-1 border">{index + 1}</td>
-                                        <td className="p-1 border">{student.studentName}</td>
-                                        {activeColumns.includes('stdId') && <td className="p-1 border">{student.stdId}</td>}
-                                        {activeColumns.includes('fatherName') && <td className="p-1 border">{student.fatherName}</td>}
-                                        {activeColumns.includes('amountDue') && <td className="p-1 border text-right">{student.amountDue.toLocaleString()}</td>}
-                                        {activeColumns.includes('paid') && <td className="p-1 border text-right">{student.paid.toLocaleString()}</td>}
-                                        <td className="p-1 border text-right">{student.balance.toLocaleString()}</td>
+                                        <td className="p-1">{index + 1}</td>
+                                        <td className="p-1">{student.studentName}</td>
+                                        {activeColumns.includes('stdId') && <td className="p-1">{student.stdId}</td>}
+                                        {activeColumns.includes('fatherName') && <td className="p-1">{student.fatherName}</td>}
+                                        {activeColumns.includes('amountDue') && <td className="p-1 text-right">{student.amountDue.toLocaleString()}</td>}
+                                        {activeColumns.includes('paid') && <td className="p-1 text-right">{student.paid.toLocaleString()}</td>}
+                                        <td className="p-1 text-right">{student.balance.toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="font-bold bg-secondary-100">
-                                    <td colSpan={subtotalColspan} className="p-1 border text-right">Sub Total:</td>
-                                    {activeColumns.includes('amountDue') && <td className="p-1 border text-right">{classGroup.subtotals.amountDue.toLocaleString()}</td>}
-                                    {activeColumns.includes('paid') && <td className="p-1 border text-right">{classGroup.subtotals.paid.toLocaleString()}</td>}
-                                    <td className="p-1 border text-right">{classGroup.subtotals.balance.toLocaleString()}</td>
+                                    <td colSpan={subtotalColspan} className="p-1 text-right">Sub Total:</td>
+                                    {activeColumns.includes('amountDue') && <td className="p-1 text-right">{classGroup.subtotals.amountDue.toLocaleString()}</td>}
+                                    {activeColumns.includes('paid') && <td className="p-1 text-right">{classGroup.subtotals.paid.toLocaleString()}</td>}
+                                    <td className="p-1 text-right">{classGroup.subtotals.balance.toLocaleString()}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -208,10 +209,10 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         <table className="w-full text-sm">
                             <tbody>
                                 <tr className="font-bold text-lg bg-secondary-200">
-                                    <td colSpan={subtotalColspan} className="p-2 border text-right">Grand Total:</td>
-                                    {activeColumns.includes('amountDue') && <td className="p-2 border text-right">Rs. {grandTotal.amountDue.toLocaleString()}</td>}
-                                    {activeColumns.includes('paid') && <td className="p-2 border text-right">Rs. {grandTotal.paid.toLocaleString()}</td>}
-                                    <td className="p-2 border text-right">Rs. {grandTotal.balance.toLocaleString()}</td>
+                                    <td colSpan={subtotalColspan} className="p-2 text-right">Grand Total:</td>
+                                    {activeColumns.includes('amountDue') && <td className="p-2 text-right">Rs. {grandTotal.amountDue.toLocaleString()}</td>}
+                                    {activeColumns.includes('paid') && <td className="p-2 text-right">Rs. {grandTotal.paid.toLocaleString()}</td>}
+                                    <td className="p-2 text-right">Rs. {grandTotal.balance.toLocaleString()}</td>
                                 </tr>
                             </tbody>
                         </table>

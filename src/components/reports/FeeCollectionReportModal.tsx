@@ -138,17 +138,17 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
         const content = (
             <div className="printable-report p-4">
-                <div className="flex items-center justify-between pb-4 border-b mb-4">
+                <div className="flex items-center gap-4 pb-4 border-b mb-4">
+                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
+                        {school?.logoUrl ? (
+                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
+                        ) : (
+                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
+                        )}
+                    </div>
                     <div className="text-left">
                         <h1 className="text-2xl font-bold">{school?.name}</h1>
                         <p className="text-sm">{school?.address}</p>
-                    </div>
-                    <div className="h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain report-logo" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700 report-logo" />
-                        )}
                     </div>
                 </div>
 
@@ -160,36 +160,36 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                         <h3 className="text-lg font-bold bg-secondary-100 p-2 my-2">{classGroup.className}</h3>
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-secondary-200">
-                                    <th className="p-1 border text-left">Sr.</th>
-                                    {activeColumns.includes('stdId') && <th className="p-1 border text-left">StdID</th>}
-                                    <th className="p-1 border text-left">Student Name</th>
-                                    {activeColumns.includes('fatherName') && <th className="p-1 border text-left">Father Name</th>}
-                                    {activeColumns.includes('amountDue') && <th className="p-1 border text-right">Amount Due</th>}
-                                    {activeColumns.includes('discount') && <th className="p-1 border text-right">Discount</th>}
-                                    <th className="p-1 border text-right">Paid</th>
-                                    {activeColumns.includes('balance') && <th className="p-1 border text-right">Balance</th>}
+                                <tr>
+                                    <th className="p-1 text-left">Sr.</th>
+                                    {activeColumns.includes('stdId') && <th className="p-1 text-left">StdID</th>}
+                                    <th className="p-1 text-left">Student Name</th>
+                                    {activeColumns.includes('fatherName') && <th className="p-1 text-left">Father Name</th>}
+                                    {activeColumns.includes('amountDue') && <th className="p-1 text-right">Amount Due</th>}
+                                    {activeColumns.includes('discount') && <th className="p-1 text-right">Discount</th>}
+                                    <th className="p-1 text-right">Paid</th>
+                                    {activeColumns.includes('balance') && <th className="p-1 text-right">Balance</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {classGroup.transactions.map(t => (
                                     <tr key={t.sr}>
-                                        <td className="p-1 border">{t.sr}</td>
-                                        {activeColumns.includes('stdId') && <td className="p-1 border">{t.stdId}</td>}
-                                        <td className="p-1 border">{t.studentName}</td>
-                                        {activeColumns.includes('fatherName') && <td className="p-1 border">{t.fatherName}</td>}
-                                        {activeColumns.includes('amountDue') && <td className="p-1 border text-right">{t.amountDue.toLocaleString()}</td>}
-                                        {activeColumns.includes('discount') && <td className="p-1 border text-right">{t.discount.toLocaleString()}</td>}
-                                        <td className="p-1 border text-right">{t.paid.toLocaleString()}</td>
-                                        {activeColumns.includes('balance') && <td className="p-1 border text-right">{t.balance.toLocaleString()}</td>}
+                                        <td className="p-1">{t.sr}</td>
+                                        {activeColumns.includes('stdId') && <td className="p-1">{t.stdId}</td>}
+                                        <td className="p-1">{t.studentName}</td>
+                                        {activeColumns.includes('fatherName') && <td className="p-1">{t.fatherName}</td>}
+                                        {activeColumns.includes('amountDue') && <td className="p-1 text-right">{t.amountDue.toLocaleString()}</td>}
+                                        {activeColumns.includes('discount') && <td className="p-1 text-right">{t.discount.toLocaleString()}</td>}
+                                        <td className="p-1 text-right">{t.paid.toLocaleString()}</td>
+                                        {activeColumns.includes('balance') && <td className="p-1 text-right">{t.balance.toLocaleString()}</td>}
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="font-bold bg-secondary-100">
-                                    <td colSpan={subtotalColspan} className="p-1 border text-right">Subtotal Paid:</td>
-                                    <td className="p-1 border text-right">{classGroup.subtotals.paid.toLocaleString()}</td>
-                                    {activeColumns.includes('balance') && <td className="p-1 border"></td>}
+                                    <td colSpan={subtotalColspan} className="p-1 text-right">Subtotal Paid:</td>
+                                    <td className="p-1 text-right">{classGroup.subtotals.paid.toLocaleString()}</td>
+                                    {activeColumns.includes('balance') && <td className="p-1"></td>}
                                 </tr>
                             </tfoot>
                         </table>
@@ -201,9 +201,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                         <table className="w-full text-sm">
                             <tbody>
                                 <tr className="font-bold text-lg bg-secondary-200">
-                                    <td colSpan={subtotalColspan} className="p-2 border text-right">Grand Total Paid:</td>
-                                    <td className="p-2 border text-right">Rs. {grandTotalPaid.toLocaleString()}</td>
-                                    {activeColumns.includes('balance') && <td className="p-2 border"></td>}
+                                    <td colSpan={subtotalColspan} className="p-2 text-right">Grand Total Paid:</td>
+                                    <td className="p-2 text-right">Rs. {grandTotalPaid.toLocaleString()}</td>
+                                    {activeColumns.includes('balance') && <td className="p-2"></td>}
                                 </tr>
                             </tbody>
                         </table>
