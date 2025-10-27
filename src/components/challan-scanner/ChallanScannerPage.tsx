@@ -119,8 +119,11 @@ const ChallanScannerPage: React.FC = () => {
                 }
             });
             
-            const jsonStr = response.text.trim();
-            const data = JSON.parse(jsonStr);
+            const jsonStr = response.text;
+            if (!jsonStr) {
+                throw new Error("AI model returned no text. The response might be empty or in an unexpected format.");
+            }
+            const data = JSON.parse(jsonStr.trim());
             setExtractedData(data);
 
         } catch (e) {
