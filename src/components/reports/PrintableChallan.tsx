@@ -40,14 +40,13 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
             </div>
 
             <div className="p-1 text-xs">
-                <div className="flex justify-between"><span>Issue Date:</span><span>{formatDate(new Date())}</span></div>
+                // <div className="flex justify-between"><span>Issue Date:</span><span>{formatDate(new Date())}</span></div>
                 <div className="flex justify-between"><span>Due Date:</span><span className="font-bold">{formatDate(challan.dueDate)}</span></div>
             </div>
             <div className="p-1 border-t border-b text-xs">
                 <div className="flex justify-between"><span>Student:</span><span className="font-bold">{student.name}</span></div>
                 <div className="flex justify-between"><span>Father:</span><span>{student.fatherName}</span></div>
-                <div className="flex justify-between"><span>Class:</span><span>{studentClass}</span></div>
-                <div className="flex justify-between"><span>Roll #:</span><span>{student.rollNumber}</span></div>
+                <div className="flex justify-between"><span>Class:</span><span>{studentClass}</span><span>Roll #:</span><span>{student.rollNumber}</span></div>
             </div>
             <div className="border-x border-gray-300">
                 <div className="flex justify-between items-baseline py-1 px-2 bg-secondary-200 border-b border-gray-300">
