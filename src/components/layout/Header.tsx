@@ -143,12 +143,12 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                     </button>
 
                     {/* Logo and School Name / Switcher */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         {user?.role === UserRole.Owner ? (
                             activeSchoolId ? (
                                 <>
                                     {school?.logoUrl ? (
-                                        <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                        <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-8 w-auto max-w-[100px] object-contain" />
                                     ) : (
                                         <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
                                     )}
@@ -162,7 +162,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                             ) : (
                                 <div className="relative" ref={schoolSwitcherRef}>
                                     <button 
-                                        className="flex items-center gap-2 text-xl font-semibold text-secondary-800 dark:text-secondary-200"
+                                        className="flex items-center gap-2 text-lg font-semibold text-secondary-800 dark:text-secondary-200"
                                         onClick={() => setSchoolSwitcherOpen(prev => !prev)}
                                     >
                                         <span>Owner Overview</span>
@@ -188,11 +188,11 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                         ) : (
                             <>
                                 {school?.logoUrl ? (
-                                    <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-9 w-auto max-w-[100px] object-contain" />
+                                    <img src={school.logoUrl} alt={`${school.name} Logo`} className="h-8 w-auto max-w-[100px] object-contain" />
                                  ) : (
                                     <EduSyncLogo className="h-8 w-auto text-primary-600 dark:text-primary-400" />
                                 )}
-                                <h1 className="text-xl font-semibold">{school?.name || 'EduSync'}</h1>
+                                <h1 className="text-lg font-semibold">{school?.name || 'EduSync'}</h1>
                             </>
                         )}
                     </div>

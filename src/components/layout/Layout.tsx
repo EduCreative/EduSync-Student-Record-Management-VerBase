@@ -22,8 +22,9 @@ import AccountantManagementPage from '../accountants/AccountantManagementPage';
 import ClassManagementPage from '../classes/ClassManagementPage';
 import UserProfilePage from '../users/UserProfilePage';
 import SchoolDetailsPage from '../schools/SchoolDetailsPage';
+import ChallanScannerPage from '../challan-scanner/ChallanScannerPage';
 
-export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'schools' | 'schoolDetails' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | 'userProfile' | string;
+export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'schools' | 'schoolDetails' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | 'userProfile' | 'challan-scanner' | string;
 
 export interface ActiveView {
     view: ViewType;
@@ -90,6 +91,11 @@ const Layout: React.FC = () => {
             case 'fees':
                 if ([UserRole.Admin, UserRole.Accountant, UserRole.Parent, UserRole.Student].includes(effectiveRole as UserRole)) {
                     return <FeeManagementPage />;
+                }
+                return <Dashboard setActiveView={setActiveView} />;
+            case 'challan-scanner':
+                if ([UserRole.Admin, UserRole.Accountant].includes(effectiveRole as UserRole)) {
+                    return <ChallanScannerPage />;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
             case 'reports':
