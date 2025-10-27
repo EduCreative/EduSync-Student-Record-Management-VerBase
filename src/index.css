@@ -48,14 +48,21 @@
   }
 
   /* Print Styles for Reports */
-  .printable-report table,
+  .printable-report table {
+    @apply border-collapse;
+  }
   .printable-report th,
   .printable-report td {
-    @apply border border-secondary-300;
+    @apply border border-secondary-400; /* Darker border for better visibility */
   }
   
   .printable-report th {
     @apply bg-secondary-100;
+  }
+
+  /* Improve border visibility on report cards and other bordered elements in reports */
+  .printable-result-card .border {
+    @apply border-secondary-400;
   }
 
   /* Specific styles for better print appearance */
