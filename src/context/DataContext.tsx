@@ -546,13 +546,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => {
-        // FIX: The order of arguments for this RPC call is critical. The error indicates PostgREST is resolving
-        // arguments alphabetically. Reordering them to match this resolves the schema cache error.
+        // FIX: Based on user feedback regarding challan generation issues, the parameter order has been adjusted.
+        // Some database function signatures are sensitive to the order of parameters in the RPC call.
+        // Placing `p_year` before `p_month` is a more standard sequence and may resolve the schema mismatch error.
         const { data: count, error } = await supabase.rpc('generate_monthly_challans', {
-            p_fee_items: selectedFeeHeads.map(fh => ({ fee_head_id: fh.feeHeadId, amount: fh.amount })),
-            p_month: month,
             p_school_id: schoolId,
-            p_year: year
+            p_year: year,
+            p_month: month,
+            p_fee_items: selectedFeeHeads.map(fh => ({ fee_head_id: fh.feeHeadId, amount: fh.amount }))
         });
 
         if (error) {
