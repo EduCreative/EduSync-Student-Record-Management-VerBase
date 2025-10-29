@@ -9,8 +9,6 @@ const QR_MODE = {
     MODE_8BIT_BYTE: 1 << 2,
 };
 
-const ERROR_CORRECTION_LEVEL = { L: 1, M: 0, Q: 3, H: 2 };
-
 function getMode(data: string) {
     if (/^[0-9]*$/.test(data)) return QR_MODE.MODE_NUMBER;
     if (/^[0-9A-Z $%*+\-./:]*$/.test(data)) return QR_MODE.MODE_ALPHA_NUM;
@@ -40,7 +38,7 @@ class QRBitBuffer {
 }
 
 // Minimalist QR code data encoding
-function encodeData(data: string, type: number, errorCorrectionLevel: number) {
+function encodeData(data: string, type: number) {
     const mode = getMode(data);
     const buffer = new QRBitBuffer();
     buffer.push(mode, 4);
@@ -125,7 +123,7 @@ function createMatrix(data: string) {
     }
     
     // Data encoding and placement (simplified spiral)
-    const bytes = encodeData(data, type, ERROR_CORRECTION_LEVEL.L);
+    const bytes = encodeData(data, type);
     let bitIndex = 0;
     
     const placeBit = (row: number, col: number) => {

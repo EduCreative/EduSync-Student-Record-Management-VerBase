@@ -96,10 +96,14 @@ const ChallanGenerationPage: React.FC = () => {
 
         setIsGenerating(true);
         try {
-            await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
-        } catch (error) {
+            const generationPromise = generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Challan generation timed out after 30 seconds. The process may be running in the background.")), 30000)
+            );
+            await Promise.race([generationPromise, timeoutPromise]);
+        } catch (error: any) {
             console.error('Failed to generate challans:', error);
-            // Error toast is shown in DataContext
+            showToast('Error', error.message || 'An unknown error occurred during challan generation.', 'error');
         } finally {
             setIsGenerating(false);
         }

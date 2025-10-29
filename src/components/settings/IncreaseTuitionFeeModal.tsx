@@ -78,10 +78,15 @@ const IncreaseTuitionFeeModal: React.FC<IncreaseTuitionFeeModalProps> = ({ isOpe
 
         setIsSaving(true);
         try {
-            await increaseTuitionFees(Array.from(selectedStudentIds), increaseAmount);
+            const increasePromise = increaseTuitionFees(Array.from(selectedStudentIds), increaseAmount);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Operation timed out after 30 seconds. Please check network and try again.")), 30000)
+            );
+            await Promise.race([increasePromise, timeoutPromise]);
             onClose();
-        } catch (error) {
-            // Toast is handled in context
+        } catch (error: any) {
+            // Toast is handled in context, but show a generic one if it's a timeout
+             showToast('Error', error.message || 'Failed to apply fee increase.', 'error');
         } finally {
             setIsSaving(false);
         }

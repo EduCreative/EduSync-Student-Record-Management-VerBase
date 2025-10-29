@@ -93,10 +93,16 @@ const AttendanceMarker: React.FC = () => {
                 studentId,
                 status,
             }));
-            await setAttendance(selectedDate, recordsToSave);
-        } catch (error) {
+
+            const savePromise = setAttendance(selectedDate, recordsToSave);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Saving attendance timed out after 15 seconds.")), 15000)
+            );
+
+            await Promise.race([savePromise, timeoutPromise]);
+        } catch (error: any) {
             console.error("Failed to save attendance:", error);
-            showToast('Error', 'Could not save attendance. Please try again.', 'error');
+            showToast('Error', error.message || 'Could not save attendance. Please try again.', 'error');
         } finally {
             setIsSaving(false);
         }

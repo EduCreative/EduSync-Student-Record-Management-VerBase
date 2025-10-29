@@ -3,6 +3,7 @@ import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
 import { useData } from '../../context/DataContext';
 import { getTodayString } from '../../utils/dateHelper';
+import { useToast } from '../../context/ToastContext';
 
 interface FeePaymentModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface FeePaymentModalProps {
 
 const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, challan, student }) => {
     const { recordFeePayment } = useData();
+    const { showToast } = useToast();
     const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
 
     const [amount, setAmount] = useState(balanceDue);
@@ -35,10 +37,15 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await recordFeePayment(challan.id, amount, discount, paidDate);
+            const paymentPromise = recordFeePayment(challan.id, amount, discount, paidDate);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Payment recording timed out after 15 seconds. Please try again.")), 15000)
+            );
+            await Promise.race([paymentPromise, timeoutPromise]);
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to record payment:", error);
+            showToast('Error', error.message || 'Could not record payment.', 'error');
         } finally {
             setIsSubmitting(false);
         }

@@ -73,7 +73,12 @@ const ImportModal = <T extends Record<string, any>>({
                     console.warn("CSV Import Skipped Rows:", parseErrors);
                 }
 
-                await onImport(parsedData as T[]);
+                const importPromise = onImport(parsedData as T[]);
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Import operation timed out after 60 seconds. Please check your network or file size.")), 60000)
+                );
+
+                await Promise.race([importPromise, timeoutPromise]);
                 onClose();
 
             } catch (err: any) {
