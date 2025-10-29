@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Student, UserRole } from '../../types';
+import { UserRole } from '../../types';
 import Avatar from '../common/Avatar';
 import { useToast } from '../../context/ToastContext';
 

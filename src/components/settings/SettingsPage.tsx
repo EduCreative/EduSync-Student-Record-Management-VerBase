@@ -30,22 +30,12 @@ const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) =>
 
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
-    const { user, effectiveRole, activeSchoolId, updateUserPassword } = useAuth();
+    const { user, effectiveRole, activeSchoolId } = useAuth();
     const { schools, backupData, restoreData, updateUser, updateSchool, promoteAllStudents } = useData();
     const { showToast } = useToast();
     const { installPrompt, clearInstallPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
-
-    // State for Profile Update
-    const [name, setName] = useState(user?.name || '');
-    const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl);
-    const [isProfileSaving, setIsProfileSaving] = useState(false);
-
-    // State for Password Change
-    const [password, setPassword] = useState({ new: '', confirm: '' });
-    const [passwordErrors, setPasswordErrors] = useState<{ new?: string; confirm?: string }>({});
-    const [isPasswordSaving, setIsPasswordSaving] = useState(false);
 
     // Default preferences structure
     const defaultPrefs = {
@@ -75,8 +65,6 @@ const SettingsPage: React.FC = () => {
     // Initialize forms and preferences from user data
     useEffect(() => {
         if (user) {
-            setName(user.name);
-            setAvatarUrl(user.avatarUrl);
             if (user.notificationPreferences) {
                 setPrefs({
                     feeDeadlines: { ...defaultPrefs.feeDeadlines, ...user.notificationPreferences.feeDeadlines },
@@ -117,52 +105,7 @@ const SettingsPage: React.FC = () => {
             setIsSavingPrefs(false);
         }
     };
-
-    const handleProfileUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user || !name.trim()) return;
-
-        setIsProfileSaving(true);
-        try {
-            await updateUser({ ...user, name, avatarUrl });
-            showToast('Success', 'Profile updated successfully!', 'success');
-        } catch (error) {
-            showToast('Error', 'Failed to update profile.', 'error');
-        } finally {
-            setIsProfileSaving(false);
-        }
-    };
     
-    const handlePasswordChange = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setPasswordErrors({});
-        
-        if (password.new.length < 6) {
-            setPasswordErrors(p => ({...p, new: 'Password must be at least 6 characters.'}));
-            return;
-        }
-
-        if (password.new !== password.confirm) {
-            setPasswordErrors(p => ({...p, confirm: 'New passwords do not match.'}));
-            return;
-        }
-        
-        setIsPasswordSaving(true);
-        try {
-            const { success, error } = await updateUserPassword(password.new);
-            if (success) {
-                showToast('Success', 'Password changed successfully!', 'success');
-                setPassword({ new: '', confirm: '' });
-            } else {
-                showToast('Error', error || 'Failed to change password.', 'error');
-            }
-        } catch (e) {
-            showToast('Error', 'An unexpected error occurred while changing password.', 'error');
-        } finally {
-            setIsPasswordSaving(false);
-        }
-    };
-
     const handleSchoolUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!school || !schoolData.name.trim()) return;
@@ -306,22 +249,22 @@ const SettingsPage: React.FC = () => {
                              <h3 className="font-medium mb-2 text-secondary-800 dark:text-secondary-200">Fee Deadlines & Reminders</h3>
                              <div className="flex items-center justify-between py-1">
                                 <label className="text-sm text-secondary-600 dark:text-secondary-400">In-App Notifications</label>
-                                <ToggleSwitch enabled={prefs.feeDeadlines.inApp} onChange={val => handleToggle('feeDeadlines', 'inApp')} />
+                                <ToggleSwitch enabled={prefs.feeDeadlines.inApp} onChange={_ => handleToggle('feeDeadlines', 'inApp')} />
                              </div>
                              <div className="flex items-center justify-between py-1">
                                 <label className="text-sm text-secondary-600 dark:text-secondary-400">Email Notifications</label>
-                                <ToggleSwitch enabled={prefs.feeDeadlines.email} onChange={val => handleToggle('feeDeadlines', 'email')} />
+                                <ToggleSwitch enabled={prefs.feeDeadlines.email} onChange={_ => handleToggle('feeDeadlines', 'email')} />
                             </div>
                         </div>
                         <div className="p-3 rounded-lg border dark:border-secondary-700">
                             <h3 className="font-medium mb-2 text-secondary-800 dark:text-secondary-200">Exam Results Published</h3>
                              <div className="flex items-center justify-between py-1">
                                 <label className="text-sm text-secondary-600 dark:text-secondary-400">In-App Notifications</label>
-                                <ToggleSwitch enabled={prefs.examResults.inApp} onChange={val => handleToggle('examResults', 'inApp')} />
+                                <ToggleSwitch enabled={prefs.examResults.inApp} onChange={_ => handleToggle('examResults', 'inApp')} />
                              </div>
                              <div className="flex items-center justify-between py-1">
                                 <label className="text-sm text-secondary-600 dark:text-secondary-400">Email Notifications</label>
-                                <ToggleSwitch enabled={prefs.examResults.email} onChange={val => handleToggle('examResults', 'email')} />
+                                <ToggleSwitch enabled={prefs.examResults.email} onChange={_ => handleToggle('examResults', 'email')} />
                             </div>
                         </div>
                     </div>
