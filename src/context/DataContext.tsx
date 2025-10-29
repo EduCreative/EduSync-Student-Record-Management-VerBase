@@ -34,6 +34,22 @@ const toSnakeCase = (obj: any): any => {
     return obj;
 };
 
+const getClassLevel = (name: string): number => {
+    const lowerName = name.toLowerCase().trim();
+    if (lowerName.includes('playgroup')) return -5;
+    if (lowerName.includes('nursery')) return -4;
+    if (lowerName.includes('kg')) return -3;
+    if (lowerName.includes('junior')) return -2;
+    if (lowerName.includes('senior')) return -1;
+
+    const match = name.match(/\d+/);
+    if (match) {
+        return parseInt(match[0], 10);
+    }
+    
+    return 1000; // Put non-standard names at the end
+};
+
 // --- CONTEXT ---
 interface DataContextType {
     // Data states
@@ -79,6 +95,8 @@ interface DataContextType {
     bulkAddClasses: (classes: Omit<Class, 'id'>[]) => Promise<void>;
     backupData: () => Promise<void>;
     restoreData: (backupFile: File) => Promise<void>;
+    promoteAllStudents: () => Promise<void>;
+    increaseTuitionFees: (studentIds: string[], increaseAmount: number) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -884,13 +902,124 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const promoteAllStudents = useCallback(async () => {
+        const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+        if (!effectiveSchoolId) {
+            showToast('Error', 'No school selected to perform promotion.', 'error');
+            throw new Error('No school selected');
+        }
+
+        const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
+        const sortedClasses = [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name));
+
+        if (sortedClasses.length < 1) {
+            showToast('Info', 'No classes found to perform promotion.', 'info');
+            return;
+        }
+
+        // Iterate from highest to lowest class
+        for (let i = sortedClasses.length - 1; i >= 0; i--) {
+            const currentClass = sortedClasses[i];
+            const studentsInClass = students.filter(s => s.classId === currentClass.id && s.status === 'Active');
+
+            if (studentsInClass.length === 0) {
+                continue; // Skip empty class
+            }
+
+            const studentIds = studentsInClass.map(s => s.id);
+
+            if (i === sortedClasses.length - 1) { // Highest class graduates
+                const newStatus = `Class ${currentClass.name} Passed`;
+                const { error } = await supabase.from('students').update({ status: newStatus }).in('id', studentIds);
+                if (error) {
+                    showToast('Error', `Failed to graduate students from ${currentClass.name}.`, 'error');
+                    throw error;
+                }
+            } else { // Promote to next class
+                const nextClass = sortedClasses[i + 1];
+                const { error } = await supabase.from('students').update({ class_id: nextClass.id }).in('id', studentIds);
+                if (error) {
+                    showToast('Error', `Failed to promote students from ${currentClass.name} to ${nextClass.name}.`, 'error');
+                    throw error;
+                }
+            }
+        }
+        
+        addLog('Students Promoted', `Promoted students for the new academic year.`);
+        showToast('Success', 'All students have been promoted successfully.', 'success');
+        await fetchData();
+    }, [user, activeSchoolId, classes, students, showToast, addLog, fetchData]);
+
+    const increaseTuitionFees = useCallback(async (studentIds: string[], increaseAmount: number) => {
+        const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+        if (!effectiveSchoolId) {
+            const msg = 'No school context selected.';
+            showToast('Error', msg, 'error');
+            throw new Error(msg);
+        }
+
+        const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
+        if (!tuitionFeeHead) {
+            const msg = "'Tuition Fee' head not found. Please create a fee head named 'Tuition Fee'.";
+            showToast('Error', msg, 'error');
+            throw new Error(msg);
+        }
+
+        const studentsToUpdate = students.filter(s => studentIds.includes(s.id));
+        
+        const updatePromises = studentsToUpdate.map(student => {
+            const currentFeeStructure = student.feeStructure || [];
+            const tuitionFeeIndex = currentFeeStructure.findIndex(item => item.feeHeadId === tuitionFeeHead.id);
+            
+            let newFeeStructure;
+
+            if (tuitionFeeIndex > -1) {
+                // Tuition fee already exists, update it
+                newFeeStructure = [...currentFeeStructure];
+                newFeeStructure[tuitionFeeIndex] = {
+                    ...newFeeStructure[tuitionFeeIndex],
+                    amount: newFeeStructure[tuitionFeeIndex].amount + increaseAmount,
+                };
+            } else {
+                // Tuition fee doesn't exist, add it based on the default
+                newFeeStructure = [
+                    ...currentFeeStructure,
+                    {
+                        feeHeadId: tuitionFeeHead.id,
+                        amount: tuitionFeeHead.defaultAmount + increaseAmount,
+                    },
+                ];
+            }
+            
+            return supabase
+                .from('students')
+                .update({ fee_structure: newFeeStructure })
+                .eq('id', student.id);
+        });
+
+        const results = await Promise.allSettled(updatePromises);
+        
+        const failedUpdates = results.filter(r => r.status === 'rejected');
+        if (failedUpdates.length > 0) {
+            console.error('Some student fee updates failed:', failedUpdates);
+            const msg = `${failedUpdates.length} out of ${studentsToUpdate.length} fee updates failed. Please check the console.`;
+            showToast('Partial Failure', msg, 'error');
+            throw new Error(msg);
+        }
+
+        addLog('Tuition Fees Increased', `Increased tuition fee by Rs. ${increaseAmount} for ${studentsToUpdate.length} students.`);
+        showToast('Success', `Tuition fees increased for ${studentsToUpdate.length} students.`, 'success');
+        await fetchData();
+
+    }, [user, activeSchoolId, students, feeHeads, showToast, addLog, fetchData]);
+
     const value = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
-        bulkAddClasses, backupData, restoreData, addUserByAdmin,
+        bulkAddClasses, backupData, restoreData, addUserByAdmin, promoteAllStudents, increaseTuitionFees,
     };
 
     return (

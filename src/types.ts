@@ -1,5 +1,6 @@
 
 
+
 export enum UserRole {
     Owner = 'Owner',
     Admin = 'Admin',
@@ -65,7 +66,7 @@ export interface Student {
     secondaryContactNumber?: string;
     address: string;
     // New fields for leaving certificate and photo management
-    status: 'Active' | 'Inactive' | 'Left';
+    status: string;
     gender: 'Male' | 'Female';
     dateOfLeaving?: string;
     reasonForLeaving?: string;

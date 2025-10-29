@@ -10,6 +10,23 @@ import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
 
+const getClassLevel = (name: string): number => {
+    const lowerName = name.toLowerCase().trim();
+    if (lowerName.includes('playgroup')) return -5;
+    if (lowerName.includes('nursery')) return -4;
+    if (lowerName.includes('kg')) return -3;
+    if (lowerName.includes('junior')) return -2;
+    if (lowerName.includes('senior')) return -1;
+
+    const match = name.match(/\d+/);
+    if (match) {
+        return parseInt(match[0], 10);
+    }
+    
+    return 1000; // Put non-standard names at the end
+};
+
+
 const ClassManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId, effectiveRole, hasPermission } = useAuth();
     const { classes, users, students, addClass, updateClass, deleteClass, loading, bulkAddClasses } = useData();
@@ -24,10 +41,13 @@ const ClassManagementPage: React.FC = () => {
     const canManageClasses = hasPermission(Permission.CAN_MANAGE_CLASSES);
 
     const schoolClasses = useMemo(() => {
+        let filteredClasses: Class[];
         if (effectiveRole === UserRole.Teacher) {
-            return classes.filter(c => c.schoolId === effectiveSchoolId && c.teacherId === currentUser?.id);
+            filteredClasses = classes.filter(c => c.schoolId === effectiveSchoolId && c.teacherId === currentUser?.id);
+        } else {
+            filteredClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
         }
-        return classes.filter(c => c.schoolId === effectiveSchoolId);
+        return [...filteredClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name));
     }, [classes, effectiveSchoolId, effectiveRole, currentUser]);
     
     const teachers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Teacher), [users, effectiveSchoolId]);
@@ -87,21 +107,26 @@ const ClassManagementPage: React.FC = () => {
     const requiredHeaders = ['name'];
 
     const handleExport = () => {
-        const dataToExport = schoolClasses.map(c => ({
-            classId: c.id,
+        const dataToExport = schoolClasses.map((c, index) => ({
+            displayId: index + 1,
             className: c.name,
             teacher: c.teacherId ? teacherMap.get(c.teacherId) || 'N/A' : 'N/A',
             studentCount: studentCountMap[c.id] || 0,
+            classId_internal: c.id,
         }));
         exportToCsv(dataToExport, 'classes_export');
     };
     
     const tableColumns = [
-        { width: '30%' }, { width: '30%' }, { width: '20%' },
+        { width: '10%' }, // ID
+        { width: canManageClasses ? '25%' : '40%' }, // Name
+        { width: canManageClasses ? '25%' : '30%' }, // Teacher
+        { width: '20%' }, // Students
     ];
     if (canManageClasses) {
-        tableColumns.push({ width: '20%' });
+        tableColumns.push({ width: '20%' }); // Actions
     }
+
 
     return (
         <>
@@ -162,6 +187,7 @@ const ClassManagementPage: React.FC = () => {
                             <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
                                 <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                     <tr>
+                                        <th scope="col" className="px-6 py-3">ID</th>
                                         <th scope="col" className="px-6 py-3">Class Name</th>
                                         <th scope="col" className="px-6 py-3">Teacher</th>
                                         <th scope="col" className="px-6 py-3">No. of Students</th>
@@ -169,8 +195,9 @@ const ClassManagementPage: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {schoolClasses.map(c => (
+                                    {schoolClasses.map((c, index) => (
                                         <tr key={c.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                            <td className="px-6 py-4">{index + 1}</td>
                                             <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{c.name}</td>
                                             <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
                                             <td className="px-6 py-4">{studentCountMap[c.id] || 0}</td>

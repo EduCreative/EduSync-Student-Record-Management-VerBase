@@ -44,7 +44,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         userId: '',
         secondaryContactNumber: '',
         openingBalance: 0,
-        status: 'Active' as 'Active' | 'Inactive' | 'Left',
+        status: 'Active',
         feeStructure: [] as { feeHeadId: string; amount: number }[],
     });
 
@@ -167,12 +167,13 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                      {studentToEdit && (
                         <div>
                             <label htmlFor="status" className="input-label">Status</label>
-                            <select name="status" id="status" value={formData.status} onChange={handleChange} className="w-full input-field" disabled={formData.status === 'Left'}>
+                            <select name="status" id="status" value={formData.status} onChange={handleChange} className="w-full input-field" disabled={formData.status === 'Left' || formData.status.includes('Passed')}>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
                                 {formData.status === 'Left' && <option value="Left">Left</option>}
+                                {formData.status.includes('Passed') && <option value={formData.status}>{formData.status}</option>}
                             </select>
-                            <p className="text-xs text-secondary-500 mt-1">Status 'Left' is set via 'Issue Leaving Certificate'.</p>
+                            <p className="text-xs text-secondary-500 mt-1">Status 'Left' or 'Passed' is set via other actions.</p>
                         </div>
                     )}
                      <div>
