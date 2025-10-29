@@ -40,12 +40,10 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
             </div>
 
             <div className="p-1 text-xs">
-                // <div className="flex justify-between"><span>Issue Date:</span><span>{formatDate(new Date())}</span></div>
-                <div className="flex justify-between"><span>Due Date:</span><span className="font-bold">{formatDate(challan.dueDate)}</span></div>
+                <div className="flex justify-between"><span>Issue Date:</span><span>{formatDate(new Date())}</span><span>Due Date:</span><span className="font-bold">{formatDate(challan.dueDate)}</span></div>
             </div>
             <div className="p-1 border-t border-b text-xs">
-                <div className="flex justify-between"><span>Student:</span><span className="font-bold">{student.name}</span></div>
-                <div className="flex justify-between"><span>Father:</span><span>{student.fatherName}</span></div>
+                <div className="flex justify-between"><span>Student:</span><span className="font-bold">{student.name}</span><span>Father:</span><span>{student.fatherName}</span></div>
                 <div className="flex justify-between"><span>Class:</span><span>{studentClass}</span><span>Roll #:</span><span>{student.rollNumber}</span></div>
             </div>
             <div className="border-x border-gray-300">
@@ -59,9 +57,12 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 {challan.previousBalance > 0 && <ChallanRow label="Arrears" value={challan.previousBalance} />}
             </div>
             <div className="border border-t-0 border-gray-300 mt-auto">
-                <ChallanRow label="Sub Total" value={challan.totalAmount} bold />
-                {challan.discount > 0 && <ChallanRow label="Discount" value={-challan.discount} />}
-                <ChallanRow label="Grand Total" value={challan.totalAmount - challan.discount} bold />
+                <ChallanRow label="Sub Total" value={challan.totalAmount} />
+                <ChallanRow label="Discount" value={challan.discount} />
+                <ChallanRow label="Total Amount Due" value={challan.totalAmount - challan.discount} bold />
+                <ChallanRow label="Paid Amount" value={challan.paidAmount > 0 ? challan.paidAmount : '-'} />
+                <ChallanRow label="Payment Date" value={challan.paidDate ? formatDate(challan.paidDate) : '-'} />
+                <ChallanRow label="Balance" value={challan.totalAmount - challan.discount - challan.paidAmount} bold />
             </div>
         </>
     );

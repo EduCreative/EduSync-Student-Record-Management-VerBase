@@ -10,7 +10,7 @@ import { Permission } from '../../permissions';
 const SchoolFormModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (school: School | Omit<School, 'id'>) => void;
+    onSave: (school: School | Omit<School, 'id'>) => Promise<void>;
     schoolToEdit: School | null;
 }> = ({ isOpen, onClose, onSave, schoolToEdit }) => {
     
@@ -21,6 +21,7 @@ const SchoolFormModal: React.FC<{
     });
 
     const [formData, setFormData] = useState(getInitialState());
+    const [isSaving, setIsSaving] = useState(false);
     
     React.useEffect(() => {
         if(isOpen) {
@@ -28,14 +29,21 @@ const SchoolFormModal: React.FC<{
         }
     }, [isOpen, schoolToEdit]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (schoolToEdit) {
-            onSave({ ...schoolToEdit, ...formData });
-        } else {
-            onSave(formData);
+        setIsSaving(true);
+        try {
+            if (schoolToEdit) {
+                await onSave({ ...schoolToEdit, ...formData });
+            } else {
+                await onSave(formData);
+            }
+            onClose();
+        } catch (error) {
+            console.error("Failed to save school:", error);
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     return (
@@ -56,7 +64,9 @@ const SchoolFormModal: React.FC<{
                 </div>
                 <div className="flex justify-end space-x-2 pt-2">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button type="submit" className="btn-primary">Save School</button>
+                    <button type="submit" className="btn-primary" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save School'}
+                    </button>
                 </div>
             </form>
         </Modal>
@@ -133,11 +143,11 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
     const [schoolToEdit, setSchoolToEdit] = useState<School | null>(null);
     const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
 
-    const handleSave = (school: School | Omit<School, 'id'>) => {
+    const handleSave = async (school: School | Omit<School, 'id'>) => {
         if ('id' in school) {
-            updateSchool(school);
+            await updateSchool(school);
         } else {
-            addSchool(school.name, school.address, school.logoUrl);
+            await addSchool(school.name, school.address, school.logoUrl);
         }
     };
 

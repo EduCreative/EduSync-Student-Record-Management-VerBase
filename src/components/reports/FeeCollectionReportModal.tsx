@@ -29,9 +29,9 @@ const getFirstDayOfMonthString = () => {
 const availableColumns = {
     stdId: "Std. ID",
     fatherName: "Father's Name",
+    className: "Class",
     amountDue: "Amount Due",
     discount: "Discount",
-    paymentDate: "Payment Date",
     balance: "Balance"
 };
 type ColumnKey = keyof typeof availableColumns;
@@ -47,9 +47,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         stdId: true,
         fatherName: true,
+        className: true,
         amountDue: true,
         discount: true,
-        paymentDate: true,
         balance: true,
     });
 
@@ -67,6 +67,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         stdId: string;
         studentName: string;
         fatherName: string;
+        className: string;
         amountDue: number;
         discount: number;
         paid: number;
@@ -74,9 +75,8 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         date: string;
     }
 
-    interface ClassGroup {
-        classId: string;
-        className: string;
+    interface DateGroup {
+        date: string;
         transactions: Transaction[];
         subtotals: {
             paid: number;
@@ -91,25 +91,25 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             return fee.paidDate >= startDate && fee.paidDate <= endDate;
         });
 
-        const groupedByClass = paidFeesInRange.reduce((acc, fee) => {
-            const student = studentMap.get(fee.studentId);
-            if (!student) return acc;
-
-            const classId = student.classId;
-            if (!acc[classId]) {
-                acc[classId] = {
-                    classId: classId,
-                    className: classMap.get(classId) || 'Unknown Class',
+        const groupedByDate = paidFeesInRange.reduce((acc, fee) => {
+            const date = fee.paidDate!;
+            if (!acc[date]) {
+                acc[date] = {
+                    date: date,
                     transactions: [],
                     subtotals: { paid: 0 },
                 };
             }
+            
+            const student = studentMap.get(fee.studentId);
+            if (!student) return acc;
 
-            acc[classId].transactions.push({
-                sr: 0, // Serial number will be added later
+            acc[date].transactions.push({
+                sr: 0, 
                 stdId: student.rollNumber,
                 studentName: student.name,
                 fatherName: student.fatherName,
+                className: classMap.get(student.classId) || 'N/A',
                 amountDue: fee.totalAmount,
                 discount: fee.discount,
                 paid: fee.paidAmount,
@@ -117,17 +117,21 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                 date: fee.paidDate!,
             });
 
-            acc[classId].subtotals.paid += fee.paidAmount;
+            acc[date].subtotals.paid += fee.paidAmount;
 
             return acc;
-        }, {} as Record<string, ClassGroup>);
+        }, {} as Record<string, DateGroup>);
 
-        return Object.values(groupedByClass)
-            .sort((a, b) => a.className.localeCompare(b.className))
-            .map(classGroup => {
-                classGroup.transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                classGroup.transactions.forEach((t, index) => { t.sr = index + 1; });
-                return classGroup;
+        return Object.values(groupedByDate)
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map(dateGroup => {
+                dateGroup.transactions.sort((a, b) => {
+                    if (a.className < b.className) return -1;
+                    if (a.className > b.className) return 1;
+                    return a.stdId.localeCompare(b.stdId, undefined, { numeric: true });
+                });
+                dateGroup.transactions.forEach((t, index) => { t.sr = index + 1; });
+                return dateGroup;
             });
     }, [fees, studentMap, classMap, effectiveSchoolId, startDate, endDate]);
     
@@ -136,7 +140,13 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
     const handleGenerate = () => {
         const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
-        const subtotalColspan = 2 + (activeColumns.includes('stdId') ? 1 : 0) + (activeColumns.includes('fatherName') ? 1 : 0) + (activeColumns.includes('amountDue') ? 1 : 0) + (activeColumns.includes('discount') ? 1 : 0);
+        const subtotalColspan = 1 + 
+            (activeColumns.includes('stdId') ? 1 : 0) + 
+            1 + // Student Name
+            (activeColumns.includes('fatherName') ? 1 : 0) + 
+            (activeColumns.includes('className') ? 1 : 0) + 
+            (activeColumns.includes('amountDue') ? 1 : 0) +
+            (activeColumns.includes('discount') ? 1 : 0);
 
         const content = (
             <div className="printable-report p-4">
@@ -157,9 +167,9 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                 <h1 className="text-xl font-bold mb-1 text-center">Fee Collection Report</h1>
                 <p className="text-center mb-4">From: {formatDate(startDate)} To: {formatDate(endDate)}</p>
                 
-                {reportData.map(classGroup => (
-                    <div key={classGroup.classId} className="mb-6" style={{ pageBreakInside: 'avoid' }}>
-                        <h3 className="text-lg font-bold bg-secondary-100 p-2 my-2">{classGroup.className}</h3>
+                {reportData.map(dateGroup => (
+                    <div key={dateGroup.date} className="mb-6" style={{ pageBreakInside: 'avoid' }}>
+                        <h3 className="text-lg font-bold bg-secondary-100 p-2 my-2">{formatDate(dateGroup.date)}</h3>
                         <table className="w-full text-sm">
                             <thead>
                                 <tr>
@@ -167,24 +177,24 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                     {activeColumns.includes('stdId') && <th className="p-1 text-left">StdID</th>}
                                     <th className="p-1 text-left">Student Name</th>
                                     {activeColumns.includes('fatherName') && <th className="p-1 text-left">Father Name</th>}
+                                    {activeColumns.includes('className') && <th className="p-1 text-left">Class</th>}
                                     {activeColumns.includes('amountDue') && <th className="p-1 text-right">Amount Due</th>}
                                     {activeColumns.includes('discount') && <th className="p-1 text-right">Discount</th>}
                                     <th className="p-1 text-right">Paid</th>
-                                    {activeColumns.includes('paymentDate') && <th className="p-1 text-left">Payment Date</th>}
                                     {activeColumns.includes('balance') && <th className="p-1 text-right">Balance</th>}
                                 </tr>
                             </thead>
                             <tbody>
-                                {classGroup.transactions.map(t => (
+                                {dateGroup.transactions.map(t => (
                                     <tr key={t.sr}>
                                         <td className="p-1">{t.sr}</td>
                                         {activeColumns.includes('stdId') && <td className="p-1">{t.stdId}</td>}
                                         <td className="p-1">{t.studentName}</td>
                                         {activeColumns.includes('fatherName') && <td className="p-1">{t.fatherName}</td>}
+                                        {activeColumns.includes('className') && <td className="p-1">{t.className}</td>}
                                         {activeColumns.includes('amountDue') && <td className="p-1 text-right">{t.amountDue.toLocaleString()}</td>}
                                         {activeColumns.includes('discount') && <td className="p-1 text-right">{t.discount.toLocaleString()}</td>}
                                         <td className="p-1 text-right">{t.paid.toLocaleString()}</td>
-                                        {activeColumns.includes('paymentDate') && <td className="p-1">{formatDate(t.date)}</td>}
                                         {activeColumns.includes('balance') && <td className="p-1 text-right">{t.balance.toLocaleString()}</td>}
                                     </tr>
                                 ))}
@@ -192,8 +202,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                             <tfoot>
                                 <tr className="font-bold bg-secondary-100">
                                     <td colSpan={subtotalColspan} className="p-1 text-right">Subtotal Paid:</td>
-                                    <td className="p-1 text-right">{classGroup.subtotals.paid.toLocaleString()}</td>
-                                    {activeColumns.includes('paymentDate') && <td className="p-1"></td>}
+                                    <td className="p-1 text-right">{dateGroup.subtotals.paid.toLocaleString()}</td>
                                     {activeColumns.includes('balance') && <td className="p-1"></td>}
                                 </tr>
                             </tfoot>
@@ -208,7 +217,6 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                 <tr className="font-bold text-lg bg-secondary-200">
                                     <td colSpan={subtotalColspan} className="p-2 text-right">Grand Total Paid:</td>
                                     <td className="p-2 text-right">Rs. {grandTotalPaid.toLocaleString()}</td>
-                                    {activeColumns.includes('paymentDate') && <td className="p-2"></td>}
                                     {activeColumns.includes('balance') && <td className="p-2"></td>}
                                 </tr>
                             </tbody>
@@ -225,25 +233,25 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         if (selectedColumns.stdId) headers.push('StdID');
         headers.push('Student Name');
         if (selectedColumns.fatherName) headers.push("Father's Name");
+        if (selectedColumns.className) headers.push("Class");
         if (selectedColumns.amountDue) headers.push('Amount Due');
         if (selectedColumns.discount) headers.push('Discount');
         headers.push('Paid');
-        if (selectedColumns.paymentDate) headers.push('Payment Date');
         if (selectedColumns.balance) headers.push('Balance');
 
         const csvRows = [headers.join(',')];
 
-        reportData.forEach(classGroup => {
-            csvRows.push(escapeCsvCell(`Class: ${classGroup.className}`));
-            classGroup.transactions.forEach(t => {
+        reportData.forEach(dateGroup => {
+            csvRows.push(escapeCsvCell(`Date: ${formatDate(dateGroup.date)}`));
+            dateGroup.transactions.forEach(t => {
                 const row: (string | number)[] = [t.sr];
                 if (selectedColumns.stdId) row.push(t.stdId);
                 row.push(t.studentName);
                 if (selectedColumns.fatherName) row.push(t.fatherName);
+                if (selectedColumns.className) row.push(t.className);
                 if (selectedColumns.amountDue) row.push(t.amountDue);
                 if (selectedColumns.discount) row.push(t.discount);
                 row.push(t.paid);
-                if (selectedColumns.paymentDate) row.push(t.date);
                 if (selectedColumns.balance) row.push(t.balance);
                 csvRows.push(row.map(escapeCsvCell).join(','));
             });
@@ -251,7 +259,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             const subtotalRow = Array(headers.length).fill('');
             const paidIndex = headers.indexOf('Paid');
             subtotalRow[paidIndex - 1] = 'Subtotal Paid:';
-            subtotalRow[paidIndex] = classGroup.subtotals.paid;
+            subtotalRow[paidIndex] = dateGroup.subtotals.paid;
             csvRows.push(subtotalRow.join(','));
             csvRows.push('');
         });

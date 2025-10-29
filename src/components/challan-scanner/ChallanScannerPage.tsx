@@ -43,12 +43,25 @@ const ChallanScannerPage: React.FC = () => {
         setScannedChallan(null);
         setScannedStudent(null);
         
+        if (!window.isSecureContext) {
+            setError('Camera access requires a secure connection (HTTPS).');
+            return;
+        }
+
         if (!('BarcodeDetector' in window)) {
             setError('Barcode detection is not supported in this browser.');
             return;
         }
 
         try {
+            if (navigator.permissions && navigator.permissions.query) {
+                const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
+                if (permissionStatus.state === 'denied') {
+                    setError('Camera permission was denied. Please enable it in your browser settings to use this feature.');
+                    return;
+                }
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             streamRef.current = stream;
             if (videoRef.current) {
@@ -56,8 +69,14 @@ const ChallanScannerPage: React.FC = () => {
             }
             detectorRef.current = new BarcodeDetector({ formats: ['code_128', 'qr_code'] });
             setIsScanning(true);
-        } catch (err) {
-            setError('Could not access camera. Please grant permission and try again.');
+        } catch (err: any) {
+            let message = 'Could not access camera. Please grant permission and try again.';
+            if (err.name === 'NotAllowedError') {
+                message = 'Camera access was not allowed. Please grant permission to use this feature.';
+            } else if (err.name === 'NotFoundError') {
+                message = 'No camera found on this device.';
+            }
+            setError(message);
             console.error(err);
         }
     }, []);

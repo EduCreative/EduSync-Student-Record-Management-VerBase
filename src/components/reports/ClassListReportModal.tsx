@@ -15,8 +15,12 @@ interface ClassListReportModalProps {
 const availableColumns = {
     rollNumber: "Std. ID",
     fatherName: "Father's Name",
+    fatherCnic: "Father's CNIC",
+    gender: "Gender",
+    dateOfBirth: "Date of Birth",
     caste: "Caste",
     contactNumber: "Contact Number",
+    secondaryContactNumber: "Secondary Contact",
     dateOfAdmission: "Admission Date",
     address: "Address",
 };
@@ -32,8 +36,12 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         rollNumber: true,
         fatherName: true,
+        fatherCnic: false,
+        gender: false,
+        dateOfBirth: false,
         caste: false,
         contactNumber: true,
+        secondaryContactNumber: false,
         dateOfAdmission: false,
         address: false,
     });
@@ -91,7 +99,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                                 <td className="p-1">{student.name}</td>
                                 {activeColumns.map(col => (
                                     <td key={col} className="p-1">
-                                        {col === 'dateOfAdmission' ? formatDate(student[col]) : student[col as ColumnKey] || 'N/A'}
+                                        {col === 'dateOfAdmission' || col === 'dateOfBirth' ? formatDate(student[col]) : (student as any)[col] || 'N/A'}
                                     </td>
                                 ))}
                             </tr>
@@ -116,8 +124,8 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                     .filter(k => selectedColumns[k as ColumnKey])
                     .map(col => {
                         const key = col as ColumnKey;
-                        const value = student[key];
-                        return key === 'dateOfAdmission' ? formatDate(value) : value;
+                        const value = (student as any)[key];
+                        return key === 'dateOfAdmission' || key === 'dateOfBirth' ? formatDate(value) : value;
                     })
             ];
             csvRows.push(row.map(escapeCsvCell).join(','));

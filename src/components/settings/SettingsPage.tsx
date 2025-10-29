@@ -7,6 +7,7 @@ import Modal from '../common/Modal';
 import { UserRole } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import ImageUpload from '../common/ImageUpload';
+import { usePWAInstall } from '../../context/PWAInstallContext';
 
 // A simple toggle switch component
 const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void }> = ({ enabled, onChange }) => (
@@ -31,6 +32,7 @@ const SettingsPage: React.FC = () => {
     const { user, effectiveRole, activeSchoolId, updateUserPassword } = useAuth();
     const { schools, backupData, restoreData, updateUser, updateSchool } = useData();
     const { showToast } = useToast();
+    const { installPrompt, clearInstallPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
 
@@ -183,6 +185,19 @@ const SettingsPage: React.FC = () => {
         }
     };
     
+    const handleInstallClick = async () => {
+        if (!installPrompt) {
+            showToast('Info', 'The app cannot be installed right now. Try again later or check your browser settings.', 'info');
+            return;
+        }
+        installPrompt.prompt();
+        const { outcome } = await installPrompt.userChoice;
+        if (outcome === 'accepted') {
+            showToast('Success', 'App installed successfully!', 'success');
+        }
+        clearInstallPrompt();
+    };
+
     const canSeeNotifications = [UserRole.Parent, UserRole.Student].includes(effectiveRole as UserRole);
 
     return (
@@ -206,6 +221,21 @@ const SettingsPage: React.FC = () => {
             </Modal>
             <div className="max-w-4xl mx-auto space-y-8">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Settings</h1>
+
+                {installPrompt && (
+                    <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">App Installation</h2>
+                        <div className="py-4 flex items-center justify-between">
+                            <div>
+                                <p className="font-medium">Install EduSync</p>
+                                <p className="text-sm text-secondary-500 dark:text-secondary-400">Install the app on your device for quick, offline access.</p>
+                            </div>
+                            <button onClick={handleInstallClick} className="btn-primary">
+                                <DownloadIcon className="w-4 h-4" /> Install App
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700">Appearance</h2>
