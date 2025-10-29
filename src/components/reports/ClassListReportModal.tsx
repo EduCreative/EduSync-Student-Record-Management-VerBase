@@ -7,6 +7,7 @@ import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
 import { EduSyncLogo } from '../../constants';
 import { formatDate } from '../../utils/dateHelper';
+import { formatCnic } from '../../utils/stringUtils';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -104,7 +105,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                                 <td className="p-1">{student.name}</td>
                                 {activeColumns.map(col => (
                                     <td key={col} className="p-1">
-                                        {col === 'dateOfAdmission' || col === 'dateOfBirth' ? formatDate(student[col]) : (student as any)[col] || 'N/A'}
+                                        {col === 'dateOfAdmission' || col === 'dateOfBirth' ? formatDate(student[col]) : (col === 'fatherCnic' ? formatCnic(student[col]) : (student as any)[col] || 'N/A')}
                                     </td>
                                 ))}
                             </tr>
@@ -130,7 +131,9 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                     .map(col => {
                         const key = col as ColumnKey;
                         const value = (student as any)[key];
-                        return key === 'dateOfAdmission' || key === 'dateOfBirth' ? formatDate(value) : value;
+                        if (key === 'dateOfAdmission' || key === 'dateOfBirth') return formatDate(value);
+                        if (key === 'fatherCnic') return formatCnic(value);
+                        return value;
                     })
             ];
             csvRows.push(row.map(escapeCsvCell).join(','));

@@ -12,6 +12,7 @@ import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
+import { formatCnic } from '../../utils/stringUtils';
 
 interface StudentManagementPageProps {
     setActiveView: (view: ActiveView) => void;
@@ -91,6 +92,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             schoolId: effectiveSchoolId,
             openingBalance: Number(item.openingBalance) || 0,
             userId: item.userId || null, // Convert empty string for UUID to null
+            fatherCnic: formatCnic(item.fatherCnic),
         }));
         await bulkAddStudents(studentsToImport);
     };
@@ -101,7 +103,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         grNumber: "GR-12345",
         classId: schoolClasses[0]?.id || "paste_valid_class_id_here",
         fatherName: "Zulfiqar Ahmed",
-        fatherCnic: "35202-1234567-1",
+        fatherCnic: "4130412628123",
         dateOfBirth: "2010-05-15",
         dateOfAdmission: new Date().toISOString().split('T')[0],
         contactNumber: "0300-1234567",

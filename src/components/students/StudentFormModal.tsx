@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import ImageUpload from '../common/ImageUpload';
 import { getTodayString } from '../../utils/dateHelper';
+import { formatCnic } from '../../utils/stringUtils';
 
 interface StudentFormModalProps {
     isOpen: boolean;
@@ -124,6 +125,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 ...formData,
                 userId: formData.userId || null, 
                 openingBalance: Number(formData.openingBalance) || 0,
+                fatherCnic: formatCnic(formData.fatherCnic),
             };
 
             const saveOperation = studentToEdit
