@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { FeeChallan, Student, School } from '../../types';
 import { EduSyncLogo } from '../../constants';
-import Barcode from '../common/Barcode';
+import QRCode from '../common/QRCode';
 import { formatDate } from '../../utils/dateHelper';
 
 interface PrintableChallanProps {
@@ -12,7 +12,7 @@ interface PrintableChallanProps {
 }
 
 const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> = ({ label, value, bold }) => (
-    <div className={`flex justify-between items-baseline py-1 px-2 border-b border-gray-200 ${bold ? 'font-bold' : ''}`}>
+    <div className={`flex justify-between items-baseline py-1 px-2 border-b border-gray-200 last:border-b-0 ${bold ? 'font-bold' : ''}`}>
         <span className="text-xs">{label}</span>
         <span className="text-xs text-right">{typeof value === 'number' ? `Rs. ${value.toLocaleString()}` : value}</span>
     </div>
@@ -20,6 +20,8 @@ const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> 
 
 const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school, studentClass }) => {
     
+    const balance = challan.totalAmount - challan.discount - challan.paidAmount;
+
     const ChallanBody: FC = () => (
         <>
             <div className="flex items-center gap-2 p-2 border-b">
@@ -36,8 +38,8 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 </div>
             </div>
             
-            <div className="barcode-container py-1 border-b">
-                <Barcode value={challan.challanNumber} height={30} barWidth={1.2} />
+            <div className="barcode-container py-1 border-b" style={{ minHeight: '50px' }}>
+                <QRCode value={challan.challanNumber} size={45} />
             </div>
 
             <div className="p-1 text-xs">
@@ -70,7 +72,7 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 <ChallanRow label="Total Amount Due" value={challan.totalAmount - challan.discount} bold />
                 <ChallanRow label="Paid Amount" value={challan.paidAmount > 0 ? challan.paidAmount : '-'} />
                 <ChallanRow label="Payment Date" value={challan.paidDate ? formatDate(challan.paidDate) : '-'} />
-                <ChallanRow label="Balance" value={challan.totalAmount - challan.discount - challan.paidAmount} bold />
+                <ChallanRow label="Balance" value={balance} bold />
             </div>
         </>
     );
