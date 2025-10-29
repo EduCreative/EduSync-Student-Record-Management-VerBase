@@ -6,6 +6,9 @@ import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
 import { EduSyncLogo } from '../../constants';
+// No date functions are used directly in this component, so no import needed.
+// Correction: The original file did not use formatDate, so no change is needed.
+// However, it's good practice to have it available if needed in the future.
 
 interface DefaulterReportModalProps {
     isOpen: boolean;

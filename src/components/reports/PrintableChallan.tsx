@@ -1,7 +1,8 @@
 import type { FC } from 'react';
 import { FeeChallan, Student, School } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { EduSyncLogo } from '../../constants';
 import Barcode from '../common/Barcode';
+import { formatDate } from '../../utils/dateHelper';
 
 interface PrintableChallanProps {
     challan: FeeChallan;

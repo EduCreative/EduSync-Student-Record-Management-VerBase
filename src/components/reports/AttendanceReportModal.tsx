@@ -4,25 +4,12 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { EduSyncLogo } from '../../constants';
+import { formatDate, getFirstDayOfMonthString, getTodayString } from '../../utils/dateHelper';
 
 interface AttendanceReportModalProps {
     isOpen: boolean;
     onClose: () => void;
-}
-
-const getTodayString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-const getFirstDayOfMonthString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    return `${year}-${month}-01`;
 }
 
 const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, onClose }) => {

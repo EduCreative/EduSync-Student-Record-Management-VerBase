@@ -31,21 +31,26 @@ const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick }
     return (
         <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
             <div className="mb-4">{title}</div>
-            <div className="flex justify-around items-end h-48 space-x-2">
-                {data.map((item, index) => (
-                    <div key={index} className="flex flex-col items-center flex-1 group" onClick={() => onClick && onClick(item)}>
-                        <div 
-                            className={`w-full rounded-t-md ${onClick ? 'cursor-pointer group-hover:opacity-80' : ''}`}
-                            style={{ 
-                                height: `${(item.value / maxValue) * 100}%`,
-                                backgroundColor: item.color || color,
-                                transition: 'height 0.3s ease-in-out, opacity 0.2s'
-                            }}
-                            title={`${item.label}: ${item.value}`}
-                        ></div>
-                        <span className="text-xs text-secondary-500 mt-2 truncate">{item.label}</span>
-                    </div>
-                ))}
+            <div className="w-full overflow-x-auto pb-2">
+                <div 
+                    className="flex justify-around items-end h-48 space-x-2"
+                    style={{ minWidth: `${data.length * 40}px` }}
+                >
+                    {data.map((item, index) => (
+                        <div key={index} className="flex flex-col items-center flex-1 group" onClick={() => onClick && onClick(item)}>
+                            <div 
+                                className={`w-full rounded-t-md ${onClick ? 'cursor-pointer group-hover:opacity-80' : ''}`}
+                                style={{ 
+                                    height: `${(item.value / maxValue) * 100}%`,
+                                    backgroundColor: item.color || color,
+                                    transition: 'height 0.3s ease-in-out, opacity 0.2s'
+                                }}
+                                title={`${item.label}: ${item.value}`}
+                            ></div>
+                            <span className="text-xs text-secondary-500 mt-2 truncate group-hover:text-primary-600">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

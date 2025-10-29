@@ -131,28 +131,3 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
         { name: 'Calendar', path: '/calendar', icon: <CalendarIcon /> },
     ],
 };
-
-export const formatDate = (dateString?: string | Date): string => {
-    if (!dateString) return 'N/A';
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'Invalid Date';
-        const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
-        return date.toLocaleDateString('en-GB', options).replace(/ /g, '-');
-    } catch (error) {
-        return 'Invalid Date';
-    }
-};
-
-export const formatDateTime = (isoString?: string): string => {
-    if (!isoString) return 'N/A';
-    try {
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return 'Invalid Date';
-        const datePart = formatDate(date);
-        const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-        return `${datePart}, ${time}`;
-    } catch (error) {
-        return 'Invalid Date';
-    }
-};

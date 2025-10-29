@@ -5,6 +5,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import ImageUpload from '../common/ImageUpload';
+import { getTodayString } from '../../utils/dateHelper';
 
 interface StudentFormModalProps {
     isOpen: boolean;
@@ -12,12 +13,6 @@ interface StudentFormModalProps {
     onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => Promise<void>;
     studentToEdit?: Student | null;
 }
-
-const getTodayString = () => {
-    const today = new Date();
-    const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
-    return localDate.toISOString().split('T')[0];
-};
 
 const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, onSave, studentToEdit }) => {
     const { user, activeSchoolId } = useAuth();
@@ -28,6 +23,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     const getInitialFormData = () => ({
         name: '',
         rollNumber: '',
+        grNumber: '',
         classId: '',
         fatherName: '',
         fatherCnic: '',
@@ -35,6 +31,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         dateOfAdmission: getTodayString(),
         admittedClass: '',
         caste: '',
+        religion: '',
         lastSchoolAttended: '',
         contactNumber: '',
         address: '',
@@ -62,6 +59,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 setFormData({
                     name: studentToEdit.name,
                     rollNumber: studentToEdit.rollNumber,
+                    grNumber: studentToEdit.grNumber || '',
                     classId: studentToEdit.classId,
                     fatherName: studentToEdit.fatherName,
                     fatherCnic: studentToEdit.fatherCnic,
@@ -69,6 +67,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     dateOfAdmission: studentToEdit.dateOfAdmission,
                     admittedClass: studentToEdit.admittedClass,
                     caste: studentToEdit.caste || '',
+                    religion: studentToEdit.religion || '',
                     lastSchoolAttended: studentToEdit.lastSchoolAttended || '',
                     contactNumber: studentToEdit.contactNumber,
                     address: studentToEdit.address,
@@ -165,6 +164,10 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         {errors.rollNumber && <p className="text-red-500 text-xs mt-1">{errors.rollNumber}</p>}
                     </div>
                      <div>
+                        <label htmlFor="grNumber" className="input-label">GR Number</label>
+                        <input type="text" name="grNumber" id="grNumber" value={formData.grNumber} onChange={handleChange} className="w-full input-field" />
+                    </div>
+                     <div>
                         <label htmlFor="classId" className="input-label">Class</label>
                         <select name="classId" id="classId" value={formData.classId} onChange={handleChange} className="w-full input-field" required>
                             <option value="">Select Class</option>
@@ -203,6 +206,10 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="caste" className="input-label">Caste</label>
                         <input type="text" name="caste" id="caste" value={formData.caste} onChange={handleChange} className="w-full input-field" />
+                    </div>
+                     <div>
+                        <label htmlFor="religion" className="input-label">Religion</label>
+                        <input type="text" name="religion" id="religion" value={formData.religion} onChange={handleChange} className="w-full input-field" />
                     </div>
                      <div>
                         <label htmlFor="gender" className="input-label">Gender</label>

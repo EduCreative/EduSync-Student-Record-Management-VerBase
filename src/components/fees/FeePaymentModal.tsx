@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
 import { useData } from '../../context/DataContext';
+import { getTodayString } from '../../utils/dateHelper';
 
 interface FeePaymentModalProps {
     isOpen: boolean;
@@ -9,14 +10,6 @@ interface FeePaymentModalProps {
     challan: FeeChallan;
     student: Student;
 }
-
-const getTodayString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
 const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, challan, student }) => {
     const { recordFeePayment } = useData();

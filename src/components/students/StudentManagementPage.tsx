@@ -98,6 +98,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const sampleDataForImport = [{
         name: "Kamran Ahmed",
         rollNumber: "101",
+        grNumber: "GR-12345",
         classId: schoolClasses[0]?.id || "paste_valid_class_id_here",
         fatherName: "Zulfiqar Ahmed",
         fatherCnic: "35202-1234567-1",
@@ -109,6 +110,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         gender: "Male",
         admittedClass: "Grade 5",
         caste: "Arain",
+        religion: "Islam",
         lastSchoolAttended: "Previous Public School",
         openingBalance: 0,
         userId: ""

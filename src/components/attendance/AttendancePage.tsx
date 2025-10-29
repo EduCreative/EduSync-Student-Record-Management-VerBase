@@ -8,16 +8,9 @@ import AttendanceViewer from './AttendanceViewer';
 import { useToast } from '../../context/ToastContext';
 import AttendanceReportModal from '../reports/AttendanceReportModal';
 import { PrinterIcon } from '../../constants';
+import { getTodayString } from '../../utils/dateHelper';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
-
-const getTodayString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
 const AttendanceMarker: React.FC = () => {
     const { user, effectiveRole, activeSchoolId } = useAuth();

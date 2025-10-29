@@ -1,5 +1,3 @@
-
-
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { School, UserRole } from '../../types';
@@ -57,6 +55,23 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ setActiveView }) => {
             color: roleColors[role as UserRole] || '#64748b'
         }));
     }, [users]);
+
+    const feeCollectionBySchoolData = useMemo(() => {
+        const collectionBySchool: Record<string, number> = {};
+        
+        fees.forEach(fee => {
+            const student = students.find(s => s.id === fee.studentId);
+            if (student && student.schoolId) {
+                collectionBySchool[student.schoolId] = (collectionBySchool[student.schoolId] || 0) + fee.paidAmount;
+            }
+        });
+    
+        return schools.map(school => ({
+            id: school.id,
+            label: school.name,
+            value: collectionBySchool[school.id] || 0,
+        })).sort((a, b) => b.value - a.value);
+    }, [schools, students, fees]);
 
     const studentsInViewingSchool = useMemo(() => {
         if (!viewingSchool) return [];
@@ -139,6 +154,11 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ setActiveView }) => {
                         onClick={handleDoughnutClick}
                     />
                 </div>
+                <BarChart
+                    title="Total Fee Collection by School"
+                    data={feeCollectionBySchoolData}
+                    color="#10b981"
+                />
             </div>
         </>
     );

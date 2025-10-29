@@ -1,6 +1,4 @@
 
-
-
 export enum UserRole {
     Owner = 'Owner',
     Admin = 'Admin',
@@ -57,6 +55,7 @@ export interface Student {
     classId: string;
     schoolId: string;
     rollNumber: string;
+    grNumber?: string;
     avatarUrl?: string | null;
     fatherName: string;
     fatherCnic: string;
@@ -77,6 +76,7 @@ export interface Student {
     // FIX: Re-added fields as per user request and renamed `admittedInClass` to `admittedClass` to fix DB column name mismatch.
     admittedClass: string;
     caste?: string;
+    religion?: string;
     lastSchoolAttended?: string;
 }
 

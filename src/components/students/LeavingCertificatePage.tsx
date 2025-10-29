@@ -1,22 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { usePrint } from '../../context/PrintContext';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { EduSyncLogo } from '../../constants';
 import { ActiveView } from '../layout/Layout';
 import { Student } from '../../types';
+import { formatDate, getTodayString } from '../../utils/dateHelper';
 
 interface LeavingCertificatePageProps {
     studentId: string;
     setActiveView: (view: ActiveView) => void;
 }
-
-const getTodayString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
 const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ studentId, setActiveView }) => {
     const { students, classes, getSchoolById, issueLeavingCertificate } = useData();

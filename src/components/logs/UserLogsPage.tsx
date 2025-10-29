@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { formatDateTime } from '../../constants';
 import { User } from '../../types';
 import Avatar from '../common/Avatar';
+import { formatDateTime } from '../../utils/dateHelper';
 
 const UserLogsPage: React.FC = () => {
     const { logs, users } = useData();

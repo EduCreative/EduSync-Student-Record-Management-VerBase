@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 import { FeeChallan } from '../../types';
+import { formatDate } from '../../utils/dateHelper';
 
 interface StudentFeeHistoryProps {
     studentId: string;

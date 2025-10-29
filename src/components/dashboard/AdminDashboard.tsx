@@ -11,6 +11,7 @@ import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 import LineChart from '../charts/LineChart';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
+import { getTodayString } from '../../utils/dateHelper';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -100,10 +101,9 @@ const ChartHeaderWithToggle: React.FC<{ title: string; selected: 'line' | 'bar';
     </div>
 );
 
-
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
-    const { users, students, getSchoolById, fees, attendance, loading, logs } = useData();
+    const { users, students, getSchoolById, fees, attendance, loading, logs, classes } = useData();
     
     const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
     const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
@@ -118,7 +118,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const schoolUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.id !== user.id), [users, effectiveSchoolId, user.id]);
 
     const stats = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getTodayString();
 
         const feesCollectedToday = fees
             .filter(f => f.paidDate === todayStr && students.find(s => s.id === f.studentId)?.schoolId === effectiveSchoolId)
@@ -159,7 +159,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }, [fees, students, effectiveSchoolId]);
 
     const attendanceData = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getTodayString();
         const todaysAttendance = attendance.filter(a => a.date === todayStr);
         const attendanceMap = new Map(todaysAttendance.map(a => [a.studentId, a.status]));
     
@@ -207,6 +207,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
         return logs.slice(0, 5);
     }, [logs]);
 
+    const genderDistributionData = useMemo(() => {
+        const counts = { Male: 0, Female: 0 };
+        schoolStudents.forEach(student => {
+            if (student.gender === 'Male') counts.Male++;
+            else if (student.gender === 'Female') counts.Female++;
+        });
+        return [
+            { label: 'Male', value: counts.Male, color: '#3b82f6' },
+            { label: 'Female', value: counts.Female, color: '#ec4899' },
+        ];
+    }, [schoolStudents]);
+    
+    const classStrengthData = useMemo(() => {
+        const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
+        return schoolClasses.map(c => ({
+            id: c.id,
+            label: c.name,
+            value: schoolStudents.filter(s => s.classId === c.id).length
+        })).sort((a, b) => b.value - a.value);
+    }, [schoolStudents, classes, effectiveSchoolId]);
+
     const handleFeeStatusClick = (item: { label: string }) => {
         const status = item.label as FeeChallan['status'];
         const relevantChallans = fees.filter(f => {
@@ -229,7 +250,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
 
     const handleAttendanceClick = (item: { label: string }) => {
         const status = item.label;
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getTodayString();
         const todaysAttendanceRecords = attendance.filter(a => a.date === todayStr);
         const todaysAttendanceMap = new Map(todaysAttendanceRecords.map(a => [a.studentId, a.status]));
 
@@ -327,6 +348,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} />
                     <BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} />
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <DoughnutChart title="Student Gender Ratio" data={genderDistributionData} />
+                    <BarChart title="Student Distribution by Class" data={classStrengthData} color="#8b5cf6" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

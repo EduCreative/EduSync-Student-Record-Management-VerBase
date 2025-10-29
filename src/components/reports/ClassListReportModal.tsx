@@ -5,7 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { EduSyncLogo } from '../../constants';
+import { formatDate } from '../../utils/dateHelper';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -14,11 +15,13 @@ interface ClassListReportModalProps {
 
 const availableColumns = {
     rollNumber: "Std. ID",
+    grNumber: "GR No.",
     fatherName: "Father's Name",
     fatherCnic: "Father's CNIC",
     gender: "Gender",
     dateOfBirth: "Date of Birth",
     caste: "Caste",
+    religion: "Religion",
     contactNumber: "Contact Number",
     secondaryContactNumber: "Secondary Contact",
     dateOfAdmission: "Admission Date",
@@ -35,11 +38,13 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
     const [classId, setClassId] = useState('all');
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         rollNumber: true,
+        grNumber: true,
         fatherName: true,
         fatherCnic: false,
         gender: false,
         dateOfBirth: false,
         caste: false,
+        religion: false,
         contactNumber: true,
         secondaryContactNumber: false,
         dateOfAdmission: false,
