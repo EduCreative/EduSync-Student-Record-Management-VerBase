@@ -50,6 +50,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
 
     const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saveError, setSaveError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
@@ -84,6 +85,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 setFormData(getInitialFormData());
             }
             setErrors({});
+            setSaveError('');
         }
     }, [studentToEdit, isOpen]);
 
@@ -114,6 +116,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSaveError('');
         if (!validate()) return;
         
         setIsSaving(true);
@@ -124,15 +127,19 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 openingBalance: Number(formData.openingBalance) || 0,
             };
 
-            if (studentToEdit) {
-                await onSave({ ...studentToEdit, ...saveData });
-            } else {
-                const { status, ...rest } = saveData;
-                await onSave(rest);
-            }
+            const saveOperation = studentToEdit
+                ? onSave({ ...studentToEdit, ...saveData })
+                : onSave(saveData);
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Request timed out after 15 seconds. Please try again.")), 15000)
+            );
+
+            await Promise.race([saveOperation, timeoutPromise]);
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save student:", error);
+            setSaveError(error.message || 'An unknown error occurred. Please try again.');
         } finally {
             setIsSaving(false);
         }
@@ -145,6 +152,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                   imageUrl={formData.avatarUrl}
                   onChange={(newAvatarUrl) => setFormData(prev => ({...prev, avatarUrl: newAvatarUrl}))}
                 />
+                {saveError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">{saveError}</div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="name" className="input-label">Student Name</label>

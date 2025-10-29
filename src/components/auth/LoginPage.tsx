@@ -57,11 +57,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
         e.preventDefault();
         setError('');
         setLoading(true);
-        const { success, error: loginError } = await login(email, password);
-        if (!success) {
-            setError(loginError || 'Invalid email or password. Please try again.');
+        try {
+            const loginOperation = login(email, password);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Login request timed out after 10 seconds.")), 10000)
+            );
+            
+            // Type assertion to handle the resolved value from Promise.race
+            const result = await Promise.race([loginOperation, timeoutPromise]) as { success: boolean; error?: string };
+
+            if (!result.success) {
+                setError(result.error || 'Invalid email or password. Please try again.');
+            }
+            // On success, the AuthProvider's onAuthStateChange listener will handle the redirect.
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred during login.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
