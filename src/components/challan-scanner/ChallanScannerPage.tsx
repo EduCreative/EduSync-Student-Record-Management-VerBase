@@ -22,6 +22,7 @@ const ChallanScannerPage: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const detectorRef = useRef<BarcodeDetector | null>(null);
+    const lastNotFoundToast = useRef(0);
 
     const [isScanning, setIsScanning] = useState(false);
     const [scannedChallan, setScannedChallan] = useState<FeeChallan | null>(null);
@@ -57,7 +58,7 @@ const ChallanScannerPage: React.FC = () => {
             if (navigator.permissions && navigator.permissions.query) {
                 const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
                 if (permissionStatus.state === 'denied') {
-                    setError('Camera permission was denied. Please enable it in your browser settings to use this feature.');
+                    setError('Camera permission has been denied. To use the scanner, please go to your browser settings for this site and allow camera access.');
                     return;
                 }
             }
@@ -70,11 +71,13 @@ const ChallanScannerPage: React.FC = () => {
             detectorRef.current = new BarcodeDetector({ formats: ['code_128', 'qr_code'] });
             setIsScanning(true);
         } catch (err: any) {
-            let message = 'Could not access camera. Please grant permission and try again.';
+            let message = 'Could not access the camera. Please ensure you grant permission when prompted.';
             if (err.name === 'NotAllowedError') {
-                message = 'Camera access was not allowed. Please grant permission to use this feature.';
+                message = 'Camera access was denied. To use the scanner, please go to your browser settings for this site and allow camera access.';
             } else if (err.name === 'NotFoundError') {
-                message = 'No camera found on this device.';
+                message = 'No camera was found on your device.';
+            } else if (err.name === 'NotReadableError') {
+                message = 'The camera is currently in use by another application or browser tab.';
             }
             setError(message);
             console.error(err);
@@ -110,7 +113,11 @@ const ChallanScannerPage: React.FC = () => {
                             showToast('Success', `Challan #${challanNumber} found!`, 'success');
                             stopScan();
                         } else {
-                            showToast('Not Found', `Challan #${challanNumber} not found.`, 'info');
+                            const now = Date.now();
+                            if (now - lastNotFoundToast.current > 3000) { // Only show toast every 3 seconds
+                                showToast('Not Found', `Challan #${challanNumber} not found in records.`, 'info');
+                                lastNotFoundToast.current = now;
+                            }
                         }
                     }
                 } catch (e) {
@@ -159,7 +166,7 @@ const ChallanScannerPage: React.FC = () => {
                     <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg shadow-md">
                         <h2 className="text-xl font-semibold mb-4 border-b pb-2 dark:border-secondary-700">Scanned Details</h2>
                         {error && <p className="text-red-500 text-center py-8">{error}</p>}
-                        {scannedChallan && scannedStudent ? (
+                        {!error && scannedChallan && scannedStudent ? (
                             <div className="space-y-4">
                                 <div className="flex items-center gap-4">
                                     <Avatar student={scannedStudent} className="w-16 h-16"/>
@@ -177,10 +184,19 @@ const ChallanScannerPage: React.FC = () => {
                                     Record Payment
                                 </button>
                             </div>
-                        ) : (
-                            <p className="text-center py-8 text-secondary-500">
-                                {isScanning ? "Point your camera at a challan's barcode." : "Start the camera to begin scanning."}
-                            </p>
+                        ) : !error && (
+                            <div className="text-center py-8 text-secondary-500">
+                                {isScanning ? (
+                                    <p>Point your camera at a challan's barcode.</p>
+                                ) : (
+                                    <>
+                                        <p>Start the camera to begin scanning.</p>
+                                        <p className="text-xs text-secondary-400 mt-2">
+                                            This feature requires camera access. You may be prompted for permission.
+                                        </p>
+                                    </>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
