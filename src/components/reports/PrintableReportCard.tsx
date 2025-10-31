@@ -1,7 +1,6 @@
 import type { FC } from 'react';
 import { Student, School, Result } from '../../types';
-import { EduSyncLogo } from '../../constants';
-import { formatDate } from '../../utils/dateHelper';
+import { formatDate, EduSyncLogo } from '../../constants';
 
 interface PrintableReportCardProps {
     student: Student;

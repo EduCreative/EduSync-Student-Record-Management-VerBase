@@ -60,7 +60,6 @@ const SettingsPage: React.FC = () => {
     const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
     const [isPromoting, setIsPromoting] = useState(false);
     const [isTuitionFeeModalOpen, setIsTuitionFeeModalOpen] = useState(false);
-    const [promotionError, setPromotionError] = useState('');
 
 
     // Initialize forms and preferences from user data
@@ -98,14 +97,10 @@ const SettingsPage: React.FC = () => {
         if (!user) return;
         setIsSavingPrefs(true);
         try {
-            const updatePromise = updateUser({ ...user, notificationPreferences: prefs });
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Saving preferences timed out.")), 15000)
-            );
-            await Promise.race([updatePromise, timeoutPromise]);
+            await updateUser({ ...user, notificationPreferences: prefs });
             showToast('Success', 'Notification preferences saved!', 'success');
-        } catch (error: any) {
-            showToast('Error', error.message || 'Could not save preferences.', 'error');
+        } catch (error) {
+            showToast('Error', 'Could not save preferences.', 'error');
         } finally {
             setIsSavingPrefs(false);
         }
@@ -117,14 +112,10 @@ const SettingsPage: React.FC = () => {
 
         setIsSchoolSaving(true);
         try {
-            const updatePromise = updateSchool({ ...school, ...schoolData });
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Updating school details timed out.")), 15000)
-            );
-            await Promise.race([updatePromise, timeoutPromise]);
+            await updateSchool({ ...school, ...schoolData });
             showToast('Success', 'School details updated!', 'success');
-        } catch (error: any) {
-            showToast('Error', error.message || 'Failed to update school details.', 'error');
+        } catch (error) {
+            showToast('Error', 'Failed to update school details.', 'error');
         } finally {
             setIsSchoolSaving(false);
         }
@@ -146,20 +137,14 @@ const SettingsPage: React.FC = () => {
 
     const handlePromoteStudents = async () => {
         setIsPromoting(true);
-        setPromotionError('');
         try {
-            const promotionPromise = promoteAllStudents();
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Promotion timed out after 30 seconds.")), 30000)
-            );
-            await Promise.race([promotionPromise, timeoutPromise]);
-            setIsPromoteModalOpen(false); // Close on success
-        } catch (error: any) {
+            await promoteAllStudents();
+        } catch (error) {
+            // Error toast is handled in DataContext
             console.error("Promotion failed:", error);
-            setPromotionError(error.message || "An unknown error occurred during promotion.");
-            // Error toast is handled in DataContext, but we set local error to display in modal
         } finally {
             setIsPromoting(false);
+            setIsPromoteModalOpen(false);
         }
     };
 
@@ -196,9 +181,6 @@ const SettingsPage: React.FC = () => {
                         <br />
                         <strong>This action is irreversible.</strong>
                     </p>
-                    {promotionError && (
-                        <p className="text-sm text-red-600 mt-3 p-2 bg-red-50 dark:bg-red-900/50 rounded-md">{promotionError}</p>
-                    )}
                     <div className="mt-6 flex justify-end space-x-3">
                         <button type="button" onClick={() => setIsPromoteModalOpen(false)} className="btn-secondary" disabled={isPromoting}>Cancel</button>
                         <button type="button" onClick={handlePromoteStudents} className="btn-danger" disabled={isPromoting}>

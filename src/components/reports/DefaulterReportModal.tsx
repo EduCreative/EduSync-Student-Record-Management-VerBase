@@ -6,9 +6,6 @@ import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
 import { EduSyncLogo } from '../../constants';
-// No date functions are used directly in this component, so no import needed.
-// Correction: The original file did not use formatDate, so no change is needed.
-// However, it's good practice to have it available if needed in the future.
 
 interface DefaulterReportModalProps {
     isOpen: boolean;
@@ -185,13 +182,13 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                             <tbody>
                                 {classGroup.students.map((student, index) => (
                                     <tr key={student.studentId}>
-                                        <td className="p-1">{index + 1}</td>
-                                        <td className="p-1">{student.studentName}</td>
-                                        {activeColumns.includes('stdId') && <td className="p-1">{student.stdId}</td>}
-                                        {activeColumns.includes('fatherName') && <td className="p-1">{student.fatherName}</td>}
-                                        {activeColumns.includes('amountDue') && <td className="p-1 text-right">{student.amountDue.toLocaleString()}</td>}
-                                        {activeColumns.includes('paid') && <td className="p-1 text-right">{student.paid.toLocaleString()}</td>}
-                                        <td className="p-1 text-right">{student.balance.toLocaleString()}</td>
+                                        <td className="p-0">{index + 1}</td>
+                                        <td className="p-0">{student.studentName}</td>
+                                        {activeColumns.includes('stdId') && <td className="p-0">{student.stdId}</td>}
+                                        {activeColumns.includes('fatherName') && <td className="p-0">{student.fatherName}</td>}
+                                        {activeColumns.includes('amountDue') && <td className="p-0 text-right">{student.amountDue.toLocaleString()}</td>}
+                                        {activeColumns.includes('paid') && <td className="p-0 text-right">{student.paid.toLocaleString()}</td>}
+                                        <td className="p-0 text-right">{student.balance.toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -227,8 +224,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     };
 
     const handleExport = () => {
-        const headers: string[] = ['Sr.', 'Student Name'];
-        if (selectedColumns.stdId) headers.push('StdID');
+        const headers: string[] = ['Sr.', 'StdID', 'Student Name'];
+        // if (selectedColumns.stdId) headers.push('StdID');
         if (selectedColumns.fatherName) headers.push("Father's Name");
         if (selectedColumns.amountDue) headers.push('Amount Due');
         if (selectedColumns.paid) headers.push('Paid');
@@ -239,8 +236,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
         reportData.forEach(classGroup => {
             csvRows.push(escapeCsvCell(`Class: ${classGroup.className}`));
             classGroup.students.forEach((student, index) => {
-                const row: (string | number)[] = [index + 1, student.studentName];
-                if (selectedColumns.stdId) row.push(student.stdId);
+                const row: (string | number)[] = [index + 1, student.stdId, student.studentName];
+                // if (selectedColumns.stdId) row.push(student.stdId);
                 if (selectedColumns.fatherName) row.push(student.fatherName);
                 if (selectedColumns.amountDue) row.push(student.amountDue);
                 if (selectedColumns.paid) row.push(student.paid);

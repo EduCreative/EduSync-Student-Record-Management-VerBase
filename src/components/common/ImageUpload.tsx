@@ -82,21 +82,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ imageUrl, onChange, bucketNam
             const fileName = `${crypto.randomUUID()}.${fileExt}`;
             filePath = `${fileName}`;
 
-            // FIX: Implement a manual timeout for storage uploads, as they bypass the global timeout
-            // in supabaseClient.ts. This prevents the UI from hanging indefinitely on a stalled upload.
-            const uploadPromise = supabase.storage
+            // FIX: Removed the custom Promise.race timeout which was causing the upload to hang.
+            // Directly await the Supabase client upload method and use its native error handling.
+            const { data: uploadData, error: uploadError } = await supabase.storage
                 .from(bucketName)
                 .upload(filePath, file);
-
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Upload timed out after 30 seconds.')), 30000)
-            );
-
-            const result = await Promise.race([uploadPromise, timeoutPromise]);
-            
-            // If the timeout rejects, Promise.race will throw and the catch block will execute.
-            // If the upload finishes, the result will be the standard Supabase response.
-            const { data: uploadData, error: uploadError } = result as { data: { path: string }, error: Error | null };
 
             if (uploadError) {
                 throw uploadError;

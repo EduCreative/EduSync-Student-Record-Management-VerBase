@@ -79,7 +79,7 @@ const ResultsEntry: React.FC = () => {
     
     const handleSaveResults = async () => {
         if (!selectedClassId || !selectedExam || !selectedSubject) {
-            showToast("Selection Missing", "Please select a class, exam, and subject before saving.", "info");
+            alert("Please select class, exam, and subject.");
             return;
         }
         setIsSaving(true);
@@ -93,16 +93,10 @@ const ResultsEntry: React.FC = () => {
                     marks: studentMarks,
                     totalMarks: totalMarks,
                 }));
-            
-            const savePromise = saveResults(resultsToSave);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Saving results timed out after 15 seconds.")), 15000)
-            );
-
-            await Promise.race([savePromise, timeoutPromise]);
-        } catch (error: any) {
+            await saveResults(resultsToSave);
+        } catch (error) {
             console.error("Failed to save results:", error);
-            showToast('Error', error.message || 'Could not save results. Please try again.', 'error');
+            showToast('Error', 'Could not save results. Please try again.', 'error');
         } finally {
             setIsSaving(false);
         }

@@ -4,8 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Student, UserRole, FeeChallan, Class } from '../../types';
 import Avatar from '../common/Avatar';
 import FeePaymentModal from './FeePaymentModal';
-// FIX: Corrected import path for formatDate utility.
-import { formatDate } from '../../utils/dateHelper';
+import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

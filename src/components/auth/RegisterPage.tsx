@@ -106,24 +106,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
         }
 
         setLoading(true);
-        try {
-            const registerOperation = register(name, email, password, role);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Registration request timed out after 10 seconds.")), 10000)
-            );
-
-            const result = await Promise.race([registerOperation, timeoutPromise]) as { success: boolean, error?: string };
-            
-            if (!result.success) {
-                setError(result.error || 'An error occurred during registration.');
-            } else {
-                setSuccess(true);
-            }
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred during registration.');
-        } finally {
-            setLoading(false);
+        const result = await register(name, email, password, role);
+        if (!result.success) {
+            setError(result.error || 'An error occurred during registration.');
+        } else {
+            setSuccess(true);
         }
+        setLoading(false);
     };
 
     if (success) {

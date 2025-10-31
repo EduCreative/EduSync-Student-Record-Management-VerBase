@@ -5,9 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
-import { EduSyncLogo } from '../../constants';
-import { formatDate } from '../../utils/dateHelper';
-import { formatCnic } from '../../utils/stringUtils';
+import { formatDate, EduSyncLogo } from '../../constants';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -16,13 +14,11 @@ interface ClassListReportModalProps {
 
 const availableColumns = {
     rollNumber: "Std. ID",
-    grNumber: "GR No.",
     fatherName: "Father's Name",
     fatherCnic: "Father's CNIC",
     gender: "Gender",
     dateOfBirth: "Date of Birth",
     caste: "Caste",
-    religion: "Religion",
     contactNumber: "Contact Number",
     secondaryContactNumber: "Secondary Contact",
     dateOfAdmission: "Admission Date",
@@ -39,13 +35,11 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
     const [classId, setClassId] = useState('all');
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         rollNumber: true,
-        grNumber: true,
         fatherName: true,
         fatherCnic: false,
         gender: false,
         dateOfBirth: false,
         caste: false,
-        religion: false,
         contactNumber: true,
         secondaryContactNumber: false,
         dateOfAdmission: false,
@@ -105,7 +99,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                                 <td className="p-1">{student.name}</td>
                                 {activeColumns.map(col => (
                                     <td key={col} className="p-1">
-                                        {col === 'dateOfAdmission' || col === 'dateOfBirth' ? formatDate(student[col]) : (col === 'fatherCnic' ? formatCnic(student[col]) : (student as any)[col] || 'N/A')}
+                                        {col === 'dateOfAdmission' || col === 'dateOfBirth' ? formatDate(student[col]) : (student as any)[col] || 'N/A'}
                                     </td>
                                 ))}
                             </tr>
@@ -131,9 +125,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                     .map(col => {
                         const key = col as ColumnKey;
                         const value = (student as any)[key];
-                        if (key === 'dateOfAdmission' || key === 'dateOfBirth') return formatDate(value);
-                        if (key === 'fatherCnic') return formatCnic(value);
-                        return value;
+                        return key === 'dateOfAdmission' || key === 'dateOfBirth' ? formatDate(value) : value;
                     })
             ];
             csvRows.push(row.map(escapeCsvCell).join(','));

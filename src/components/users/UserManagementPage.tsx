@@ -6,12 +6,11 @@ import Badge from '../common/Badge';
 import UserFormModal from './UserFormModal';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
-import { DownloadIcon, UploadIcon } from '../../constants';
+import { formatDateTime, DownloadIcon, UploadIcon } from '../../constants';
 import TableSkeleton from '../common/skeletons/TableSkeleton';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
-import { formatDateTime } from '../../utils/dateHelper';
 
 interface UserManagementPageProps {
     payload?: { roleFilter?: UserRole };

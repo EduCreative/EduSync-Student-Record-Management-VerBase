@@ -24,24 +24,14 @@ const RequestPasswordResetPage: React.FC<RequestPasswordResetPageProps> = ({ onS
         e.preventDefault();
         setError('');
         setLoading(true);
-        try {
-            const resetOperation = sendPasswordResetEmail(email);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Request timed out after 10 seconds.")), 10000)
-            );
 
-            const result = await Promise.race([resetOperation, timeoutPromise]) as { success: boolean, error?: string };
-
-            if (result.success) {
-                setSuccess(true);
-            } else {
-                setError(result.error || 'Failed to send reset email. Please try again.');
-            }
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred.');
-        } finally {
-            setLoading(false);
+        const { success: reqSuccess, error: reqError } = await sendPasswordResetEmail(email);
+        if (reqSuccess) {
+            setSuccess(true);
+        } else {
+            setError(reqError || 'Failed to send reset email. Please try again.');
         }
+        setLoading(false);
     };
 
     if (success) {

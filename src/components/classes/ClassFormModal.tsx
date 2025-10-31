@@ -61,20 +61,14 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
                 schoolId: effectiveSchoolId,
             };
 
-            const saveOperation = classToEdit
-                ? onSave({ ...classToEdit, ...saveData })
-                : onSave(saveData);
-
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Request timed out after 15 seconds. Please try again.")), 15000)
-            );
-
-            await Promise.race([saveOperation, timeoutPromise]);
-            
+            if (classToEdit) {
+                await onSave({ ...classToEdit, ...saveData });
+            } else {
+                await onSave(saveData);
+            }
             onClose();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to save class:", error);
-            setError(error.message || 'An unknown error occurred. Please try again.');
         } finally {
             setIsSaving(false);
         }

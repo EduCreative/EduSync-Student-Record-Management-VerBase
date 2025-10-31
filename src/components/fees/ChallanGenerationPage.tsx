@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole, FeeHead } from '../../types';
@@ -10,7 +10,7 @@ const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 const ChallanGenerationPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
-    const { students, fees, feeHeads, generateChallansForMonth } = useData();
+    const { feeHeads, generateChallansForMonth } = useData();
     const { showToast } = useToast();
 
     const [month, setMonth] = useState(months[new Date().getMonth()]);
@@ -20,6 +20,7 @@ const ChallanGenerationPage: React.FC = () => {
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
+    // FIX: Changed useMemo to useEffect to prevent side-effects in a memoized function.
     useEffect(() => {
         const newMap = new Map<string, { selected: boolean; amount: number }>();
         feeHeads.forEach((fh: FeeHead) => {
@@ -27,34 +28,9 @@ const ChallanGenerationPage: React.FC = () => {
         });
         setSelectedFeeHeads(newMap);
     }, [feeHeads]);
-    
-    const generationSummary = useMemo(() => {
-        if (!effectiveSchoolId) return { totalActive: 0, alreadyGenerated: 0, toGenerate: 0 };
-
-        const activeStudentsInSchool = students.filter(s => s.schoolId === effectiveSchoolId && s.status === 'Active');
-        const studentIdsInSchool = new Set(activeStudentsInSchool.map(s => s.id));
-
-        const existingChallansForPeriod = new Set(
-            fees
-                .filter(f => 
-                    f.month === month && 
-                    f.year === year &&
-                    studentIdsInSchool.has(f.studentId)
-                )
-                .map(f => f.studentId)
-        );
-
-        const alreadyGenerated = existingChallansForPeriod.size;
-        const toGenerate = activeStudentsInSchool.length - alreadyGenerated;
-
-        return {
-            totalActive: activeStudentsInSchool.length,
-            alreadyGenerated,
-            toGenerate,
-        };
-    }, [students, fees, effectiveSchoolId, month, year]);
 
     const handleFeeHeadToggle = (id: string) => {
+        // FIX: Explicitly type `prev` to ensure correct type inference for `current`.
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
@@ -69,6 +45,7 @@ const ChallanGenerationPage: React.FC = () => {
         const numAmount = parseInt(amount, 10);
         if (isNaN(numAmount)) return;
         
+        // FIX: Explicitly type `prev` to ensure correct type inference for `current`.
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
@@ -96,14 +73,10 @@ const ChallanGenerationPage: React.FC = () => {
 
         setIsGenerating(true);
         try {
-            const generationPromise = generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Challan generation timed out after 30 seconds. The process may be running in the background.")), 30000)
-            );
-            await Promise.race([generationPromise, timeoutPromise]);
-        } catch (error: any) {
+            await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
+        } catch (error) {
             console.error('Failed to generate challans:', error);
-            showToast('Error', error.message || 'An unknown error occurred during challan generation.', 'error');
+            // Error toast is shown in DataContext
         } finally {
             setIsGenerating(false);
         }
@@ -129,12 +102,6 @@ const ChallanGenerationPage: React.FC = () => {
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
-            </div>
-
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                <div className="flex justify-between"><span>Total Active Students:</span> <strong>{generationSummary.totalActive}</strong></div>
-                <div className="flex justify-between"><span>Challans Already Generated:</span> <strong>{generationSummary.alreadyGenerated}</strong></div>
-                <div className="flex justify-between font-bold border-t border-blue-200 dark:border-blue-700 pt-1 mt-1"><span>New Challans to be Generated:</span> <strong>{generationSummary.toGenerate}</strong></div>
             </div>
 
             <div>
@@ -169,10 +136,10 @@ const ChallanGenerationPage: React.FC = () => {
             <div className="flex justify-end pt-4">
                 <button
                     onClick={handleGenerate}
-                    disabled={isGenerating || generationSummary.toGenerate === 0}
+                    disabled={isGenerating}
                     className="btn-primary w-full sm:w-auto"
                 >
-                    {isGenerating ? 'Generating...' : `Generate ${generationSummary.toGenerate} Challans`}
+                    {isGenerating ? 'Generating...' : 'Generate Challans'}
                 </button>
             </div>
         </div>

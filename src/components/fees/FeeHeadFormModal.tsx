@@ -28,7 +28,6 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
         if (!formData.name.trim()) {
             setError('Fee head name is required.');
             return;
@@ -40,19 +39,14 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
 
         setIsSaving(true);
         try {
-            const saveOperation = feeHeadToEdit
-                ? onSave({ ...feeHeadToEdit, ...formData })
-                : onSave(formData);
-            
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Request timed out after 15 seconds. Please try again.")), 15000)
-            );
-
-            await Promise.race([saveOperation, timeoutPromise]);
+            if (feeHeadToEdit) {
+                await onSave({ ...feeHeadToEdit, ...formData });
+            } else {
+                await onSave(formData);
+            }
             onClose();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to save fee head:", error);
-            setError(error.message || 'An unknown error occurred. Please try again.');
         } finally {
             setIsSaving(false);
         }

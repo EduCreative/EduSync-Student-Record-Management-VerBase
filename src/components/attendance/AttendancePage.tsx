@@ -8,9 +8,16 @@ import AttendanceViewer from './AttendanceViewer';
 import { useToast } from '../../context/ToastContext';
 import AttendanceReportModal from '../reports/AttendanceReportModal';
 import { PrinterIcon } from '../../constants';
-import { getTodayString } from '../../utils/dateHelper';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
+
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 const AttendanceMarker: React.FC = () => {
     const { user, effectiveRole, activeSchoolId } = useAuth();
@@ -93,16 +100,10 @@ const AttendanceMarker: React.FC = () => {
                 studentId,
                 status,
             }));
-
-            const savePromise = setAttendance(selectedDate, recordsToSave);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Saving attendance timed out after 15 seconds.")), 15000)
-            );
-
-            await Promise.race([savePromise, timeoutPromise]);
-        } catch (error: any) {
+            await setAttendance(selectedDate, recordsToSave);
+        } catch (error) {
             console.error("Failed to save attendance:", error);
-            showToast('Error', error.message || 'Could not save attendance. Please try again.', 'error');
+            showToast('Error', 'Could not save attendance. Please try again.', 'error');
         } finally {
             setIsSaving(false);
         }

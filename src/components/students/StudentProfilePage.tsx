@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
+import { formatDate } from '../../constants';
 import Avatar from '../common/Avatar';
 import Badge from '../common/Badge';
 import { ActiveView } from '../layout/Layout';
@@ -7,8 +8,6 @@ import StudentFeeStructure from './StudentFeeStructure';
 import StudentFeeHistory from './StudentFeeHistory';
 import StudentResults from './StudentResults';
 import StudentAttendance from './StudentAttendance';
-import { formatDate } from '../../utils/dateHelper';
-import { formatCnic } from '../../utils/stringUtils';
 
 interface StudentProfilePageProps {
     studentId: string;
@@ -62,7 +61,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             <Badge color={student.status === 'Active' ? 'green' : 'secondary'}>{student.status}</Badge>
                         </div>
                         <p className="text-secondary-500 dark:text-secondary-400 mt-1">
-                            {studentClass?.name || 'N/A'} | Roll No: {student.rollNumber} | GR No: {student.grNumber || 'N/A'}
+                            {studentClass?.name || 'N/A'} | Roll No: {student.rollNumber}
                         </p>
                         <div className="mt-4 flex flex-wrap gap-4">
                             <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>
@@ -101,11 +100,10 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                                  <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Personal Information</h2>
                                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
                                     <InfoItem label="Father's Name" value={student.fatherName} />
-                                    <InfoItem label="Father's CNIC" value={formatCnic(student.fatherCnic)} />
+                                    <InfoItem label="Father's CNIC" value={student.fatherCnic} />
                                     <InfoItem label="Date of Birth" value={formatDate(student.dateOfBirth)} />
                                     <InfoItem label="Gender" value={student.gender} />
                                     <InfoItem label="Caste" value={student.caste} />
-                                    <InfoItem label="Religion" value={student.religion} />
                                     <InfoItem label="Contact Number" value={student.contactNumber} />
                                     <InfoItem label="Secondary Contact" value={student.secondaryContactNumber} />
                                     <InfoItem label="Address" value={student.address} className="sm:col-span-2" />
@@ -114,7 +112,6 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             <div>
                                 <h2 className="text-xl font-semibold mb-4 text-secondary-900 dark:text-white">Academic & Financials</h2>
                                 <dl className="space-y-4">
-                                    <InfoItem label="GR Number" value={student.grNumber} />
                                     <InfoItem label="Admission Date" value={formatDate(student.dateOfAdmission)} />
                                     <InfoItem label="Admitted in Class" value={student.admittedClass} />
                                     <InfoItem label="Last School Attended" value={student.lastSchoolAttended} />

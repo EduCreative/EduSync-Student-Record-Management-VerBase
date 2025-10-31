@@ -35,25 +35,14 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onResetSuccess })
 
         setError('');
         setLoading(true);
-        try {
-            const resetOperation = updateUserPassword(password);
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Request timed out after 10 seconds.")), 10000)
-            );
-
-            const result = await Promise.race([resetOperation, timeoutPromise]) as { success: boolean, error?: string };
-
-            if (result.success) {
-                showToast('Success', 'Your password has been reset successfully.', 'success');
-                onResetSuccess();
-            } else {
-                setError(result.error || 'Failed to reset password. The link may have expired.');
-            }
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred.');
-        } finally {
-            setLoading(false);
+        const { success, error: resetError } = await updateUserPassword(password);
+        if (success) {
+            showToast('Success', 'Your password has been reset successfully.', 'success');
+            onResetSuccess();
+        } else {
+            setError(resetError || 'Failed to reset password. The link may have expired.');
         }
+        setLoading(false);
     };
 
     return (

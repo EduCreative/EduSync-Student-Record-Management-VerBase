@@ -66,7 +66,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const [isSendingReset, setIsSendingReset] = useState(false);
     const [disabledLinks, setDisabledLinks] = useState<Record<string, boolean>>({});
     const [errors, setErrors] = useState<{ name?: string; email?: string; role?: string; schoolId?: string; password?: string; confirmPassword?: string; }>({});
-    const [saveError, setSaveError] = useState('');
 
     const isOwnerGlobalView = currentUser?.role === UserRole.Owner && !activeSchoolId;
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
@@ -104,7 +103,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
             setPassword('');
             setConfirmPassword('');
             setErrors({});
-            setSaveError('');
         }
     }, [userToEdit, isOpen, currentUser, schools, defaultRole, effectiveSchoolId]);
 
@@ -185,7 +183,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaveError('');
         if (!validate()) {
             return;
         }
@@ -196,19 +193,15 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 .filter(([, isDisabled]) => isDisabled)
                 .map(([path]) => path);
 
-            const saveOperation = userToEdit
-                ? onSave({ ...userToEdit, ...formData, disabledNavLinks })
-                : onSave({ ...formData, password, disabledNavLinks });
-
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Request timed out after 15 seconds. Please try again.")), 15000)
-            );
-
-            await Promise.race([saveOperation, timeoutPromise]);
+            if (userToEdit) {
+                await onSave({ ...userToEdit, ...formData, disabledNavLinks });
+            } else {
+                await onSave({ ...formData, password, disabledNavLinks });
+            }
             onClose();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to save user:", error);
-            setSaveError(error.message || 'An unknown error occurred. Please try again.');
+            // The toast is likely shown in the onSave implementation in DataContext
         } finally {
             setIsSaving(false);
         }
@@ -240,7 +233,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                   imageUrl={formData.avatarUrl}
                   onChange={(newAvatarUrl) => setFormData(prev => ({...prev, avatarUrl: newAvatarUrl}))}
                 />
-                {saveError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">{saveError}</div>}
                 <div>
                     <label htmlFor="name" className="input-label">Full Name</label>
                     <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="input-field" />

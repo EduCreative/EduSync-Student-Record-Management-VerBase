@@ -5,8 +5,6 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import ImageUpload from '../common/ImageUpload';
-import { getTodayString } from '../../utils/dateHelper';
-import { formatCnic } from '../../utils/stringUtils';
 
 interface StudentFormModalProps {
     isOpen: boolean;
@@ -14,6 +12,12 @@ interface StudentFormModalProps {
     onSave: (studentData: Student | Omit<Student, 'id' | 'status'>) => Promise<void>;
     studentToEdit?: Student | null;
 }
+
+const getTodayString = () => {
+    const today = new Date();
+    const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+    return localDate.toISOString().split('T')[0];
+};
 
 const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, onSave, studentToEdit }) => {
     const { user, activeSchoolId } = useAuth();
@@ -24,7 +28,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     const getInitialFormData = () => ({
         name: '',
         rollNumber: '',
-        grNumber: '',
         classId: '',
         fatherName: '',
         fatherCnic: '',
@@ -32,7 +35,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         dateOfAdmission: getTodayString(),
         admittedClass: '',
         caste: '',
-        religion: '',
         lastSchoolAttended: '',
         contactNumber: '',
         address: '',
@@ -48,7 +50,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
 
     const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [saveError, setSaveError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
@@ -60,7 +61,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 setFormData({
                     name: studentToEdit.name,
                     rollNumber: studentToEdit.rollNumber,
-                    grNumber: studentToEdit.grNumber || '',
                     classId: studentToEdit.classId,
                     fatherName: studentToEdit.fatherName,
                     fatherCnic: studentToEdit.fatherCnic,
@@ -68,7 +68,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     dateOfAdmission: studentToEdit.dateOfAdmission,
                     admittedClass: studentToEdit.admittedClass,
                     caste: studentToEdit.caste || '',
-                    religion: studentToEdit.religion || '',
                     lastSchoolAttended: studentToEdit.lastSchoolAttended || '',
                     contactNumber: studentToEdit.contactNumber,
                     address: studentToEdit.address,
@@ -85,7 +84,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 setFormData(getInitialFormData());
             }
             setErrors({});
-            setSaveError('');
         }
     }, [studentToEdit, isOpen]);
 
@@ -116,7 +114,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaveError('');
         if (!validate()) return;
         
         setIsSaving(true);
@@ -125,22 +122,17 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 ...formData,
                 userId: formData.userId || null, 
                 openingBalance: Number(formData.openingBalance) || 0,
-                fatherCnic: formatCnic(formData.fatherCnic),
             };
 
-            const saveOperation = studentToEdit
-                ? onSave({ ...studentToEdit, ...saveData })
-                : onSave(saveData);
-            
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Request timed out after 15 seconds. Please try again.")), 15000)
-            );
-
-            await Promise.race([saveOperation, timeoutPromise]);
+            if (studentToEdit) {
+                await onSave({ ...studentToEdit, ...saveData });
+            } else {
+                const { status, ...rest } = saveData;
+                await onSave(rest);
+            }
             onClose();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to save student:", error);
-            setSaveError(error.message || 'An unknown error occurred. Please try again.');
         } finally {
             setIsSaving(false);
         }
@@ -153,7 +145,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                   imageUrl={formData.avatarUrl}
                   onChange={(newAvatarUrl) => setFormData(prev => ({...prev, avatarUrl: newAvatarUrl}))}
                 />
-                {saveError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">{saveError}</div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="name" className="input-label">Student Name</label>
@@ -164,10 +155,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         <label htmlFor="rollNumber" className="input-label">Roll Number</label>
                         <input type="text" name="rollNumber" id="rollNumber" value={formData.rollNumber} onChange={handleChange} className="w-full input-field" required />
                         {errors.rollNumber && <p className="text-red-500 text-xs mt-1">{errors.rollNumber}</p>}
-                    </div>
-                     <div>
-                        <label htmlFor="grNumber" className="input-label">GR Number</label>
-                        <input type="text" name="grNumber" id="grNumber" value={formData.grNumber} onChange={handleChange} className="w-full input-field" />
                     </div>
                      <div>
                         <label htmlFor="classId" className="input-label">Class</label>
@@ -208,10 +195,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     <div>
                         <label htmlFor="caste" className="input-label">Caste</label>
                         <input type="text" name="caste" id="caste" value={formData.caste} onChange={handleChange} className="w-full input-field" />
-                    </div>
-                     <div>
-                        <label htmlFor="religion" className="input-label">Religion</label>
-                        <input type="text" name="religion" id="religion" value={formData.religion} onChange={handleChange} className="w-full input-field" />
                     </div>
                      <div>
                         <label htmlFor="gender" className="input-label">Gender</label>
