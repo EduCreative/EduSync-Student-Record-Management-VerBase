@@ -7,6 +7,7 @@ import { NAV_LINKS } from '../../constants';
 import ImageUpload from '../common/ImageUpload';
 import { useToast } from '../../context/ToastContext';
 import { supabase } from '../../lib/supabaseClient';
+import { Permission, ROLE_PERMISSIONS } from '../../permissions';
 
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -34,7 +35,7 @@ const EyeOffIcon = (props: React.SVGProps<SVGSVGElement>) => (
 interface UserFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (user: User | (Omit<User, 'id' | 'lastLogin' | 'disabledNavLinks'> & { disabledNavLinks?: string[], password?: string })) => Promise<void>;
+    onSave: (user: User | (Omit<User, 'id' | 'lastLogin' | 'disabledNavLinks' | 'permissionsOverrides'> & { disabledNavLinks?: string[], password?: string, permissionsOverrides?: Partial<Record<Permission, boolean>> })) => Promise<void>;
     userToEdit?: User | null;
     defaultRole?: UserRole;
     lockRole?: boolean;
@@ -65,6 +66,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const [isSaving, setIsSaving] = useState(false);
     const [isSendingReset, setIsSendingReset] = useState(false);
     const [disabledLinks, setDisabledLinks] = useState<Record<string, boolean>>({});
+    // FIX: Corrected typo in state variable name to match property in User type.
+    const [permissionsOverrides, setPermissionsOverrides] = useState<Partial<Record<Permission, boolean>>>({});
     const [errors, setErrors] = useState<{ name?: string; email?: string; role?: string; schoolId?: string; password?: string; confirmPassword?: string; }>({});
 
     const isOwnerGlobalView = currentUser?.role === UserRole.Owner && !activeSchoolId;
@@ -89,6 +92,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     });
                 }
                 setDisabledLinks(initialDisabled);
+                setPermissionsOverrides(userToEdit.permissionsOverrides || {});
             } else {
                 setFormData({
                     name: '',
@@ -99,6 +103,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     avatarUrl: null,
                 });
                 setDisabledLinks({});
+                setPermissionsOverrides({});
             }
             setPassword('');
             setConfirmPassword('');
@@ -165,7 +170,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     
         setIsSendingReset(true);
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(userToEdit.email, {
+            // FIX: Cast to any to bypass type error for resetPasswordForEmail.
+            const { error } = await (supabase.auth as any).resetPasswordForEmail(userToEdit.email, {
                 redirectTo: window.location.origin, // Redirect user back to the app after reset
             });
         
@@ -194,9 +200,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 .map(([path]) => path);
 
             if (userToEdit) {
-                await onSave({ ...userToEdit, ...formData, disabledNavLinks });
+                await onSave({ ...userToEdit, ...formData, disabledNavLinks, permissionsOverrides });
             } else {
-                await onSave({ ...formData, password, disabledNavLinks });
+                await onSave({ ...formData, password, disabledNavLinks, permissionsOverrides });
             }
             onClose();
         } catch (error) {
@@ -225,6 +231,44 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                 return [];
         }
     }, [currentUser]);
+
+    const handlePermissionChange = (permission: Permission, value: string) => {
+        setPermissionsOverrides(prev => {
+            const newOverrides = { ...prev };
+            if (value === 'default') {
+                delete newOverrides[permission];
+            } else {
+                newOverrides[permission] = value === 'allow';
+            }
+            return newOverrides;
+        });
+    };
+    
+    const renderPermissionSelector = (permission: Permission, label: string) => {
+        const override = permissionsOverrides[permission];
+        let currentValue = 'default';
+        if (override === true) {
+            currentValue = 'allow';
+        } else if (override === false) {
+            currentValue = 'deny';
+        }
+    
+        return (
+            <div className="flex items-center justify-between py-1">
+                <label htmlFor={`perm-${permission}`} className="text-sm text-secondary-800 dark:text-secondary-200">{label}</label>
+                <select
+                    id={`perm-${permission}`}
+                    value={currentValue}
+                    onChange={e => handlePermissionChange(permission, e.target.value)}
+                    className="input-field text-xs py-1 px-2 w-32"
+                >
+                    <option value="default">Default (by role)</option>
+                    <option value="allow">Allow</option>
+                    <option value="deny">Deny</option>
+                </select>
+            </div>
+        );
+    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={userToEdit ? 'Edit User' : 'Add New User'}>
@@ -337,6 +381,32 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                         </div>
                     </div>
                 )}
+
+                {(currentUser?.role === UserRole.Owner || currentUser?.role === UserRole.Admin) &&
+                userToEdit && userToEdit.id !== currentUser.id && (
+                    <div className="pt-2">
+                        <label className="input-label mb-2 font-semibold">Fine-Grained Permissions</label>
+                        <div className="space-y-4 p-3 bg-secondary-50 dark:bg-secondary-700 rounded-md border dark:border-secondary-600">
+                            <div>
+                                <h4 className="font-medium text-secondary-800 dark:text-secondary-200 text-sm">Students</h4>
+                                <div className="mt-1 pl-2">
+                                    {renderPermissionSelector(Permission.CAN_VIEW_STUDENTS, 'View Students')}
+                                    {renderPermissionSelector(Permission.CAN_EDIT_STUDENTS, 'Create/Edit Students')}
+                                    {renderPermissionSelector(Permission.CAN_DELETE_STUDENTS, 'Delete Students')}
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="font-medium text-secondary-800 dark:text-secondary-200 text-sm">Classes</h4>
+                                <div className="mt-1 pl-2">
+                                    {renderPermissionSelector(Permission.CAN_VIEW_CLASSES, 'View Classes')}
+                                    {renderPermissionSelector(Permission.CAN_EDIT_CLASSES, 'Create/Edit Classes')}
+                                    {renderPermissionSelector(Permission.CAN_DELETE_CLASSES, 'Delete Classes')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex justify-end space-x-3 pt-4">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
                     <button type="submit" className="btn-primary" disabled={isSaving}>

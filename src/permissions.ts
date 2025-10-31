@@ -10,12 +10,14 @@ export enum Permission {
   CAN_DELETE_USERS = 'CAN_DELETE_USERS',
 
   // Student Management
-  CAN_MANAGE_STUDENTS = 'CAN_MANAGE_STUDENTS',
+  CAN_VIEW_STUDENTS = 'CAN_VIEW_STUDENTS',
+  CAN_EDIT_STUDENTS = 'CAN_EDIT_STUDENTS',
   CAN_DELETE_STUDENTS = 'CAN_DELETE_STUDENTS',
-  CAN_VIEW_STUDENT_LISTS = 'CAN_VIEW_STUDENT_LISTS',
 
   // Class Management
-  CAN_MANAGE_CLASSES = 'CAN_MANAGE_CLASSES',
+  CAN_VIEW_CLASSES = 'CAN_VIEW_CLASSES',
+  CAN_EDIT_CLASSES = 'CAN_EDIT_CLASSES',
+  CAN_DELETE_CLASSES = 'CAN_DELETE_CLASSES',
 
   // Fee & Financial Management
   CAN_MANAGE_FEES = 'CAN_MANAGE_FEES',
@@ -35,10 +37,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   [UserRole.Admin]: [
     Permission.CAN_MANAGE_USERS,
     Permission.CAN_DELETE_USERS,
-    Permission.CAN_MANAGE_STUDENTS,
+    Permission.CAN_VIEW_STUDENTS,
+    Permission.CAN_EDIT_STUDENTS,
     Permission.CAN_DELETE_STUDENTS,
-    Permission.CAN_VIEW_STUDENT_LISTS,
-    Permission.CAN_MANAGE_CLASSES,
+    Permission.CAN_VIEW_CLASSES,
+    Permission.CAN_EDIT_CLASSES,
+    Permission.CAN_DELETE_CLASSES,
     Permission.CAN_MANAGE_FEES,
     Permission.CAN_MANAGE_FEE_HEADS,
     Permission.CAN_VIEW_FINANCIAL_REPORTS,
@@ -51,13 +55,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   [UserRole.Accountant]: [
     Permission.CAN_MANAGE_FEES,
     Permission.CAN_VIEW_FINANCIAL_REPORTS,
-    Permission.CAN_VIEW_STUDENT_LISTS, // To see student names for fees
+    Permission.CAN_VIEW_STUDENTS, // To see student names for fees
   ],
   
   [UserRole.Teacher]: [
     Permission.CAN_MANAGE_ATTENDANCE,
     Permission.CAN_MANAGE_RESULTS,
-    Permission.CAN_VIEW_STUDENT_LISTS, // To see students in their class
+    Permission.CAN_VIEW_STUDENTS, // To see students in their class
+    Permission.CAN_VIEW_CLASSES,
   ],
 
   [UserRole.Parent]: [], // View-only logic is handled by data filtering

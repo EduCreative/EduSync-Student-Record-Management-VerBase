@@ -38,7 +38,9 @@ const ClassManagementPage: React.FC = () => {
     const [classToEdit, setClassToEdit] = useState<Class | null>(null);
     const [classToDelete, setClassToDelete] = useState<Class | null>(null);
     
-    const canManageClasses = hasPermission(Permission.CAN_MANAGE_CLASSES);
+    const canEditClasses = hasPermission(Permission.CAN_EDIT_CLASSES);
+    const canDeleteClasses = hasPermission(Permission.CAN_DELETE_CLASSES);
+    const canPerformActions = canEditClasses || canDeleteClasses;
 
     const schoolClasses = useMemo(() => {
         let filteredClasses: Class[];
@@ -85,8 +87,6 @@ const ClassManagementPage: React.FC = () => {
     };
 
     const handleImportClasses = async (data: any[]) => {
-        // FIX: Added the required `schoolId` to each class object before passing to `bulkAddClasses`.
-        // The function expects a `schoolId` on each object to satisfy its type signature.
         if (!effectiveSchoolId) {
             alert("No active school selected. Cannot import classes.");
             return;
@@ -107,30 +107,29 @@ const ClassManagementPage: React.FC = () => {
     const requiredHeaders = ['name'];
 
     const handleExport = () => {
-        const dataToExport = schoolClasses.map((c, index) => ({
-            displayId: index + 1,
-            className: c.name,
-            teacher: c.teacherId ? teacherMap.get(c.teacherId) || 'N/A' : 'N/A',
-            studentCount: studentCountMap[c.id] || 0,
-            classId_internal: c.id,
+        const dataToExport = schoolClasses.map(c => ({
+            name: c.name,
+            teacherId: c.teacherId || '',
+            teacherName_for_reference: c.teacherId ? teacherMap.get(c.teacherId) || 'N/A' : 'N/A',
+            studentCount_for_reference: studentCountMap[c.id] || 0,
         }));
         exportToCsv(dataToExport, 'classes_export');
     };
     
     const tableColumns = [
         { width: '10%' }, // ID
-        { width: canManageClasses ? '25%' : '40%' }, // Name
-        { width: canManageClasses ? '25%' : '30%' }, // Teacher
+        { width: canPerformActions ? '25%' : '40%' }, // Name
+        { width: canPerformActions ? '25%' : '30%' }, // Teacher
         { width: '20%' }, // Students
     ];
-    if (canManageClasses) {
+    if (canPerformActions) {
         tableColumns.push({ width: '20%' }); // Actions
     }
 
 
     return (
         <>
-            {canManageClasses && (
+            {canEditClasses && (
                 <>
                     <ClassFormModal 
                         isOpen={isFormModalOpen}
@@ -161,9 +160,9 @@ const ClassManagementPage: React.FC = () => {
             </Modal>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{canManageClasses ? 'Class Management' : 'My Classes'}</h1>
+                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{canEditClasses ? 'Class Management' : 'My Classes'}</h1>
                     <div className="flex items-center gap-2">
-                         {canManageClasses && (
+                         {canEditClasses && (
                              <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
                                 <UploadIcon className="w-4 h-4" /> Import CSV
                             </button>
@@ -171,7 +170,7 @@ const ClassManagementPage: React.FC = () => {
                         <button onClick={handleExport} className="btn-secondary">
                            <DownloadIcon className="w-4 h-4" /> Export CSV
                         </button>
-                        {canManageClasses && (
+                        {canEditClasses && (
                             <button onClick={() => handleOpenModal()} className="btn-primary">
                                 + Add Class
                             </button>
@@ -191,7 +190,7 @@ const ClassManagementPage: React.FC = () => {
                                         <th scope="col" className="px-6 py-3">Class Name</th>
                                         <th scope="col" className="px-6 py-3">Teacher</th>
                                         <th scope="col" className="px-6 py-3">No. of Students</th>
-                                        {canManageClasses && <th scope="col" className="px-6 py-3">Actions</th>}
+                                        {canPerformActions && <th scope="col" className="px-6 py-3">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -201,11 +200,11 @@ const ClassManagementPage: React.FC = () => {
                                             <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{c.name}</td>
                                             <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
                                             <td className="px-6 py-4">{studentCountMap[c.id] || 0}</td>
-                                            {canManageClasses && (
+                                            {canPerformActions && (
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-4">
-                                                        <button onClick={() => handleOpenModal(c)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                                        <button onClick={() => setClassToDelete(c)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                        {canEditClasses && <button onClick={() => handleOpenModal(c)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>}
+                                                        {canDeleteClasses && <button onClick={() => setClassToDelete(c)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>}
                                                     </div>
                                                 </td>
                                             )}

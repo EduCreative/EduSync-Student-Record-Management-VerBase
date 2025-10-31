@@ -1,6 +1,8 @@
 
 
 
+import { Permission } from './permissions';
+
 export enum UserRole {
     Owner = 'Owner',
     Admin = 'Admin',
@@ -34,6 +36,7 @@ export interface User {
     childStudentIds?: string[]; // Added for Parent role
     disabledNavLinks?: string[]; // For Owner to disable menu items for a user
     notificationPreferences?: NotificationPreferences;
+    permissionsOverrides?: Partial<Record<Permission, boolean>>;
 }
 
 export interface School {

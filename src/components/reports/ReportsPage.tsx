@@ -93,7 +93,8 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
             case 'defaulter':
                 return hasPermission(Permission.CAN_VIEW_FINANCIAL_REPORTS);
             case 'classList':
-                return hasPermission(Permission.CAN_VIEW_STUDENT_LISTS);
+                // FIX: Corrected permission check from CAN_VIEW_STUDENT_LISTS to CAN_VIEW_STUDENTS.
+                return hasPermission(Permission.CAN_VIEW_STUDENTS);
             case 'bulkChallan':
             case 'challanRange':
                 return hasPermission(Permission.CAN_MANAGE_FEES);

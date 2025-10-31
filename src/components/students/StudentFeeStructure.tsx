@@ -22,7 +22,8 @@ const StudentFeeStructure: React.FC<StudentFeeStructureProps> = ({ student }) =>
         setStructure(student.feeStructure || []);
     }, [student.feeStructure]);
 
-    const canManage = hasPermission(Permission.CAN_MANAGE_STUDENTS);
+    // FIX: Corrected permission check from CAN_MANAGE_STUDENTS to CAN_EDIT_STUDENTS.
+    const canManage = hasPermission(Permission.CAN_EDIT_STUDENTS);
 
     const assignedFeeHeadIds = useMemo(() => new Set(structure.map(item => item.feeHeadId)), [structure]);
 

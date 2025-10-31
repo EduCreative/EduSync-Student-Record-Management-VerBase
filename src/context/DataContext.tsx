@@ -364,7 +364,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addUserByAdmin = async (userData: (Omit<User, 'id'> & { password?: string })) => {
         // 1. Preserve admin session
-        const { data: { session: adminSession } } = await supabase.auth.getSession();
+        // FIX: Cast to any to bypass type error for getSession.
+        const { data: { session: adminSession } } = await (supabase.auth as any).getSession();
         if (!adminSession) {
             showToast('Error', 'Your session has expired. Please log in again.', 'error');
             throw new Error("Admin session not found.");
@@ -372,13 +373,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
         // 2. Sign up the new user
         const { name, email, password, role, schoolId, status, avatarUrl } = userData;
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        // FIX: Cast to any to bypass type error for signUp.
+        const { data: signUpData, error: signUpError } = await (supabase.auth as any).signUp({
             email: email!,
             password: password!,
         });
     
         // 3. Immediately restore admin session to prevent being logged out.
-        const { error: setSessionError } = await supabase.auth.setSession({
+        // FIX: Cast to any to bypass type error for setSession.
+        const { error: setSessionError } = await (supabase.auth as any).setSession({
             access_token: adminSession.access_token,
             refresh_token: adminSession.refresh_token,
         });

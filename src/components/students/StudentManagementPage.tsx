@@ -33,7 +33,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const [currentPage, setCurrentPage] = useState(1);
     const STUDENTS_PER_PAGE = 10;
     
-    const canManage = hasPermission(Permission.CAN_MANAGE_STUDENTS);
+    const canEdit = hasPermission(Permission.CAN_EDIT_STUDENTS);
     const canDelete = hasPermission(Permission.CAN_DELETE_STUDENTS);
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
@@ -120,11 +120,22 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         const dataToExport = filteredStudents.map(s => ({
             name: s.name,
             rollNumber: s.rollNumber,
-            className: classMap.get(s.classId) || 'N/A',
-            status: s.status,
+            classId: s.classId,
             fatherName: s.fatherName,
-            contactNumber: s.contactNumber,
+            fatherCnic: s.fatherCnic,
+            dateOfBirth: s.dateOfBirth,
             dateOfAdmission: s.dateOfAdmission,
+            contactNumber: s.contactNumber,
+            secondaryContactNumber: s.secondaryContactNumber,
+            address: s.address,
+            gender: s.gender,
+            admittedClass: s.admittedClass,
+            caste: s.caste,
+            lastSchoolAttended: s.lastSchoolAttended,
+            openingBalance: s.openingBalance,
+            userId: s.userId,
+            className_for_reference: classMap.get(s.classId) || 'N/A',
+            status: s.status,
         }));
         exportToCsv(dataToExport, 'students_export');
     };
@@ -159,7 +170,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Student Management</h1>
                     <div className="flex items-center gap-2">
-                        {canManage && (
+                        {canEdit && (
                             <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
                                 <UploadIcon className="w-4 h-4" /> Import CSV
                             </button>
@@ -167,7 +178,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                         <button onClick={handleExport} className="btn-secondary">
                             <DownloadIcon className="w-4 h-4" /> Export CSV
                         </button>
-                        {canManage && <button onClick={() => handleOpenModal()} className="btn-primary">+ Add Student</button>}
+                        {canEdit && <button onClick={() => handleOpenModal()} className="btn-primary">+ Add Student</button>}
                     </div>
                 </div>
 
@@ -223,7 +234,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-4">
                                                         <button onClick={() => setActiveView({ view: 'studentProfile', payload: { studentId: student.id }})} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">View</button>
-                                                        {canManage && (
+                                                        {canEdit && (
                                                             <button onClick={() => handleOpenModal(student)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
                                                         )}
                                                         {canDelete && (

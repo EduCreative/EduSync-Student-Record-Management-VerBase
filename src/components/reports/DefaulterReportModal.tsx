@@ -13,7 +13,6 @@ interface DefaulterReportModalProps {
 }
 
 const availableColumns = {
-    stdId: "Std. ID",
     fatherName: "Father's Name",
     amountDue: "Amount Due",
     paid: "Paid"
@@ -27,7 +26,6 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
     const [classId, setClassId] = useState('all');
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
-        stdId: true,
         fatherName: true,
         amountDue: true,
         paid: true,
@@ -142,7 +140,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
     const handleGenerate = () => {
         const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
-        const subtotalColspan = 2 + (activeColumns.includes('stdId') ? 1 : 0) + (activeColumns.includes('fatherName') ? 1 : 0);
+        const subtotalColspan = 3 + (activeColumns.includes('fatherName') ? 1 : 0);
 
         const content = (
             <div className="printable-report p-4 font-sans">
@@ -170,34 +168,34 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         <table className="w-full text-sm">
                             <thead>
                                 <tr>
-                                    <th className="p-1 text-left">Sr.</th>
-                                    <th className="p-1 text-left">Student Name</th>
-                                    {activeColumns.includes('stdId') && <th className="p-1 text-left">StdID</th>}
-                                    {activeColumns.includes('fatherName') && <th className="p-1 text-left">Father Name</th>}
-                                    {activeColumns.includes('amountDue') && <th className="p-1 text-right">Amount Due</th>}
-                                    {activeColumns.includes('paid') && <th className="p-1 text-right">Paid</th>}
-                                    <th className="p-1 text-right">Balance</th>
+                                    <th className="py-0 px-1 text-left">Sr.</th>
+                                    <th className="py-0 px-1 text-left">StdID</th>
+                                    <th className="py-0 px-1 text-left">Student Name</th>
+                                    {activeColumns.includes('fatherName') && <th className="py-0 px-1 text-left">Father Name</th>}
+                                    {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">Amount Due</th>}
+                                    {activeColumns.includes('paid') && <th className="py-0 px-1 text-right">Paid</th>}
+                                    <th className="py-0 px-1 text-right">Balance</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {classGroup.students.map((student, index) => (
                                     <tr key={student.studentId}>
-                                        <td className="p-0">{index + 1}</td>
-                                        <td className="p-0">{student.studentName}</td>
-                                        {activeColumns.includes('stdId') && <td className="p-0">{student.stdId}</td>}
-                                        {activeColumns.includes('fatherName') && <td className="p-0">{student.fatherName}</td>}
-                                        {activeColumns.includes('amountDue') && <td className="p-0 text-right">{student.amountDue.toLocaleString()}</td>}
-                                        {activeColumns.includes('paid') && <td className="p-0 text-right">{student.paid.toLocaleString()}</td>}
-                                        <td className="p-0 text-right">{student.balance.toLocaleString()}</td>
+                                        <td className="py-0 px-1">{index + 1}</td>
+                                        <td className="py-0 px-1">{student.stdId}</td>
+                                        <td className="py-0 px-1">{student.studentName}</td>
+                                        {activeColumns.includes('fatherName') && <td className="py-0 px-1">{student.fatherName}</td>}
+                                        {activeColumns.includes('amountDue') && <td className="py-0 px-1 text-right">{student.amountDue.toLocaleString()}</td>}
+                                        {activeColumns.includes('paid') && <td className="py-0 px-1 text-right">{student.paid.toLocaleString()}</td>}
+                                        <td className="py-0 px-1 text-right">{student.balance.toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="font-bold bg-secondary-100">
-                                    <td colSpan={subtotalColspan} className="p-1 text-right">Sub Total:</td>
-                                    {activeColumns.includes('amountDue') && <td className="p-1 text-right">{classGroup.subtotals.amountDue.toLocaleString()}</td>}
-                                    {activeColumns.includes('paid') && <td className="p-1 text-right">{classGroup.subtotals.paid.toLocaleString()}</td>}
-                                    <td className="p-1 text-right">{classGroup.subtotals.balance.toLocaleString()}</td>
+                                    <td colSpan={subtotalColspan} className="py-1 px-1 text-right">Sub Total:</td>
+                                    {activeColumns.includes('amountDue') && <td className="py-1 px-1 text-right">{classGroup.subtotals.amountDue.toLocaleString()}</td>}
+                                    {activeColumns.includes('paid') && <td className="py-1 px-1 text-right">{classGroup.subtotals.paid.toLocaleString()}</td>}
+                                    <td className="py-1 px-1 text-right">{classGroup.subtotals.balance.toLocaleString()}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -209,10 +207,10 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         <table className="w-full text-sm">
                             <tbody>
                                 <tr className="font-bold text-lg bg-secondary-200">
-                                    <td colSpan={subtotalColspan} className="p-2 text-right">Grand Total:</td>
-                                    {activeColumns.includes('amountDue') && <td className="p-2 text-right">Rs. {grandTotal.amountDue.toLocaleString()}</td>}
-                                    {activeColumns.includes('paid') && <td className="p-2 text-right">Rs. {grandTotal.paid.toLocaleString()}</td>}
-                                    <td className="p-2 text-right">Rs. {grandTotal.balance.toLocaleString()}</td>
+                                    <td colSpan={subtotalColspan} className="py-1 px-2 text-right">Grand Total:</td>
+                                    {activeColumns.includes('amountDue') && <td className="py-1 px-2 text-right">Rs. {grandTotal.amountDue.toLocaleString()}</td>}
+                                    {activeColumns.includes('paid') && <td className="py-1 px-2 text-right">Rs. {grandTotal.paid.toLocaleString()}</td>}
+                                    <td className="py-1 px-2 text-right">Rs. {grandTotal.balance.toLocaleString()}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -225,7 +223,6 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
     const handleExport = () => {
         const headers: string[] = ['Sr.', 'StdID', 'Student Name'];
-        // if (selectedColumns.stdId) headers.push('StdID');
         if (selectedColumns.fatherName) headers.push("Father's Name");
         if (selectedColumns.amountDue) headers.push('Amount Due');
         if (selectedColumns.paid) headers.push('Paid');
@@ -237,7 +234,6 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             csvRows.push(escapeCsvCell(`Class: ${classGroup.className}`));
             classGroup.students.forEach((student, index) => {
                 const row: (string | number)[] = [index + 1, student.stdId, student.studentName];
-                // if (selectedColumns.stdId) row.push(student.stdId);
                 if (selectedColumns.fatherName) row.push(student.fatherName);
                 if (selectedColumns.amountDue) row.push(student.amountDue);
                 if (selectedColumns.paid) row.push(student.paid);
