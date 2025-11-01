@@ -120,10 +120,16 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         if (!effectiveSchoolId) {
             throw new Error("No active school selected. Cannot import students.");
         }
+
+        const hasTuitionFeeInCsv = validData.some(item => item.monthly_tuition_fee && Number(item.monthly_tuition_fee) > 0);
+        const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
+
+        if (hasTuitionFeeInCsv && !tuitionFeeHead) {
+            throw new Error("A 'Tuition Fee' head is required to import student fees. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
+        }
         
         const CHUNK_SIZE = 50;
         const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
-        const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
         const school = schools.find(s => s.id === effectiveSchoolId);
         const defaultTuitionFee = school?.defaultTuitionFee;
 
