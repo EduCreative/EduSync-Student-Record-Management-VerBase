@@ -19,7 +19,6 @@ interface StudentManagementPageProps {
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
-    // FIX: Removed `showToast` from `useData` destructuring as it is not part of the context type. Toast notifications are handled within the data context methods.
     const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, schools } = useData();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
@@ -88,6 +87,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     
     const validateStudentImport = async (data: any[]) => {
         const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
+        const existingRollNos = new Set(students.filter(s => s.schoolId === effectiveSchoolId).map(s => s.rollNumber.trim().toLowerCase()));
+        const rollNosInCsv = new Set<string>();
+
         const validRecords: any[] = [];
         const invalidRecords: { record: any, reason: string, rowNum: number }[] = [];
 
@@ -95,13 +97,20 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             const rowNum = index + 2;
             const className = item.className?.trim().toLowerCase();
             const classId = className ? classNameToIdMap.get(className) : undefined;
+            const rollNumber = item.rollNumber?.trim().toLowerCase();
     
             if (!classId) {
                 invalidRecords.push({ record: item, reason: `Class "${item.className}" not found.`, rowNum });
             } else if (!item.name || !item.rollNumber) {
                 invalidRecords.push({ record: item, reason: `Missing required field (name or rollNumber).`, rowNum });
-            } else {
+            } else if (existingRollNos.has(rollNumber)) {
+                invalidRecords.push({ record: item, reason: `Roll number "${item.rollNumber}" is already in use.`, rowNum });
+            } else if (rollNosInCsv.has(rollNumber)) {
+                invalidRecords.push({ record: item, reason: `Duplicate roll number "${item.rollNumber}" within the CSV file.`, rowNum });
+            }
+            else {
                 validRecords.push(item);
+                rollNosInCsv.add(rollNumber);
             }
         });
         return { validRecords, invalidRecords };
