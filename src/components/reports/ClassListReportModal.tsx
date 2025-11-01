@@ -6,6 +6,7 @@ import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
+import { getClassLevel } from '../../utils/sorting';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -53,6 +54,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const reportData = useMemo(() => {
         return students
@@ -141,7 +143,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                     <label htmlFor="class-filter-list" className="input-label">Select Class</label>
                     <select id="class-filter-list" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                         <option value="all">All Classes</option>
-                        {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
 

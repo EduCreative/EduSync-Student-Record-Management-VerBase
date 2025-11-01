@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
+import { getClassLevel } from '../../utils/sorting';
 
 interface AttendanceReportModalProps {
     isOpen: boolean;
@@ -37,6 +38,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const datesInRange = useMemo(() => {
         const dates = [];
@@ -151,7 +153,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                         <label htmlFor="class-select-attendance" className="input-label">Class</label>
                         <select id="class-select-attendance" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                             <option value="all">All Classes</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
                     <div>

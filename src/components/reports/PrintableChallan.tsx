@@ -19,7 +19,7 @@ const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> 
 
 const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school, studentClass }) => {
     
-    const ChallanBody: FC = () => (
+    const ChallanBody: FC<{ copyName: string }> = ({ copyName }) => (
         <>
             <div className="flex items-center justify-between p-2 border-b">
                 <div className="flex items-center gap-2 overflow-hidden">
@@ -102,6 +102,7 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 </div>
 
                 <ChallanRow label="Balance" value={challan.totalAmount - (challan.discount || 0) - (challan.paidAmount || 0)} bold />
+                <p className="text-[8px] font-bold text-center p-1">{copyName}</p>
             </div>
         </>
     );
@@ -109,12 +110,10 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
     return (
         <>
             <div className="school-copy flex flex-col p-1 border-b md:border-b-0 md:border-r h-full w-full md:w-1/2">
-                <ChallanBody />
-                 <p className="text-[8px] font-bold text-center p-1">School Copy</p>
+                <ChallanBody copyName="School Copy" />
             </div>
             <div className="parent-copy flex flex-col p-1 h-full w-full md:w-1/2">
-                <ChallanBody />
-                <p className="text-[8px] font-bold text-center p-1">Parent/Student Copy</p>
+                <ChallanBody copyName="Parent/Student Copy" />
             </div>
         </>
     );

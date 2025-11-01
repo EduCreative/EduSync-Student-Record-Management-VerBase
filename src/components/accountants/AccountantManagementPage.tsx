@@ -76,14 +76,31 @@ const AccountantManagementPage: React.FC = () => {
         }
     };
     
-    const handleImportAccountants = async (data: any[]) => {
-        const accountantsToImport = data.map(item => ({
-            ...item,
-            role: UserRole.Accountant,
-            status: 'Active',
-            schoolId: effectiveSchoolId,
-        }));
-        await bulkAddUsers(accountantsToImport);
+    const handleImportAccountants = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+        if (!effectiveSchoolId) {
+            throw new Error("No active school selected for import.");
+        }
+        
+        const CHUNK_SIZE = 50;
+        let processed = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+            const chunk = data.slice(i, i + CHUNK_SIZE);
+            const accountantsToImport = chunk.map(item => ({
+                ...item,
+                role: UserRole.Accountant,
+                status: 'Active',
+                schoolId: effectiveSchoolId,
+            }));
+
+            if (accountantsToImport.length > 0) {
+                await bulkAddUsers(accountantsToImport);
+            }
+            
+            processed += chunk.length;
+            progressCallback({ processed, total: data.length, errors });
+        }
     };
 
     const sampleDataForImport = [{

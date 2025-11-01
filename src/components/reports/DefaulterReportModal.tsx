@@ -6,6 +6,7 @@ import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
 import { EduSyncLogo } from '../../constants';
+import { getClassLevel } from '../../utils/sorting';
 
 interface DefaulterReportModalProps {
     isOpen: boolean;
@@ -41,6 +42,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const reportData = useMemo(() => {
         // FIX: Define interfaces for student and class group summaries to ensure type safety in reduce and map operations.
@@ -269,7 +271,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                     <label htmlFor="class-filter" className="input-label">Filter by Class</label>
                     <select id="class-filter" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                         <option value="all">All Classes</option>
-                        {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
                  <div>

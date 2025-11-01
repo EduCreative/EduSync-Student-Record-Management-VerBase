@@ -113,13 +113,30 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
         }
     };
     
-    const handleImportUsers = async (data: any[]) => {
-        const usersToImport = data.map(item => ({
-            ...item,
-            status: 'Active', // Default status for imported users
-            schoolId: item.schoolId || effectiveSchoolId, // Use schoolId from CSV or current context
-        }));
-        await bulkAddUsers(usersToImport);
+    const handleImportUsers = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+        if (!effectiveSchoolId && !isOwnerGlobalView) {
+            throw new Error("No active school selected for import.");
+        }
+    
+        const CHUNK_SIZE = 50;
+        let processed = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+            const chunk = data.slice(i, i + CHUNK_SIZE);
+            const usersToImport = chunk.map(item => ({
+                ...item,
+                status: 'Active',
+                schoolId: item.schoolId || effectiveSchoolId,
+            }));
+
+            if (usersToImport.length > 0) {
+                await bulkAddUsers(usersToImport);
+            }
+            
+            processed += chunk.length;
+            progressCallback({ processed, total: data.length, errors });
+        }
     };
 
     const sampleDataForImport = [{

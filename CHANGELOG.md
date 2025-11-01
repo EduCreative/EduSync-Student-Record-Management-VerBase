@@ -8,15 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Application Hanging on Save:** Resolved a critical bug where action buttons (e.g., "Save", "Update", "Generate") would get stuck in a loading state if the underlying operation encountered an error. All asynchronous actions now correctly use `finally` blocks to reset their loading state, ensuring the UI remains responsive and interactive even when errors occur.
-
-## [1.5.1] - 2024-07-22
-
-### Fixed
-- **Widespread Application Hanging:** Resolved a critical, application-wide bug where forms would hang in a "saving" state if an error occurred during data submission (e.g., saving a user, generating challans, creating an event). The `handleSubmit` functions in multiple modal forms (Class, Fee Head, Event) were missing loading state management and error handling. This has been fixed by implementing robust `try...finally` blocks to ensure the loading state is always reset, preventing the UI from freezing.
+- **Application Hanging on Save:** Resolved a critical bug where action buttons (e.g., "Save", "Update", "Generate") would get stuck in a loading state if the underlying operation encountered an error. All asynchronous actions now correctly use `try...finally` blocks to reset their loading state, ensuring the UI remains responsive and interactive even when errors occur.
+- **CSV Date Import Error:** Fixed a database error (`invalid input syntax for type date: ""`) that occurred when importing CSV files with empty date fields. The import process now correctly sanitizes empty date strings to `null` before insertion.
+- **Build Error:** Removed an unused `useMemo` import in `PromotionPreviewModal.tsx` that was causing the build to fail.
 
 ### Added
-- **Loading State Feedback:** Added loading indicators ("Saving...", "Updating...") to several forms (Class, Fee Head, Event modals) that were missing them. This provides better user feedback during data submission and prevents accidental double-clicks.
+- **CSV Import Progress UI:** Replaced the simple import toast with a detailed progress modal. The new modal shows a real-time progress bar, a count of processed records, and a list of any specific rows that were skipped due to errors, providing a much better user experience for large data imports.
+- **Robust Chunked Imports:** The CSV import process now handles large files more reliably by processing data in smaller chunks.
 
 ## [1.5.0] - 2024-07-21
 

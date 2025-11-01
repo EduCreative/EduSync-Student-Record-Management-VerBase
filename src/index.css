@@ -76,6 +76,7 @@
     }
     .challan-wrapper {
       height: 95mm;
+      overflow: visible !important; /* Ensure content is not clipped by the fixed height */
       @apply flex-row; /* Ensure side-by-side for printing */
     }
   }

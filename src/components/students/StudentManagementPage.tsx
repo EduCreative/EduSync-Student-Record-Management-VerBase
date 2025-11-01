@@ -87,55 +87,65 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         }
     };
     
-    const handleImportStudents = async (data: any[]) => {
-        if (!effectiveSchoolId) return;
-
+    const handleImportStudents = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+        if (!effectiveSchoolId) {
+            throw new Error("No active school selected. Cannot import students.");
+        }
+        
+        const CHUNK_SIZE = 50;
         const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
         const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
     
-        const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
-        const importErrors: string[] = [];
+        let processed = 0;
+        const allErrors: string[] = [];
+
+        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+            const chunk = data.slice(i, i + CHUNK_SIZE);
+            const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
+            const chunkErrors: string[] = [];
     
-        data.forEach((item, index) => {
-            const className = item.className?.trim().toLowerCase();
-            const classId = className ? classNameToIdMap.get(className) : undefined;
-    
-            if (!classId) {
-                importErrors.push(`Row ${index + 2}: Class "${item.className}" not found. Skipping student "${item.name}".`);
-                return;
-            }
-    
-            const studentData: any = {
-                ...item,
-                schoolId: effectiveSchoolId,
-                classId: classId,
-                openingBalance: Number(item.openingBalance) || 0,
-                userId: item.userId || null,
-            };
-    
-            const tuitionFee = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
-            if (tuitionFee !== null && tuitionFee > 0) {
-                if (tuitionFeeHead) {
-                    studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: tuitionFee }];
-                } else {
-                    showToast('Warning', `"Tuition Fee" head not found. Could not set custom fee for ${item.name}.`, 'info');
-                }
-            }
-            
-            delete studentData.className;
-            delete studentData.monthly_tuition_fee;
-            
-            studentsToImport.push(studentData);
-        });
-    
-        if (importErrors.length > 0) {
-            showToast('Import Errors', `${importErrors.length} rows were skipped. ${importErrors[0]}`, 'error');
-        }
+            chunk.forEach((item, index) => {
+                const rowNum = i + index + 1; // File row number is 1-based + header
+                const className = item.className?.trim().toLowerCase();
+                const classId = className ? classNameToIdMap.get(className) : undefined;
         
-        if (studentsToImport.length > 0) {
-            await bulkAddStudents(studentsToImport);
-        } else if (importErrors.length === 0) {
-            showToast('Info', 'No new students to import.', 'info');
+                if (!classId) {
+                    chunkErrors.push(`Row ${rowNum}: Class "${item.className}" not found. Skipping student "${item.name}".`);
+                    return;
+                }
+        
+                const studentData: any = {
+                    ...item,
+                    schoolId: effectiveSchoolId,
+                    classId: classId,
+                    dateOfBirth: item.dateOfBirth || null, // Sanitize empty date strings
+                    dateOfAdmission: item.dateOfAdmission || null, // Sanitize empty date strings
+                    openingBalance: Number(item.openingBalance) || 0,
+                    userId: item.userId || null,
+                };
+        
+                const tuitionFee = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
+                if (tuitionFee !== null && tuitionFee > 0) {
+                    if (tuitionFeeHead) {
+                        studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: tuitionFee }];
+                    } else {
+                        showToast('Warning', `"Tuition Fee" head not found. Could not set custom fee for ${item.name}.`, 'info');
+                    }
+                }
+                
+                delete studentData.className;
+                delete studentData.monthly_tuition_fee;
+                
+                studentsToImport.push(studentData);
+            });
+    
+            if (studentsToImport.length > 0) {
+                await bulkAddStudents(studentsToImport);
+            }
+
+            processed += chunk.length;
+            allErrors.push(...chunkErrors);
+            progressCallback({ processed, total: data.length, errors: allErrors });
         }
     };
 

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole } from '../../types';
 import PrintableChallan from './PrintableChallan';
+import { getClassLevel } from '../../utils/sorting';
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 const currentYear = new Date().getFullYear();
@@ -27,6 +28,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
@@ -34,9 +36,10 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
         if (!classId) return [];
         return fees.filter(fee => {
             const student = studentMap.get(fee.studentId);
-            return student?.classId === classId && fee.month === month && fee.year === year;
+            if (!student || student.schoolId !== effectiveSchoolId) return false;
+            return (classId === 'all' || student.classId === classId) && fee.month === month && fee.year === year;
         });
-    }, [fees, studentMap, classId, month, year]);
+    }, [fees, studentMap, classId, month, year, effectiveSchoolId]);
 
     const handleGenerate = () => {
         if (!school) return;
@@ -60,7 +63,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                 })}
             </div>
         );
-        showPrintPreview(content, `EduSync - Fee Challans - ${classMap.get(classId)} - ${month} ${year}`);
+        showPrintPreview(content, `EduSync - Fee Challans - ${classId === 'all' ? 'All Classes' : classMap.get(classId)} - ${month} ${year}`);
     };
 
     return (
@@ -71,7 +74,8 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                         <label htmlFor="class-select" className="input-label">Select Class</label>
                         <select id="class-select" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                             <option value="">-- Choose a class --</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <option value="all">All Classes</option>
+                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
                     <div>

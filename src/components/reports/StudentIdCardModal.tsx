@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole } from '../../types';
 import PrintableIdCard from './PrintableIdCard';
+import { getClassLevel } from '../../utils/sorting';
 
 interface StudentIdCardModalProps {
     isOpen: boolean;
@@ -21,12 +22,13 @@ const StudentIdCardModal: React.FC<StudentIdCardModalProps> = ({ isOpen, onClose
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
     const reportData = useMemo(() => {
         if (!classId) return [];
-        return students.filter(s => s.classId === classId && s.status === 'Active');
-    }, [students, classId]);
+        return students.filter(s => (classId === 'all' || s.classId === classId) && s.schoolId === effectiveSchoolId && s.status === 'Active');
+    }, [students, classId, effectiveSchoolId]);
 
     const handleGenerate = () => {
         if (!school) return;
@@ -43,7 +45,7 @@ const StudentIdCardModal: React.FC<StudentIdCardModalProps> = ({ isOpen, onClose
                 ))}
             </div>
         );
-        showPrintPreview(content, `EduSync - ID Cards - ${classMap.get(classId)}`);
+        showPrintPreview(content, `EduSync - ID Cards - ${classId === 'all' ? 'All Classes' : classMap.get(classId)}`);
     };
 
     return (
@@ -53,7 +55,8 @@ const StudentIdCardModal: React.FC<StudentIdCardModalProps> = ({ isOpen, onClose
                     <label htmlFor="class-select-id-card" className="input-label">Select Class</label>
                     <select id="class-select-id-card" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                         <option value="">-- Choose a class --</option>
-                        {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        <option value="all">All Classes</option>
+                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-md text-center">

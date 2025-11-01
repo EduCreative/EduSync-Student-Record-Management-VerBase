@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import Avatar from '../common/Avatar';
 import { formatDate } from '../../constants';
+import { getClassLevel } from '../../utils/sorting';
 
 const FeeRemindersPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
@@ -19,6 +20,7 @@ const FeeRemindersPage: React.FC = () => {
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
@@ -77,7 +79,7 @@ const FeeRemindersPage: React.FC = () => {
                     <label className="input-label">Filter by Class</label>
                     <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="input-field">
                         <option value="all">All Classes</option>
-                        {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
                 <div>

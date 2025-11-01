@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole, Student, Result } from '../../types';
 import PrintableReportCard from './PrintableReportCard';
+import { getClassLevel } from '../../utils/sorting';
 
 interface ReportCardModalProps {
     isOpen: boolean;
@@ -22,18 +23,25 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({ isOpen, onClose }) =>
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
     const examTypes = useMemo(() => [...new Set(results.map((r: Result) => r.exam))], [results]);
 
     const reportData = useMemo(() => {
-        if (!classId || !exam) return [];
-        const classStudents = students.filter((s: Student) => s.classId === classId && s.status === 'Active');
+        if (!exam || !classId) return [];
+
+        const classStudents = students.filter((s: Student) => 
+            s.schoolId === effectiveSchoolId &&
+            (classId === 'all' || s.classId === classId) && 
+            s.status === 'Active'
+        );
+        
         return classStudents.map(student => {
             const studentResults = results.filter((r: Result) => r.studentId === student.id && r.exam === exam);
             return { student, results: studentResults };
         });
-    }, [students, results, classId, exam]);
+    }, [students, results, classId, exam, effectiveSchoolId]);
 
     const handleGenerate = () => {
         if (!school) return;
@@ -52,7 +60,7 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({ isOpen, onClose }) =>
                 ))}
             </div>
         );
-        showPrintPreview(content, `EduSync - Report Cards - ${classMap.get(classId)} - ${exam}`);
+        showPrintPreview(content, `EduSync - Report Cards - ${classId === 'all' ? 'All Classes' : classMap.get(classId)} - ${exam}`);
     };
 
     return (
@@ -63,7 +71,8 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({ isOpen, onClose }) =>
                         <label htmlFor="class-select" className="input-label">Select Class</label>
                         <select id="class-select" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                             <option value="">-- Choose a class --</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <option value="all">All Classes</option>
+                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
                     <div>

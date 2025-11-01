@@ -121,17 +121,30 @@ const ClassManagementPage: React.FC = () => {
         }
     };
 
-    const handleImportClasses = async (data: any[]) => {
+    const handleImportClasses = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
         if (!effectiveSchoolId) {
-            alert("No active school selected. Cannot import classes.");
-            return;
+            throw new Error("No active school selected. Cannot import classes.");
         }
-        const classesToImport = data.map(item => ({
-            name: item.name,
-            teacherId: item.teacherId || null,
-            schoolId: effectiveSchoolId,
-        }));
-        await bulkAddClasses(classesToImport);
+        
+        const CHUNK_SIZE = 50;
+        let processed = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+            const chunk = data.slice(i, i + CHUNK_SIZE);
+            const classesToImport = chunk.map(item => ({
+                name: item.name,
+                teacherId: item.teacherId || null,
+                schoolId: effectiveSchoolId,
+            }));
+
+            if (classesToImport.length > 0) {
+                await bulkAddClasses(classesToImport);
+            }
+            
+            processed += chunk.length;
+            progressCallback({ processed, total: data.length, errors });
+        }
     };
 
     const sampleDataForImport = [{

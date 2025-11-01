@@ -81,14 +81,31 @@ const TeacherManagementPage: React.FC = () => {
         }
     };
     
-    const handleImportTeachers = async (data: any[]) => {
-        const teachersToImport = data.map(item => ({
-            ...item,
-            role: UserRole.Teacher,
-            status: 'Active',
-            schoolId: effectiveSchoolId,
-        }));
-        await bulkAddUsers(teachersToImport);
+    const handleImportTeachers = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+        if (!effectiveSchoolId) {
+            throw new Error("No active school selected for import.");
+        }
+        
+        const CHUNK_SIZE = 50;
+        let processed = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+            const chunk = data.slice(i, i + CHUNK_SIZE);
+            const teachersToImport = chunk.map(item => ({
+                ...item,
+                role: UserRole.Teacher,
+                status: 'Active',
+                schoolId: effectiveSchoolId,
+            }));
+
+            if (teachersToImport.length > 0) {
+                await bulkAddUsers(teachersToImport);
+            }
+            
+            processed += chunk.length;
+            progressCallback({ processed, total: data.length, errors });
+        }
     };
 
     const sampleDataForImport = [{
