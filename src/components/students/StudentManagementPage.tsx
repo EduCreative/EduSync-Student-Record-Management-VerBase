@@ -20,7 +20,7 @@ interface StudentManagementPageProps {
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
-    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads } = useData();
+    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, schools } = useData();
     const { showToast } = useToast();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
@@ -95,7 +95,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         const CHUNK_SIZE = 50;
         const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
         const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
-    
+        const school = schools.find(s => s.id === effectiveSchoolId);
+        const defaultTuitionFee = school?.defaultTuitionFee;
+
         let processed = 0;
         const allErrors: string[] = [];
 
@@ -105,7 +107,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             const chunkErrors: string[] = [];
     
             chunk.forEach((item, index) => {
-                const rowNum = i + index + 1; // File row number is 1-based + header
+                const rowNum = i + index + 2; // File row number is 1-based + header
                 const className = item.className?.trim().toLowerCase();
                 const classId = className ? classNameToIdMap.get(className) : undefined;
         
@@ -123,13 +125,21 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     openingBalance: Number(item.openingBalance) || 0,
                     userId: item.userId || null,
                 };
-        
-                const tuitionFee = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
-                if (tuitionFee !== null && tuitionFee > 0) {
+                
+                let feeAmountToApply: number | null = null;
+                const tuitionFeeFromCsv = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
+            
+                if (tuitionFeeFromCsv !== null && tuitionFeeFromCsv > 0) {
+                    feeAmountToApply = tuitionFeeFromCsv;
+                } else if (defaultTuitionFee && defaultTuitionFee > 0) {
+                    feeAmountToApply = defaultTuitionFee;
+                }
+
+                if (feeAmountToApply !== null) {
                     if (tuitionFeeHead) {
-                        studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: tuitionFee }];
+                        studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: feeAmountToApply }];
                     } else {
-                        showToast('Warning', `"Tuition Fee" head not found. Could not set custom fee for ${item.name}.`, 'info');
+                        chunkErrors.push(`Row ${rowNum}: 'Tuition Fee' head not found. Could not set fee for ${item.name}.`);
                     }
                 }
                 

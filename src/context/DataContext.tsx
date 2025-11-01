@@ -4,8 +4,6 @@ import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
 import { db } from '../lib/db';
-// FIX: Import the `Table` type from Dexie to be used for strong typing.
-import type { Table } from 'dexie';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 import { formatDate } from '../constants';
 
@@ -139,8 +137,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setFeeHeads([]); setEvents([]);
             setIsInitialLoad(true);
             setLastSyncTime(null);
-            // FIX: `db.tables` is the correct API to get all tables. The previous code was using `Object.values` incorrectly.
-            // This resolves the errors "Property 'tables' does not exist" and "Property 'clear' does not exist on type 'unknown'".
             await Promise.all(db.tables.map(table => table.clear()));
             return;
         }
@@ -165,103 +161,129 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
         
-        // Phase 2: Fetch fresh data from network
-        if (isInitialLoad && (await db.students.count()) === 0) {
-            setLoading(true);
-        } else if (!isInitialLoad) {
-            setLoading(true);
-        }
-
-        const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
-
-        const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
-            let query = supabase.from(tableName).select('*');
-            
-            if (options.filterBySchool) {
-                const isAdminManagingUsers = (tableName === 'profiles' && (user.role === UserRole.Admin || (user.role === UserRole.Owner && activeSchoolId)));
-        
-                if (effectiveSchoolId) {
-                    if (isAdminManagingUsers) {
-                        query = query.or(`school_id.eq.${effectiveSchoolId},school_id.is.null`);
-                    } else {
-                        query = query.eq('school_id', effectiveSchoolId);
-                    }
-                } else if (user.role === UserRole.Owner) {
-                } else if (user.schoolId) {
-                    query = query.eq('school_id', user.schoolId);
-                } else {
-                    return [];
-                }
-            }
-            
-            if (options.order) query = query.order(options.order, { ascending: false });
-            if (options.limit) query = query.limit(options.limit);
-            
-            const { data, error } = await query;
-            if (error) {
-                console.error(`Error fetching ${tableName}:`, error);
-                showToast('Data Sync Error', `Could not load latest data for ${tableName}.`, 'error');
-                return null;
-            }
-            return toCamelCase(data || []);
-        };
+        setLoading(true);
 
         try {
-            const [schoolsData, usersData, classesData, feeHeadsData, eventsData, logsData] = await Promise.all([
+            const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+
+            // Pure fetcher function without side effects
+            const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
+                let query = supabase.from(tableName).select('*');
+                
+                if (options.filterBySchool) {
+                    const isAdminManagingUsers = (tableName === 'profiles' && (user.role === UserRole.Admin || (user.role === UserRole.Owner && activeSchoolId)));
+            
+                    if (effectiveSchoolId) {
+                        if (isAdminManagingUsers) {
+                            query = query.or(`school_id.eq.${effectiveSchoolId},school_id.is.null`);
+                        } else {
+                            query = query.eq('school_id', effectiveSchoolId);
+                        }
+                    } else if (user.role === UserRole.Owner) {
+                        // No filter for Owner in global view, fetches all data for this table.
+                    } else if (user.schoolId) {
+                        query = query.eq('school_id', user.schoolId);
+                    } else {
+                        return []; // No context, return empty.
+                    }
+                }
+                
+                if (options.order) query = query.order(options.order, { ascending: false });
+                if (options.limit) query = query.limit(options.limit);
+                
+                const { data, error } = await query;
+                if (error) {
+                    console.error(`Error fetching ${tableName}:`, error);
+                    showToast('Data Sync Error', `Could not load latest data for ${tableName}.`, 'error');
+                    return null;
+                }
+                return toCamelCase(data || []);
+            };
+
+            // --- PHASE 1: FETCH ALL DATA ---
+            const [
+                schoolsData, usersData, classesData, feeHeadsData, eventsData, logsData, studentsData
+            ] = await Promise.all([
                 fetchTable('schools'),
                 fetchTable('profiles', { filterBySchool: true }),
                 fetchTable('classes', { filterBySchool: true }),
                 fetchTable('fee_heads', { filterBySchool: true }),
                 fetchTable('school_events', { filterBySchool: true }),
                 fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
+                fetchTable('students', { filterBySchool: true })
             ]);
 
-            if (schoolsData) { await db.schools.bulkPut(schoolsData); setSchools(schoolsData); }
-            if (usersData) { await db.users.bulkPut(usersData); setUsers(usersData); }
-            if (classesData) { await db.classes.bulkPut(classesData); setClasses(classesData); }
-            if (feeHeadsData) { await db.feeHeads.bulkPut(feeHeadsData); setFeeHeads(feeHeadsData); }
-            if (eventsData) { await db.events.bulkPut(eventsData); setEvents(eventsData); }
-            if (logsData) { await db.logs.bulkPut(logsData); setLogs(logsData); }
-
-            const studentsData = await fetchTable('students', { filterBySchool: true });
-            if (studentsData) { await db.students.bulkPut(studentsData); setStudents(studentsData); }
-
             const studentIds = (studentsData || []).map((s: Student) => s.id);
+            let feesData: FeeChallan[] | null = null;
+            let attendanceData: Attendance[] | null = null;
+            let resultsData: Result[] | null = null;
 
             if (studentIds.length > 0) {
                 const CHUNK_SIZE = 500;
-                // FIX: Changed type from `Dexie.Table` to `Table` and imported it, fixing the namespace error.
-                const fetchDependentInChunks = async (tableName: string, dbTable: Table) => {
+                const fetchDependentInChunks = async (tableName: string) => {
                     let allData: any[] = [];
                     for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
                         const chunk = studentIds.slice(i, i + CHUNK_SIZE);
                         const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
                         if (error) {
                             console.error(`Error fetching chunk for ${tableName}:`, error);
-                            showToast('Data Sync Error', `Could not load partial data for ${tableName}.`, 'error');
-                        }
-                        if (data) {
+                        } else if (data) {
                             allData = allData.concat(data);
                         }
                     }
-                    const camelData = toCamelCase(allData);
-                    await dbTable.bulkPut(camelData);
-                    return camelData;
+                    return toCamelCase(allData);
                 };
 
-                const [feesData, attendanceData, resultsData] = await Promise.all([
-                    fetchDependentInChunks('fee_challans', db.fees),
-                    fetchDependentInChunks('attendance', db.attendance),
-                    fetchDependentInChunks('results', db.results),
+                [feesData, attendanceData, resultsData] = await Promise.all([
+                    fetchDependentInChunks('fee_challans'),
+                    fetchDependentInChunks('attendance'),
+                    fetchDependentInChunks('results'),
                 ]);
-                if(feesData) setFees(feesData);
-                if(attendanceData) setAttendanceState(attendanceData);
-                if(resultsData) setResults(resultsData);
-            } else {
-                await Promise.all([db.fees.clear(), db.attendance.clear(), db.results.clear()]);
-                setFees([]); setAttendanceState([]); setResults([]);
             }
+            
+            // --- PHASE 2: ATOMIC DATABASE WRITE ---
+            await db.transaction('rw', db.tables, async () => {
+                const promises = [
+                    schoolsData && db.schools.bulkPut(schoolsData),
+                    usersData && db.users.bulkPut(usersData),
+                    classesData && db.classes.bulkPut(classesData),
+                    feeHeadsData && db.feeHeads.bulkPut(feeHeadsData),
+                    eventsData && db.events.bulkPut(eventsData),
+                    logsData && db.logs.bulkPut(logsData),
+                    studentsData && db.students.bulkPut(studentsData),
+                    feesData && db.fees.bulkPut(feesData),
+                    attendanceData && db.attendance.bulkPut(attendanceData),
+                    resultsData && db.results.bulkPut(resultsData),
+                ].filter(Boolean);
+                await Promise.all(promises);
+                
+                // If the student fetch returned an empty list for the context, clear dependent data.
+                if (studentsData && studentsData.length === 0 && effectiveSchoolId) {
+                     const localStudentsInContext = await db.students.where({ schoolId: effectiveSchoolId }).toArray();
+                     const localStudentIds = localStudentsInContext.map(s => s.id);
+                     if (localStudentIds.length > 0) {
+                         await Promise.all([
+                            db.fees.where('studentId').anyOf(localStudentIds).delete(),
+                            db.attendance.where('studentId').anyOf(localStudentIds).delete(),
+                            db.results.where('studentId').anyOf(localStudentIds).delete(),
+                        ]);
+                     }
+                }
+            });
 
+            // --- PHASE 3: UPDATE REACT STATE ---
+            if (schoolsData) setSchools(schoolsData);
+            if (usersData) setUsers(usersData);
+            if (classesData) setClasses(classesData);
+            if (feeHeadsData) setFeeHeads(feeHeadsData);
+            if (eventsData) setEvents(eventsData);
+            if (logsData) setLogs(logsData);
+            if (studentsData) setStudents(studentsData);
+            
+            setFees(feesData || []);
+            setAttendanceState(attendanceData || []);
+            setResults(resultsData || []);
+            
             setLastSyncTime(new Date());
             
         } catch (error) {
@@ -394,7 +416,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const addUserByAdmin = async (userData: (Omit<User, 'id'> & { password?: string })) => {
         // 1. Preserve admin session
-        // FIX: Cast to any to bypass type error for getSession.
         const { data: { session: adminSession } } = await (supabase.auth as any).getSession();
         if (!adminSession) {
             showToast('Error', 'Your session has expired. Please log in again.', 'error');
@@ -403,14 +424,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
         // 2. Sign up the new user
         const { name, email, password, role, schoolId, status, avatarUrl } = userData;
-        // FIX: Cast to any to bypass type error for signUp.
         const { data: signUpData, error: signUpError } = await (supabase.auth as any).signUp({
             email: email!,
             password: password!,
         });
     
         // 3. Immediately restore admin session to prevent being logged out.
-        // FIX: Cast to any to bypass type error for setSession.
         const { error: setSessionError } = await (supabase.auth as any).setSession({
             access_token: adminSession.access_token,
             refresh_token: adminSession.refresh_token,
@@ -445,7 +464,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
         if (profileError) {
             showToast('Error Creating Profile', `User authenticated, but profile creation failed: ${profileError.message}`, 'error');
-            // A robust solution would clean up the auth user here.
             throw profileError;
         }
     
@@ -463,10 +481,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
         if (data) {
-            const newStudentFromDB = toCamelCase(data) as Student;
-            setStudents(prev => [...prev, newStudentFromDB]);
-            addLog('Student Added', `New student added: ${newStudentFromDB.name}.`);
-            showToast('Success', `Student ${newStudentFromDB.name} has been added.`);
+            await fetchData();
+            addLog('Student Added', `New student added: ${studentData.name}.`);
+            showToast('Success', `Student ${studentData.name} has been added.`);
         }
     };
 
@@ -477,10 +494,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
         if (data) {
-            const updatedStudentFromDB = toCamelCase(data) as Student;
-            setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudentFromDB : s));
-            addLog('Student Updated', `Student profile updated for ${updatedStudentFromDB.name}.`);
-            showToast('Success', `${updatedStudentFromDB.name}'s profile has been updated.`);
+            await fetchData();
+            addLog('Student Updated', `Student profile updated for ${updatedStudent.name}.`);
+            showToast('Success', `${updatedStudent.name}'s profile has been updated.`);
         }
     };
 
@@ -493,8 +509,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
-        setStudents(prev => prev.filter(s => s.id !== studentId));
+        
+        await fetchData();
         addLog('Student Deleted', `Student profile deleted for ${studentToDelete.name}.`);
         showToast('Success', `${studentToDelete.name}'s profile has been deleted.`);
     };
@@ -506,10 +522,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
         if (data) {
-            const newClass = toCamelCase(data) as Class;
-            setClasses(prev => [...prev, newClass]);
-            addLog('Class Added', `New class created: ${newClass.name}.`);
-            showToast('Success', `Class ${newClass.name} created.`);
+            await fetchData();
+            addLog('Class Added', `New class created: ${classData.name}.`);
+            showToast('Success', `Class ${classData.name} created.`);
         }
     };
     
@@ -520,10 +535,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
         if (data) {
-            const updatedClassFromDB = toCamelCase(data) as Class;
-            setClasses(prev => prev.map(c => c.id === updatedClass.id ? updatedClassFromDB : c));
-            addLog('Class Updated', `Class details updated for ${updatedClassFromDB.name}.`);
-            showToast('Success', `${updatedClassFromDB.name}'s details have been updated.`);
+            await fetchData();
+            addLog('Class Updated', `Class details updated for ${updatedClass.name}.`);
+            showToast('Success', `${updatedClass.name}'s details have been updated.`);
         }
     };
 
@@ -536,49 +550,32 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
-        setClasses(prev => prev.filter(c => c.id !== classId));
+        
+        await fetchData();
         addLog('Class Deleted', `Class deleted: ${classToDelete.name}.`);
         showToast('Success', `Class ${classToDelete.name} has been deleted.`);
     };
 
     const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => {
-        const recordsToUpsert = attendanceData.map(d => ({
-            student_id: d.studentId,
-            date,
-            status: d.status
-        }));
-        
-        const { data, error } = await supabase.from('attendance').upsert(recordsToUpsert, { onConflict: 'student_id, date' }).select();
-        
+        const { error } = await supabase.from('attendance').upsert(toSnakeCase(attendanceData.map(d => ({...d, date}))), { onConflict: 'student_id, date' }).select();
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        
-        if (data) {
-            const upsertedRecords = toCamelCase(data) as Attendance[];
-            setAttendanceState(prev => {
-                const otherDaysRecords = prev.filter(a => a.date !== date);
-                return [...otherDaysRecords, ...upsertedRecords];
-            });
-            addLog('Attendance Marked', `Attendance marked for ${recordsToUpsert.length} students on ${date}.`);
-            showToast('Success', `Attendance for ${date} has been saved.`);
-        }
+        await fetchData();
+        addLog('Attendance Marked', `Attendance marked for ${attendanceData.length} students on ${date}.`);
+        showToast('Success', `Attendance for ${date} has been saved.`);
     };
     
     const recordFeePayment = async (challanId: string, amount: number, discount: number, paidDate: string) => {
         const challan = fees.find(f => f.id === challanId);
-        if (!challan) {
-            showToast('Error', 'Challan not found.', 'error');
-            throw new Error('Challan not found.');
-        }
+        if (!challan) throw new Error('Challan not found.');
 
         const newPaidAmount = challan.paidAmount + amount;
         const totalPayable = challan.totalAmount - discount;
         const newStatus: FeeChallan['status'] = newPaidAmount >= totalPayable ? 'Paid' : 'Partial';
 
-        const { data, error } = await supabase.from('fee_challans')
+        const { error } = await supabase.from('fee_challans')
             .update({ paid_amount: newPaidAmount, discount, status: newStatus, paid_date: paidDate })
             .eq('id', challanId)
             .select()
@@ -588,86 +585,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const updatedChallan = toCamelCase(data) as FeeChallan;
-            setFees(prev => prev.map(f => f.id === challanId ? updatedChallan : f));
-            addLog('Fee Payment', `Payment of Rs. ${amount} recorded for challan ${updatedChallan.challanNumber}.`);
-            showToast('Success', 'Payment recorded successfully.');
-        }
+        await fetchData();
+        addLog('Fee Payment', `Payment of Rs. ${amount} recorded for challan ${challan.challanNumber}.`);
+        showToast('Success', 'Payment recorded successfully.');
     };
     
     const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => {
         try {
             const activeStudents = students.filter(s => s.schoolId === schoolId && s.status === 'Active');
-            const existingChallansForMonth = fees.filter(f => f.month === month && f.year === year);
-            const studentsWithChallan = new Set(existingChallansForMonth.map(f => f.studentId));
-            const studentsToGenerate = activeStudents.filter(s => !studentsWithChallan.has(s.id));
-
-            if (studentsToGenerate.length === 0) {
-                showToast('Info', 'All active students already have a challan for this month.', 'info');
-                return 0;
-            }
-
-            const feesByStudent = fees.reduce((acc, fee) => {
-                if (!acc[fee.studentId]) acc[fee.studentId] = [];
-                acc[fee.studentId].push(fee);
-                return acc;
-            }, {} as Record<string, FeeChallan[]>);
-
-            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            const monthIndex = (months.indexOf(month) + 1).toString().padStart(2, '0');
-            const prefix = `${year}${monthIndex}-`;
-
-            let maxN = 0;
-            fees.forEach(f => {
-                if (f.year === year && f.month === month && f.challanNumber.startsWith(prefix)) {
-                    const nPart = f.challanNumber.substring(prefix.length);
-                    const n = parseInt(nPart, 10);
-                    if (!isNaN(n) && n > maxN) {
-                        maxN = n;
-                    }
-                }
-            });
-            let currentN = maxN + 1;
-
-            const newChallansToInsert = [];
-            for (const student of studentsToGenerate) {
-                const studentChallans = feesByStudent[student.id] || [];
-                const previousBalance = studentChallans.reduce((balance, challan) => {
-                    return balance + (challan.totalAmount - challan.discount - challan.paidAmount);
-                }, student.openingBalance || 0);
-
-                const feeItems = selectedFeeHeads.map(fh => ({
-                    description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown Fee',
+            const { data, error } = await supabase.rpc('generate_monthly_challans', {
+                p_school_id: schoolId,
+                p_month: month,
+                p_year: year,
+                p_student_ids: activeStudents.map(s => s.id),
+                p_fee_items: selectedFeeHeads.map(fh => ({
+                    description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown',
                     amount: fh.amount
-                }));
-                const currentMonthFee = feeItems.reduce((sum, item) => sum + item.amount, 0);
-                const totalAmount = currentMonthFee + previousBalance;
-                const dueDate = new Date(year, months.indexOf(month), 10).toISOString().split('T')[0];
-                const challanNumber = `${prefix}${currentN++}`;
-
-                newChallansToInsert.push({
-                    studentId: student.id,
-                    classId: student.classId,
-                    month,
-                    year,
-                    challanNumber,
-                    dueDate,
-                    status: 'Unpaid',
-                    feeItems,
-                    previousBalance,
-                    totalAmount,
-                    discount: 0,
-                    paidAmount: 0,
-                    paidDate: null,
-                });
-            }
-
-            const { data, error } = await supabase.from('fee_challans').insert(toSnakeCase(newChallansToInsert)).select();
+                }))
+            });
 
             if (error) throw new Error(error.message);
             
-            const count = data?.length || 0;
+            const count = data || 0;
             showToast('Success', `${count} new challans were generated for ${month}, ${year}.`, 'success');
             addLog('Challans Generated', `${count} challans generated for ${month}, ${year}.`);
             await fetchData();
@@ -680,29 +619,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
-        const { data, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
+        const { error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const newFeeHead = toCamelCase(data) as FeeHead;
-            setFeeHeads(prev => [...prev, newFeeHead]);
-            addLog('Fee Head Added', `New fee head created: ${newFeeHead.name}.`);
-        }
+        await fetchData();
+        addLog('Fee Head Added', `New fee head created: ${feeHeadData.name}.`);
     };
 
     const updateFeeHead = async (updatedFeeHead: FeeHead) => {
-        const { data, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select().single();
+        const { error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select().single();
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const updatedFeeHeadFromDB = toCamelCase(data) as FeeHead;
-            setFeeHeads(prev => prev.map(fh => fh.id === updatedFeeHead.id ? updatedFeeHeadFromDB : fh));
-            addLog('Fee Head Updated', `Fee head updated: ${updatedFeeHeadFromDB.name}.`);
-        }
+        await fetchData();
+        addLog('Fee Head Updated', `Fee head updated: ${updatedFeeHead.name}.`);
     };
     
     const deleteFeeHead = async (feeHeadId: string) => {
@@ -714,173 +647,131 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
-        setFeeHeads(prev => prev.filter(fh => fh.id !== feeHeadId));
+        await fetchData();
         addLog('Fee Head Deleted', `Fee head deleted: ${feeHeadToDelete.name}.`);
     };
 
     const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => {
-        const { data, error } = await supabase.from('students')
+        const { error } = await supabase.from('students')
             .update(toSnakeCase({ ...details, status: 'Left' }))
-            .eq('id', studentId)
-            .select()
-            .single();
-
+            .eq('id', studentId);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const updatedStudentFromDB = toCamelCase(data) as Student;
-            setStudents(prev => prev.map(s => s.id === studentId ? updatedStudentFromDB : s));
-            addLog('Certificate Issued', `Leaving Certificate issued for ${updatedStudentFromDB.name}.`);
-            showToast('Success', 'Leaving Certificate issued.');
-        }
+        await fetchData();
+        const student = students.find(s=>s.id === studentId);
+        addLog('Certificate Issued', `Leaving Certificate issued for ${student?.name}.`);
+        showToast('Success', 'Leaving Certificate issued.');
     };
 
     const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
-        const recordsToUpsert = resultsToSave.map(r => toSnakeCase(r));
-        
-        const { data, error } = await supabase.from('results').upsert(recordsToUpsert, { onConflict: 'student_id, class_id, exam, subject' }).select();
-        
+        const { error } = await supabase.from('results').upsert(toSnakeCase(resultsToSave), { onConflict: 'student_id, class_id, exam, subject' });
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
-        if (data) {
-            const upsertedRecords = toCamelCase(data) as Result[];
-            setResults(prev => {
-                const uniqueKeys = new Set(upsertedRecords.map(r => `${r.studentId}-${r.classId}-${r.exam}-${r.subject}`));
-                const otherRecords = prev.filter(r => !uniqueKeys.has(`${r.studentId}-${r.classId}-${r.exam}-${r.subject}`));
-                return [...otherRecords, ...upsertedRecords];
-            });
-            addLog('Results Saved', `${resultsToSave.length} results saved for exam: ${resultsToSave[0]?.exam}.`);
-            showToast('Success', 'Results have been saved successfully.');
-        }
+        await fetchData();
+        addLog('Results Saved', `${resultsToSave.length} results saved for exam: ${resultsToSave[0]?.exam}.`);
+        showToast('Success', 'Results have been saved successfully.');
     };
     
     const addSchool = async (name: string, address: string, logoUrl?: string | null) => {
-        const { data, error } = await supabase.from('schools').insert({ name, address, logo_url: logoUrl }).select().single();
+        const { error } = await supabase.from('schools').insert({ name, address, logo_url: logoUrl });
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const newSchool = toCamelCase(data) as School;
-            setSchools(prev => [...prev, newSchool]);
-            addLog('School Added', `New school created: ${newSchool.name}.`);
-        }
+        await fetchData();
+        addLog('School Added', `New school created: ${name}.`);
     };
 
     const updateSchool = async (updatedSchool: School) => {
-        const { data, error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id).select().single();
+        const { error } = await supabase.from('schools').update(toSnakeCase(updatedSchool)).eq('id', updatedSchool.id);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const updatedSchoolFromDB = toCamelCase(data) as School;
-            setSchools(prev => prev.map(s => s.id === updatedSchool.id ? updatedSchoolFromDB : s));
-            addLog('School Updated', `School details updated for ${updatedSchoolFromDB.name}.`);
-        }
+        await fetchData();
+        addLog('School Updated', `School details updated for ${updatedSchool.name}.`);
     };
     
     const deleteSchool = async (schoolId: string) => {
         const schoolToDelete = schools.find(s => s.id === schoolId);
         if (!schoolToDelete) return;
-
         const { error } = await supabase.from('schools').delete().eq('id', schoolId);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
-        setSchools(prev => prev.filter(s => s.id !== schoolId));
+        await fetchData();
         addLog('School Deleted', `School deleted: ${schoolToDelete.name}.`);
     };
 
     const addEvent = async (eventData: Omit<SchoolEvent, 'id'>) => {
-        const { data, error } = await supabase.from('school_events').insert(toSnakeCase(eventData)).select().single();
+        const { error } = await supabase.from('school_events').insert(toSnakeCase(eventData));
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const newEvent = toCamelCase(data) as SchoolEvent;
-            setEvents(prev => [...prev, newEvent]);
-            addLog('Event Added', `New event created: ${newEvent.title}.`);
-        }
+        await fetchData();
+        addLog('Event Added', `New event created: ${eventData.title}.`);
     };
     
     const updateEvent = async (updatedEvent: SchoolEvent) => {
-        const { data, error } = await supabase.from('school_events').update(toSnakeCase(updatedEvent)).eq('id', updatedEvent.id).select().single();
+        const { error } = await supabase.from('school_events').update(toSnakeCase(updatedEvent)).eq('id', updatedEvent.id);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const updatedEventFromDB = toCamelCase(data) as SchoolEvent;
-            setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEventFromDB : e));
-            addLog('Event Updated', `Event updated: ${updatedEventFromDB.title}.`);
-        }
+        await fetchData();
+        addLog('Event Updated', `Event updated: ${updatedEvent.title}.`);
     };
     
     const deleteEvent = async (eventId: string) => {
         const eventToDelete = events.find(e => e.id === eventId);
         if (!eventToDelete) return;
-
         const { error } = await supabase.from('school_events').delete().eq('id', eventId);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
-        setEvents(prev => prev.filter(e => e.id !== eventId));
+        await fetchData();
         addLog('Event Deleted', `Event deleted: ${eventToDelete.title}.`);
     };
     
     const bulkAddStudents = async (studentsToAdd: Omit<Student, 'id' | 'status'>[]) => {
         const newStudents = studentsToAdd.map(s => ({ ...s, status: 'Active' as const }));
-        const { data, error } = await supabase.from('students').insert(toSnakeCase(newStudents)).select();
+        const { error } = await supabase.from('students').insert(toSnakeCase(newStudents));
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const addedStudents = toCamelCase(data) as Student[];
-            setStudents(prev => [...prev, ...addedStudents]);
-            addLog('Bulk Add Students', `Added ${addedStudents.length} new students.`);
-            showToast('Success', `${addedStudents.length} students imported successfully.`);
-        }
+        await fetchData();
+        addLog('Bulk Add Students', `Added ${newStudents.length} new students.`);
+        showToast('Success', `${newStudents.length} students imported successfully.`);
     };
     
     const bulkAddUsers = async (usersToAdd: (Omit<User, 'id'> & { password?: string })[]) => {
-        const { data, error } = await supabase.rpc('bulk_create_users', { users_data: usersToAdd });
-
+        const { error } = await supabase.rpc('bulk_create_users', { users_data: usersToAdd });
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        
-        const addedUsers = toCamelCase(data) as User[];
-        setUsers(prev => [...prev, ...addedUsers]);
-        addLog('Bulk Add Users', `Added ${addedUsers.length} new users.`);
-        showToast('Success', `${addedUsers.length} users imported successfully.`);
+        await fetchData();
+        addLog('Bulk Add Users', `Added ${usersToAdd.length} new users.`);
+        showToast('Success', `${usersToAdd.length} users imported successfully.`);
     };
     
     const bulkAddClasses = async (classesToAdd: Omit<Class, 'id'>[]) => {
-        const { data, error } = await supabase.from('classes').insert(toSnakeCase(classesToAdd)).select();
+        const { error } = await supabase.from('classes').insert(toSnakeCase(classesToAdd));
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        if (data) {
-            const addedClasses = toCamelCase(data) as Class[];
-            setClasses(prev => [...prev, ...addedClasses]);
-            addLog('Bulk Add Classes', `Added ${addedClasses.length} new classes.`);
-            showToast('Success', `${addedClasses.length} classes imported successfully.`);
-        }
+        await fetchData();
+        addLog('Bulk Add Classes', `Added ${classesToAdd.length} new classes.`);
+        showToast('Success', `${classesToAdd.length} classes imported successfully.`);
     };
     
     const backupData = async () => {

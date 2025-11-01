@@ -54,6 +54,7 @@ const SettingsPage: React.FC = () => {
         name: '',
         address: '',
         logoUrl: null as string | null | undefined,
+        defaultTuitionFee: 0,
     });
 
     // State for Class Promotion
@@ -76,7 +77,8 @@ const SettingsPage: React.FC = () => {
             setSchoolData({
                 name: school.name,
                 address: school.address,
-                logoUrl: school.logoUrl
+                logoUrl: school.logoUrl,
+                defaultTuitionFee: school.defaultTuitionFee || 0,
             });
         }
     }, [user, school]);
@@ -202,6 +204,11 @@ const SettingsPage: React.FC = () => {
                              <div>
                                 <label className="input-label">Address</label>
                                 <textarea value={schoolData.address} onChange={e => setSchoolData(p => ({...p, address: e.target.value}))} className="input-field" rows={2}></textarea>
+                            </div>
+                            <div>
+                                <label className="input-label">Default Monthly Tuition Fee</label>
+                                <input type="number" value={schoolData.defaultTuitionFee} onChange={e => setSchoolData(p => ({...p, defaultTuitionFee: Number(e.target.value)}))} className="input-field" />
+                                <p className="text-xs text-secondary-500 mt-1">This fee will be applied to new students or during CSV import if no specific tuition fee is provided.</p>
                             </div>
                             <div className="flex justify-end">
                                 <button type="submit" className="btn-primary" disabled={isSchoolSaving}>

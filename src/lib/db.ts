@@ -32,11 +32,16 @@ export class EduSyncDB extends Dexie {
             notifications: 'id, userId, isRead, timestamp',
         });
         
-        // FIX: Add a new, empty version 2. This forces Dexie to run an upgrade transaction,
-        // which can resolve issues with a corrupted or inconsistent database state
-        // from previous development versions without requiring a schema change. This
-        // is a common cause of database "hanging" on initialization.
+        // FIX: Add a new, empty version 2. This forces an upgrade transaction,
+        // resolving potential issues with a corrupted or inconsistent database state
+        // from previous development versions, which can cause the DB to hang.
         this.version(2).stores({});
+        
+        this.on('blocked', () => {
+            console.warn(
+              `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`
+            );
+        });
     }
 }
 

@@ -1,6 +1,3 @@
-
-
-
 import { Permission } from './permissions';
 
 export enum UserRole {
@@ -44,6 +41,7 @@ export interface School {
     name: string;
     address: string;
     logoUrl?: string | null;
+    defaultTuitionFee?: number;
 }
 
 export interface Class {
