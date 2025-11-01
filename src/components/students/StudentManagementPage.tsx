@@ -120,21 +120,24 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         if (!effectiveSchoolId) {
             throw new Error("No active school selected. Cannot import students.");
         }
-
-        const hasTuitionFeeInCsv = validData.some(item => item.monthly_tuition_fee && Number(item.monthly_tuition_fee) > 0);
-        const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
-
+    
+        // Get all relevant fee heads and school settings upfront
+        const schoolFeeHeads = feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
+        const tuitionFeeHead = schoolFeeHeads.find(fh => fh.name.toLowerCase() === 'tuition fee');
+        const school = schools.find(s => s.id === effectiveSchoolId);
+        const defaultSchoolTuitionFee = school?.defaultTuitionFee;
+    
+        // Check if tuition fee is provided in CSV but the corresponding fee head is missing
+        const hasTuitionFeeInCsv = validData.some(item => item.monthly_tuition_fee && Number(item.monthly_tuition_fee) >= 0);
         if (hasTuitionFeeInCsv && !tuitionFeeHead) {
-            throw new Error("A 'Tuition Fee' head is required to import student fees. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
+            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'monthly_tuition_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
         }
         
         const CHUNK_SIZE = 50;
         const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
-        const school = schools.find(s => s.id === effectiveSchoolId);
-        const defaultTuitionFee = school?.defaultTuitionFee;
-
+        
         let processed = 0;
-
+    
         for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
             const chunk = validData.slice(i, i + CHUNK_SIZE);
             const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
@@ -152,17 +155,35 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     userId: item.userId || null,
                 };
                 
-                let feeAmountToApply: number | null = null;
+                // Build the fee structure for each student
+                const feeStructure: { feeHeadId: string; amount: number }[] = [];
                 const tuitionFeeFromCsv = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
-            
-                if (tuitionFeeFromCsv !== null && tuitionFeeFromCsv > 0) {
-                    feeAmountToApply = tuitionFeeFromCsv;
-                } else if (defaultTuitionFee && defaultTuitionFee > 0) {
-                    feeAmountToApply = defaultTuitionFee;
-                }
 
-                if (feeAmountToApply !== null && tuitionFeeHead) {
-                    studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: feeAmountToApply }];
+                schoolFeeHeads.forEach(head => {
+                    let amountToApply: number | null = null;
+                    
+                    // Special handling for the main "Tuition Fee"
+                    if (tuitionFeeHead && head.id === tuitionFeeHead.id) {
+                        if (tuitionFeeFromCsv !== null && tuitionFeeFromCsv >= 0) {
+                            amountToApply = tuitionFeeFromCsv;
+                        } else if (defaultSchoolTuitionFee && defaultSchoolTuitionFee > 0) {
+                            amountToApply = defaultSchoolTuitionFee;
+                        } else if (head.defaultAmount > 0) {
+                            amountToApply = head.defaultAmount;
+                        }
+                    } 
+                    // Handle all other fee heads
+                    else if (head.defaultAmount > 0) {
+                        amountToApply = head.defaultAmount;
+                    }
+
+                    if (amountToApply !== null) {
+                        feeStructure.push({ feeHeadId: head.id, amount: amountToApply });
+                    }
+                });
+
+                if (feeStructure.length > 0) {
+                    studentData.feeStructure = feeStructure;
                 }
                 
                 delete studentData.className;
