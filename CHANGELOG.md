@@ -5,16 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2024-07-22
+
+### Added
+- **Offline-First Architecture**: The application is now fully functional offline. Data is cached locally using Dexie.js and automatically syncs with the server when a connection is available, ensuring a seamless user experience even with intermittent internet.
+- **PWA Support**: EduSync can now be installed as a Progressive Web App (PWA) on desktops and mobile devices for a faster, more integrated experience.
+- **Scan & Pay Module**: A new "Scan & Pay" feature for Admins and Accountants allows for quick fee collection by scanning barcodes on fee challans using the device's camera.
+- **Student ID Card Generation**: Added a new report to design, generate, and print professional, double-sided ID cards for an entire class.
+- **Advanced Academic Year Management**:
+  - **Bulk Student Promotion**: A powerful new tool for Admins to promote all students to their next respective classes at the end of an academic year, with an option to exempt specific students.
+  - **Bulk Tuition Fee Increase**: A utility for Admins to apply a fixed tuition fee increase to selected students, streamlining fee updates for the new academic year.
+- **Fee Reminders Module**: Admins and Accountants can now select students with outstanding fees and send targeted in-app reminders to their linked parent and student accounts.
+- **Fine-Grained Permissions**: Owners can now set specific permission overrides for individual users, allowing for more flexible and granular access control beyond standard roles.
+- **Challan Range Printing**: Introduced a new report option to print a specific range of fee challans by their number.
+- **Attendance Report**: Added a new report to generate a comprehensive monthly attendance sheet for any class.
+
+### Changed
+- **Major Refactor for Stability**: Re-architected the core data synchronization logic to use atomic database transactions. This resolves a critical bug that caused the application to hang during save operations and significantly improves data integrity and overall performance.
+- **Improved CSV Import UI**: The CSV import process now features a detailed progress modal that shows a real-time progress bar, a count of processed records, and a list of any rows that were skipped due to errors.
 
 ### Fixed
 - **Application Hanging on Save:** Resolved a critical bug where action buttons (e.g., "Save", "Update", "Generate") would get stuck in a loading state if the underlying operation encountered an error. All asynchronous actions now correctly use `try...finally` blocks to reset their loading state, ensuring the UI remains responsive and interactive even when errors occur.
 - **CSV Date Import Error:** Fixed a database error (`invalid input syntax for type date: ""`) that occurred when importing CSV files with empty date fields. The import process now correctly sanitizes empty date strings to `null` before insertion.
 - **Build Error:** Removed an unused `useMemo` import in `PromotionPreviewModal.tsx` that was causing the build to fail.
-
-### Added
-- **CSV Import Progress UI:** Replaced the simple import toast with a detailed progress modal. The new modal shows a real-time progress bar, a count of processed records, and a list of any specific rows that were skipped due to errors, providing a much better user experience for large data imports.
-- **Robust Chunked Imports:** The CSV import process now handles large files more reliably by processing data in smaller chunks.
 
 ## [1.5.0] - 2024-07-21
 

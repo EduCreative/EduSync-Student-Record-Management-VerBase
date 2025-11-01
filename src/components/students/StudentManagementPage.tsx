@@ -12,7 +12,6 @@ import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
-import { useToast } from '../../context/ToastContext';
 
 interface StudentManagementPageProps {
     setActiveView: (view: ActiveView) => void;
@@ -21,7 +20,6 @@ interface StudentManagementPageProps {
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
     const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, schools } = useData();
-    const { showToast } = useToast();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
