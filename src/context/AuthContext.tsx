@@ -2,22 +2,11 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { User, UserRole } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { Permission, ROLE_PERMISSIONS } from '../permissions';
+import { toCamelCase } from '../utils/caseConverter';
 // FIX: AuthChangeEvent is not available in the assumed Supabase JS version.
 // import type { AuthChangeEvent } from '@supabase/supabase-js';
 
-// Helper to convert snake_case object keys to camelCase
-const toCamelCase = (obj: any): any => {
-    if (Array.isArray(obj)) {
-        return obj.map(v => toCamelCase(v));
-    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
-        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
-            const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
-            result[camelKey] = toCamelCase(obj[key]);
-            return result;
-        }, {});
-    }
-    return obj;
-};
+// FIX: Removed local toCamelCase function to resolve conflict with the one imported from utils/caseConverter.
 
 interface AuthContextType {
     user: User | null;

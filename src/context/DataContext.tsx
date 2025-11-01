@@ -3,36 +3,10 @@ import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result,
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
-
-// Helper to convert snake_case object keys to camelCase
-// FIX: Made the object check more robust and typed the accumulator in reduce to prevent type inference issues.
-const toCamelCase = (obj: any): any => {
-    if (Array.isArray(obj)) {
-        return obj.map(v => toCamelCase(v));
-    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
-        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
-            const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
-            result[camelKey] = toCamelCase(obj[key]);
-            return result;
-        }, {});
-    }
-    return obj;
-};
-
-// Helper to convert camelCase object keys to snake_case for Supabase
-// FIX: Made the object check more robust and typed the accumulator in reduce to prevent type inference issues.
-const toSnakeCase = (obj: any): any => {
-     if (Array.isArray(obj)) {
-        return obj.map(v => toSnakeCase(v));
-    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
-        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
-            const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-            result[snakeKey] = toSnakeCase(obj[key]);
-            return result;
-        }, {});
-    }
-    return obj;
-};
+import { db } from '../lib/db';
+// FIX: Import the `Table` type from Dexie to be used for strong typing.
+import type { Table } from 'dexie';
+import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 
 const getClassLevel = (name: string): number => {
     const lowerName = name.toLowerCase().trim();
@@ -64,6 +38,8 @@ interface DataContextType {
     feeHeads: FeeHead[];
     events: SchoolEvent[];
     loading: boolean;
+    isInitialLoad: boolean;
+    lastSyncTime: Date | null;
 
     // Data functions
     getSchoolById: (schoolId: string) => School | undefined;
@@ -114,6 +90,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { showToast } = useToast();
     
     const [loading, setLoading] = useState(true);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
     const [schools, setSchools] = useState<School[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
@@ -131,10 +109,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setSchools([]); setUsers([]); setClasses([]); setStudents([]);
             setAttendanceState([]); setFees([]); setResults([]); setLogs([]);
             setFeeHeads([]); setEvents([]);
+            setIsInitialLoad(true);
+            setLastSyncTime(null);
+            // FIX: `db.tables` is the correct API to get all tables. The previous code was using `Object.values` incorrectly.
+            // This resolves the errors "Property 'tables' does not exist" and "Property 'clear' does not exist on type 'unknown'".
+            await Promise.all(db.tables.map(table => table.clear()));
             return;
         }
 
-        setLoading(true);
+        // Phase 1: Try to load from cache for instant UI
+        if (isInitialLoad) {
+            const cachedStudentCount = await db.students.count();
+            if (cachedStudentCount > 0) {
+                setLoading(true);
+                console.log("Loading data from offline cache...");
+                setSchools(await db.schools.toArray());
+                setUsers(await db.users.toArray());
+                setClasses(await db.classes.toArray());
+                setStudents(await db.students.toArray());
+                setAttendanceState(await db.attendance.toArray());
+                setFees(await db.fees.toArray());
+                setResults(await db.results.toArray());
+                setLogs(await db.logs.toArray());
+                setFeeHeads(await db.feeHeads.toArray());
+                setEvents(await db.events.toArray());
+                setLoading(false); // UI is now populated and responsive
+            }
+        }
+        
+        // Phase 2: Fetch fresh data from network
+        if (isInitialLoad && (await db.students.count()) === 0) {
+            setLoading(true);
+        } else if (!isInitialLoad) {
+            setLoading(true);
+        }
 
         const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
 
@@ -142,25 +150,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             let query = supabase.from(tableName).select('*');
             
             if (options.filterBySchool) {
-                // For Admin or Owner-as-Admin views, we need to include unassigned users for approval.
-                // This logic specifically applies when fetching the 'profiles' table.
                 const isAdminManagingUsers = (tableName === 'profiles' && (user.role === UserRole.Admin || (user.role === UserRole.Owner && activeSchoolId)));
         
                 if (effectiveSchoolId) {
                     if (isAdminManagingUsers) {
-                        // When managing users, fetch users from the current school OR unassigned ones.
                         query = query.or(`school_id.eq.${effectiveSchoolId},school_id.is.null`);
                     } else {
-                        // For all other data (students, classes, etc.), filter strictly by school.
                         query = query.eq('school_id', effectiveSchoolId);
                     }
                 } else if (user.role === UserRole.Owner) {
-                    // This is the Owner's global view (no specific school selected). No filter is applied, which is correct.
                 } else if (user.schoolId) {
-                    // This handles other roles like Teacher, Accountant. They only see their own school's data.
                     query = query.eq('school_id', user.schoolId);
                 } else {
-                    // A non-owner with no schoolId assigned should not see any school-specific data.
                     return [];
                 }
             }
@@ -171,14 +172,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const { data, error } = await query;
             if (error) {
                 console.error(`Error fetching ${tableName}:`, error);
-                showToast('Data Load Error', `Could not load data for ${tableName}.`, 'error');
+                showToast('Data Sync Error', `Could not load latest data for ${tableName}.`, 'error');
                 return null;
             }
             return toCamelCase(data || []);
         };
 
         try {
-            // Step 1: Fetch independent data concurrently
             const [schoolsData, usersData, classesData, feeHeadsData, eventsData, logsData] = await Promise.all([
                 fetchTable('schools'),
                 fetchTable('profiles', { filterBySchool: true }),
@@ -188,60 +188,62 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
             ]);
 
-            setSchools(schoolsData || []);
-            setUsers(usersData || []);
-            setClasses(classesData || []);
-            setFeeHeads(feeHeadsData || []);
-            setEvents(eventsData || []);
-            setLogs(logsData || []);
+            if (schoolsData) { await db.schools.bulkPut(schoolsData); setSchools(schoolsData); }
+            if (usersData) { await db.users.bulkPut(usersData); setUsers(usersData); }
+            if (classesData) { await db.classes.bulkPut(classesData); setClasses(classesData); }
+            if (feeHeadsData) { await db.feeHeads.bulkPut(feeHeadsData); setFeeHeads(feeHeadsData); }
+            if (eventsData) { await db.events.bulkPut(eventsData); setEvents(eventsData); }
+            if (logsData) { await db.logs.bulkPut(logsData); setLogs(logsData); }
 
-            // Step 2: Fetch students
             const studentsData = await fetchTable('students', { filterBySchool: true });
-            setStudents(studentsData || []);
+            if (studentsData) { await db.students.bulkPut(studentsData); setStudents(studentsData); }
 
-            // Step 3: Fetch student-dependent data
             const studentIds = (studentsData || []).map((s: Student) => s.id);
 
             if (studentIds.length > 0) {
-                const CHUNK_SIZE = 500; // Process 500 students at a time to avoid URL length limits
-
-                const fetchDependentInChunks = async (tableName: string) => {
+                const CHUNK_SIZE = 500;
+                // FIX: Changed type from `Dexie.Table` to `Table` and imported it, fixing the namespace error.
+                const fetchDependentInChunks = async (tableName: string, dbTable: Table) => {
                     let allData: any[] = [];
                     for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
                         const chunk = studentIds.slice(i, i + CHUNK_SIZE);
                         const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
                         if (error) {
                             console.error(`Error fetching chunk for ${tableName}:`, error);
-                            showToast('Data Load Error', `Could not load partial data for ${tableName}.`, 'error');
+                            showToast('Data Sync Error', `Could not load partial data for ${tableName}.`, 'error');
                         }
                         if (data) {
                             allData = allData.concat(data);
                         }
                     }
-                    return toCamelCase(allData);
+                    const camelData = toCamelCase(allData);
+                    await dbTable.bulkPut(camelData);
+                    return camelData;
                 };
 
                 const [feesData, attendanceData, resultsData] = await Promise.all([
-                    fetchDependentInChunks('fee_challans'),
-                    fetchDependentInChunks('attendance'),
-                    fetchDependentInChunks('results'),
+                    fetchDependentInChunks('fee_challans', db.fees),
+                    fetchDependentInChunks('attendance', db.attendance),
+                    fetchDependentInChunks('results', db.results),
                 ]);
-                setFees(feesData);
-                setAttendanceState(attendanceData);
-                setResults(resultsData);
+                if(feesData) setFees(feesData);
+                if(attendanceData) setAttendanceState(attendanceData);
+                if(resultsData) setResults(resultsData);
             } else {
-                setFees([]);
-                setAttendanceState([]);
-                setResults([]);
+                await Promise.all([db.fees.clear(), db.attendance.clear(), db.results.clear()]);
+                setFees([]); setAttendanceState([]); setResults([]);
             }
+
+            setLastSyncTime(new Date());
             
         } catch (error) {
             console.error("A critical error occurred during data fetching:", error);
-            showToast('Error', 'Failed to load essential data. Please refresh.', 'error');
+            showToast('Error', 'Failed to load latest data. Displaying cached data.', 'error');
         } finally {
             setLoading(false);
+            if(isInitialLoad) setIsInitialLoad(false);
         }
-    }, [user, activeSchoolId, showToast]);
+    }, [user, activeSchoolId, showToast, isInitialLoad]);
 
     useEffect(() => {
         fetchData();
@@ -1017,7 +1019,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [user, activeSchoolId, students, feeHeads, showToast, addLog, fetchData]);
 
     const value = {
-        schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading,
+        schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,

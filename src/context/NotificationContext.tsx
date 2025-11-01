@@ -1,21 +1,10 @@
 
+
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { Notification } from '../types';
-
-const toCamelCase = (obj: any): any => {
-    if (Array.isArray(obj)) {
-        return obj.map(v => toCamelCase(v));
-    } else if (obj !== null && typeof obj === 'object' && obj.constructor === Object) {
-        return Object.keys(obj).reduce((result: { [key: string]: any }, key) => {
-            const camelKey = key.replace(/([-_][a-z])/g, (group) => group.toUpperCase().replace('-', '').replace('_', ''));
-            result[camelKey] = toCamelCase(obj[key]);
-            return result;
-        }, {});
-    }
-    return obj;
-};
+import { toCamelCase } from '../utils/caseConverter';
 
 interface NotificationContextType {
     notifications: Notification[];

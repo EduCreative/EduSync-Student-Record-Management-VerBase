@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
@@ -15,6 +12,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import RequestPasswordResetPage from './components/auth/RequestPasswordResetPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import { PWAInstallProvider } from './context/PWAInstallContext';
+import { SyncProvider } from './context/SyncContext';
 
 type AuthView = 'login' | 'register' | 'requestReset';
 
@@ -67,6 +65,7 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
+      <SyncProvider>
         <AuthProvider>
             <NotificationProvider>
                 <ToastProvider>
@@ -80,6 +79,7 @@ const App: React.FC = () => {
                 </ToastProvider>
             </NotificationProvider>
         </AuthProvider>
+      </SyncProvider>
     </ThemeProvider>
   );
 };

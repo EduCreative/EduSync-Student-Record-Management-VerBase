@@ -7,6 +7,7 @@ import { ActiveView } from './Layout';
 import Avatar from '../common/Avatar';
 import { EduSyncLogo, formatDateTime } from '../../constants';
 import { useNotification } from '../../context/NotificationContext';
+import { useSync } from '../../context/SyncContext';
 
 const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
 
@@ -75,6 +76,63 @@ const NotificationBell: React.FC = () => {
     );
 };
 
+const SyncIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
+const CheckCircleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+const CloudOffIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/></svg>;
+
+const timeAgo = (date: Date | null): string => {
+    if (!date) return '';
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds} seconds ago`;
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+};
+
+const SyncStatus: React.FC = () => {
+    const { loading, isInitialLoad, lastSyncTime, schools } = useData();
+    const { isOnline } = useSync();
+
+    const isSyncing = loading && !isInitialLoad;
+
+    if (isSyncing) {
+        return (
+            <div className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400">
+                <SyncIcon className="w-3.5 h-3.5 animate-spin" />
+                <span>Syncing...</span>
+            </div>
+        );
+    }
+
+    if (lastSyncTime) {
+        return (
+            <div className="flex items-center gap-1 text-xs font-medium text-secondary-500 dark:text-secondary-400">
+                <CheckCircleIcon className="w-3.5 h-3.5 text-green-500" />
+                <span>Synced: {timeAgo(lastSyncTime)}</span>
+            </div>
+        );
+    }
+    
+    if (!isOnline && schools.length > 0) {
+        return (
+            <div className="flex items-center gap-1 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                <CloudOffIcon className="w-3.5 h-3.5" />
+                <span>Cached data</span>
+            </div>
+        );
+    }
+
+    return null;
+};
 
 interface HeaderProps {
     setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -85,6 +143,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
     const { user, logout, activeSchoolId, switchSchoolContext } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { schools, getSchoolById } = useData();
+    const { isOnline } = useSync();
     const [profileOpen, setProfileOpen] = useState(false);
     const [schoolSwitcherOpen, setSchoolSwitcherOpen] = useState(false);
 
@@ -199,7 +258,13 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                 </div>
 
                 {/* Header: Right side */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 md:gap-4">
+                    <SyncStatus />
+                    <div className="flex items-center gap-2 text-xs font-medium text-secondary-600 dark:text-secondary-400">
+                        <span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span>{isOnline ? 'Online' : 'Offline'}</span>
+                    </div>
+
                     <button onClick={toggleTheme} className="p-2 rounded-full text-secondary-500 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700" title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
                        {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}
                     </button>

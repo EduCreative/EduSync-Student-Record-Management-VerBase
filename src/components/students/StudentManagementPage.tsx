@@ -12,6 +12,7 @@ import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
+import { useToast } from '../../context/ToastContext';
 
 interface StudentManagementPageProps {
     setActiveView: (view: ActiveView) => void;
@@ -19,7 +20,8 @@ interface StudentManagementPageProps {
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
-    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents } = useData();
+    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads } = useData();
+    const { showToast } = useToast();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
@@ -86,19 +88,61 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     };
     
     const handleImportStudents = async (data: any[]) => {
-        const studentsToImport = data.map(item => ({
-            ...item,
-            schoolId: effectiveSchoolId,
-            openingBalance: Number(item.openingBalance) || 0,
-            userId: item.userId || null, // Convert empty string for UUID to null
-        }));
-        await bulkAddStudents(studentsToImport);
+        if (!effectiveSchoolId) return;
+
+        const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
+        const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
+    
+        const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
+        const importErrors: string[] = [];
+    
+        data.forEach((item, index) => {
+            const className = item.className?.trim().toLowerCase();
+            const classId = className ? classNameToIdMap.get(className) : undefined;
+    
+            if (!classId) {
+                importErrors.push(`Row ${index + 2}: Class "${item.className}" not found. Skipping student "${item.name}".`);
+                return;
+            }
+    
+            const studentData: any = {
+                ...item,
+                schoolId: effectiveSchoolId,
+                classId: classId,
+                openingBalance: Number(item.openingBalance) || 0,
+                userId: item.userId || null,
+            };
+    
+            const tuitionFee = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
+            if (tuitionFee !== null && tuitionFee > 0) {
+                if (tuitionFeeHead) {
+                    studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: tuitionFee }];
+                } else {
+                    showToast('Warning', `"Tuition Fee" head not found. Could not set custom fee for ${item.name}.`, 'info');
+                }
+            }
+            
+            delete studentData.className;
+            delete studentData.monthly_tuition_fee;
+            
+            studentsToImport.push(studentData);
+        });
+    
+        if (importErrors.length > 0) {
+            showToast('Import Errors', `${importErrors.length} rows were skipped. ${importErrors[0]}`, 'error');
+        }
+        
+        if (studentsToImport.length > 0) {
+            await bulkAddStudents(studentsToImport);
+        } else if (importErrors.length === 0) {
+            showToast('Info', 'No new students to import.', 'info');
+        }
     };
 
     const sampleDataForImport = [{
         name: "Kamran Ahmed",
         rollNumber: "101",
-        classId: schoolClasses[0]?.id || "paste_valid_class_id_here",
+        className: schoolClasses[0]?.name || "Grade 5",
         fatherName: "Zulfiqar Ahmed",
         fatherCnic: "35202-1234567-1",
         dateOfBirth: "2010-05-15",
@@ -111,10 +155,11 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         caste: "Arain",
         lastSchoolAttended: "Previous Public School",
         openingBalance: 0,
-        userId: ""
+        userId: "",
+        monthly_tuition_fee: 5000,
     }];
 
-    const requiredHeaders = ['name', 'rollNumber', 'classId', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];
+    const requiredHeaders = ['name', 'rollNumber', 'className', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];
 
     const handleExport = () => {
         const dataToExport = filteredStudents.map(s => ({
