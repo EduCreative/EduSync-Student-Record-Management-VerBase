@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, type FC, type ReactNode } from 'react';
 
 export interface LineChartData {
     label: string;
@@ -12,6 +12,21 @@ interface LineChartProps {
 }
 
 const LineChart: FC<LineChartProps> = ({ title, data, color = '#3b82f6' }) => {
+    const [tooltip, setTooltip] = useState<{ visible: boolean; content: string; x: number; y: number } | null>(null);
+    const pathRef = useRef<SVGPolylineElement | null>(null);
+
+    useEffect(() => {
+        if (pathRef.current) {
+            const length = pathRef.current.getTotalLength();
+            pathRef.current.style.strokeDasharray = `${length} ${length}`;
+            pathRef.current.style.strokeDashoffset = `${length}`;
+            pathRef.current.getBoundingClientRect(); // Trigger reflow to apply initial state
+            pathRef.current.style.transition = 'stroke-dashoffset 1.5s ease-in-out';
+            pathRef.current.style.strokeDashoffset = '0';
+        }
+    }, [data]);
+
+
     if (!data || data.length === 0 || data.every(d => d.value === 0)) {
         return (
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
@@ -28,15 +43,45 @@ const LineChart: FC<LineChartProps> = ({ title, data, color = '#3b82f6' }) => {
     const chartWidth = 500; // ViewBox width
 
     const points = data.map((point, i) => {
-        const x = (i / (data.length - 1)) * chartWidth;
+        const x = data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2;
         const y = chartHeight - (point.value / maxValue) * chartHeight;
         return `${x},${y}`;
     }).join(' ');
 
-    const areaPath = `M0,${chartHeight} ${points} L${chartWidth},${chartHeight} Z`;
+    const areaPath = `M0,${chartHeight} ${points} L${data.length > 1 ? chartWidth : chartWidth / 2},${chartHeight} Z`;
+
+    const handleMouseOver = (e: React.MouseEvent, item: LineChartData) => {
+        setTooltip({
+            visible: true,
+            content: `${item.label}: ${item.value.toLocaleString()}`,
+            x: e.clientX,
+            y: e.clientY,
+        });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+    };
+
+    const handleMouseOut = () => {
+        setTooltip(null);
+    };
 
     return (
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg" onMouseLeave={handleMouseOut}>
+            {tooltip?.visible && (
+                <div 
+                    className="chart-tooltip" 
+                    style={{ 
+                        position: 'fixed', 
+                        left: tooltip.x, 
+                        top: tooltip.y, 
+                        transform: 'translate(-50%, -120%)'
+                    }}
+                >
+                    {tooltip.content}
+                </div>
+            )}
             <div className="mb-4">{title}</div>
             <div className="w-full overflow-x-auto">
                 <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 30}`} className="min-w-[400px]">
@@ -48,23 +93,27 @@ const LineChart: FC<LineChartProps> = ({ title, data, color = '#3b82f6' }) => {
                     </defs>
                     <path d={areaPath} fill="url(#areaGradient)" />
                     <polyline
+                        ref={pathRef}
                         fill="none"
                         stroke={color}
                         strokeWidth="2"
                         points={points}
                     />
                     {data.map((point, i) => {
-                        const x = (i / (data.length - 1)) * chartWidth;
+                        const x = data.length > 1 ? (i / (data.length - 1)) * chartWidth : chartWidth / 2;
                         const y = chartHeight - (point.value / maxValue) * chartHeight;
                         return (
-                            <g key={i}>
+                            <g key={i} onMouseOver={(e) => handleMouseOver(e, point)} onMouseMove={handleMouseMove}>
+                                {/* Invisible larger circle for easier hover */}
+                                <circle cx={x} cy={y} r="8" fill="transparent" />
                                 <circle
                                     cx={x}
                                     cy={y}
-                                    r="3"
+                                    r="4"
                                     fill={color}
+                                    className="line-point"
                                 />
-                                {(i % 5 === 0 || i === data.length - 1) && (
+                                {(i % 5 === 0 || data.length < 10 || i === data.length - 1) && (
                                 <text
                                     x={x}
                                     y={chartHeight + 20}

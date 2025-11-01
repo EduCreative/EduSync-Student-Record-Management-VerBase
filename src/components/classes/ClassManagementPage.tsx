@@ -9,37 +9,72 @@ import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
+import PromotionPreviewModal from './PromotionPreviewModal';
+import { useToast } from '../../context/ToastContext';
+
+const numberWords: { [key: string]: number } = {
+    one: 1, two: 2, three: 3, four: 4, five: 5,
+    six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+    eleven: 11, twelve: 12
+};
 
 const getClassLevel = (name: string): number => {
     const lowerName = name.toLowerCase().trim();
-    if (lowerName.includes('playgroup')) return -5;
-    if (lowerName.includes('nursery')) return -4;
-    if (lowerName.includes('kg')) return -3;
-    if (lowerName.includes('junior')) return -2;
-    if (lowerName.includes('senior')) return -1;
+    // Normalize by removing spaces and hyphens for keyword matching
+    const normalizedName = lowerName.replace(/[\s-]+/g, '');
 
-    const match = name.match(/\d+/);
-    if (match) {
-        return parseInt(match[0], 10);
+    if (normalizedName.includes('playgroup')) return -5;
+    if (normalizedName.includes('nursery')) return -4;
+    if (normalizedName.includes('kg')) return -3; // Covers KG, K.G., etc.
+    if (normalizedName.includes('junior')) return -2;
+    if (normalizedName.includes('senior')) return -1;
+
+    let level = 1000; // Default for non-standard names to appear last
+
+    // Check for numeric digits first (e.g., "Class 1", "Grade-8")
+    const digitMatch = name.match(/\d+/);
+    if (digitMatch) {
+        level = parseInt(digitMatch[0], 10);
+    } else {
+        // If no digits, check for number words (e.g., "Class One")
+        const nameParts = lowerName.split(/[\s-]/);
+        for (const word in numberWords) {
+            if (nameParts.includes(word)) {
+                level = numberWords[word];
+                break; // Found a number word, stop searching
+            }
+        }
+    }
+
+    // Handle modifiers like "passed" to sort them after the base class
+    if (lowerName.includes('passed')) {
+        return level + 0.5;
     }
     
-    return 1000; // Put non-standard names at the end
+    return level;
 };
+
+const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
 
 
 const ClassManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId, effectiveRole, hasPermission } = useAuth();
-    const { classes, users, students, addClass, updateClass, deleteClass, loading, bulkAddClasses } = useData();
+    const { classes, users, students, addClass, updateClass, deleteClass, loading, bulkAddClasses, promoteAllStudents } = useData();
+    const { showToast } = useToast();
 
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+    const [promotionPlan, setPromotionPlan] = useState<any[]>([]);
+    const [isPromoting, setIsPromoting] = useState(false);
     const [classToEdit, setClassToEdit] = useState<Class | null>(null);
     const [classToDelete, setClassToDelete] = useState<Class | null>(null);
     
     const canEditClasses = hasPermission(Permission.CAN_EDIT_CLASSES);
     const canDeleteClasses = hasPermission(Permission.CAN_DELETE_CLASSES);
+    const canPromote = hasPermission(Permission.CAN_PROMOTE_STUDENTS);
     const canPerformActions = canEditClasses || canDeleteClasses;
 
     const schoolClasses = useMemo(() => {
@@ -116,6 +151,52 @@ const ClassManagementPage: React.FC = () => {
         exportToCsv(dataToExport, 'classes_export');
     };
     
+    const handleCalculateAndShowPreview = () => {
+        const sortedClasses = [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name));
+    
+        if (sortedClasses.length < 1) {
+            showToast('Info', 'At least one class is required to perform promotion.', 'info');
+            return;
+        }
+    
+        const plan = [];
+        for (let i = 0; i < sortedClasses.length; i++) {
+            const fromClass = sortedClasses[i];
+            const totalStudentCount = students.filter(s => s.classId === fromClass.id && s.status === 'Active').length;
+    
+            if (i < sortedClasses.length - 1) {
+                const toClass = sortedClasses[i + 1];
+                plan.push({
+                    from: fromClass,
+                    to: toClass,
+                    totalStudentCount: totalStudentCount,
+                    type: 'promote'
+                });
+            } else {
+                plan.push({
+                    from: fromClass,
+                    to: null,
+                    totalStudentCount: totalStudentCount,
+                    type: 'graduate'
+                });
+            }
+        }
+        setPromotionPlan(plan);
+        setIsPromoteModalOpen(true);
+    };
+
+    const handleConfirmPromotion = async (exemptedStudentIds: string[]) => {
+        setIsPromoting(true);
+        try {
+            await promoteAllStudents(exemptedStudentIds);
+        } catch (error) {
+            console.error("Promotion failed:", error);
+        } finally {
+            setIsPromoting(false);
+            setIsPromoteModalOpen(false);
+        }
+    };
+
     const tableColumns = [
         { width: '10%' }, // ID
         { width: canPerformActions ? '25%' : '40%' }, // Name
@@ -147,6 +228,16 @@ const ClassManagementPage: React.FC = () => {
                     />
                 </>
             )}
+            {canPromote && (
+                <PromotionPreviewModal
+                    isOpen={isPromoteModalOpen}
+                    onClose={() => setIsPromoteModalOpen(false)}
+                    onConfirm={handleConfirmPromotion}
+                    promotionPlan={promotionPlan}
+                    isPromoting={isPromoting}
+                    allStudents={students}
+                />
+            )}
             <Modal isOpen={!!classToDelete} onClose={() => setClassToDelete(null)} title="Confirm Class Deletion">
                 <div>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400">
@@ -161,7 +252,7 @@ const ClassManagementPage: React.FC = () => {
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{canEditClasses ? 'Class Management' : 'My Classes'}</h1>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                          {canEditClasses && (
                              <button onClick={() => setIsImportModalOpen(true)} className="btn-secondary">
                                 <UploadIcon className="w-4 h-4" /> Import CSV
@@ -170,6 +261,12 @@ const ClassManagementPage: React.FC = () => {
                         <button onClick={handleExport} className="btn-secondary">
                            <DownloadIcon className="w-4 h-4" /> Export CSV
                         </button>
+                        {canPromote && (
+                            <button onClick={handleCalculateAndShowPreview} className="btn-danger flex items-center gap-2">
+                                <GraduationCapIcon className="w-4 h-4" /> 
+                                Promote All Students
+                            </button>
+                        )}
                         {canEditClasses && (
                             <button onClick={() => handleOpenModal()} className="btn-primary">
                                 + Add Class

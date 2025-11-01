@@ -127,7 +127,7 @@ const AccountantDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} color="#10b981" />
+                <BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} multiColor={true} />
                 <DoughnutChart title="Outstanding Fees" data={outstandingFees} />
             </div>
 

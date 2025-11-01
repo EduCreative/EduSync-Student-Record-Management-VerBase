@@ -1,6 +1,4 @@
-
-
-import type { FC } from 'react';
+import React, { useState, useEffect, useRef, type FC } from 'react';
 
 interface ChartDataItem {
     label: string;
@@ -15,6 +13,22 @@ interface DoughnutChartProps {
 }
 
 const DoughnutChart: FC<DoughnutChartProps> = ({ title, data, onClick }) => {
+    const [tooltip, setTooltip] = useState<{ visible: boolean; content: string; x: number; y: number } | null>(null);
+    const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+
+    useEffect(() => {
+        pathRefs.current.forEach(path => {
+            if (path) {
+                const length = path.getTotalLength();
+                path.style.strokeDasharray = `${length} ${length}`;
+                path.style.strokeDashoffset = `${length}`;
+                path.getBoundingClientRect(); // Trigger reflow to apply initial state
+                path.style.transition = 'stroke-dashoffset 1s ease-in-out';
+                path.style.strokeDashoffset = '0';
+            }
+        });
+    }, [data]);
+
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) {
         return (
@@ -26,6 +40,23 @@ const DoughnutChart: FC<DoughnutChartProps> = ({ title, data, onClick }) => {
             </div>
         );
     }
+
+    const handleMouseOver = (e: React.MouseEvent, item: ChartDataItem, percentage: string) => {
+        setTooltip({
+            visible: true,
+            content: `${item.label}: ${item.value.toLocaleString()} (${percentage}%)`,
+            x: e.clientX,
+            y: e.clientY,
+        });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+    };
+
+    const handleMouseOut = () => {
+        setTooltip(null);
+    };
 
     let cumulative = 0;
     const segments = data.map(item => {
@@ -62,7 +93,20 @@ const DoughnutChart: FC<DoughnutChartProps> = ({ title, data, onClick }) => {
     }
     
     return (
-        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full" onMouseLeave={handleMouseOut}>
+            {tooltip?.visible && (
+                <div 
+                    className="chart-tooltip" 
+                    style={{ 
+                        position: 'fixed', 
+                        left: tooltip.x, 
+                        top: tooltip.y, 
+                        transform: 'translate(-50%, -120%)'
+                    }}
+                >
+                    {tooltip.content}
+                </div>
+            )}
             <h2 className="text-xl font-semibold mb-4">{title}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                 <div className="relative w-48 h-48 mx-auto">
@@ -70,17 +114,21 @@ const DoughnutChart: FC<DoughnutChartProps> = ({ title, data, onClick }) => {
                         {segments.map((segment, index) => (
                             <path
                                 key={index}
+                                // FIX: Changed ref callback from a concise body to a block body to ensure a void return type, resolving the TypeScript error.
+                                ref={el => { pathRefs.current[index] = el; }}
                                 d={segment.d}
                                 fill="none"
                                 stroke={segment.color}
                                 strokeWidth="20"
                                 onClick={() => onClick && onClick(data[index])}
-                                className={onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}
+                                onMouseOver={(e) => handleMouseOver(e, data[index], segment.percentage)}
+                                onMouseMove={handleMouseMove}
+                                className={`doughnut-segment ${onClick ? 'cursor-pointer' : ''}`}
                             />
                         ))}
                     </svg>
                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold">{total}</span>
+                        <span className="text-2xl font-bold">{total.toLocaleString()}</span>
                         <span className="text-sm text-secondary-500">Total</span>
                     </div>
                 </div>
@@ -91,7 +139,7 @@ const DoughnutChart: FC<DoughnutChartProps> = ({ title, data, onClick }) => {
                                 <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: segment.color }}></span>
                                 <span>{segment.label}</span>
                             </div>
-                            <span className="font-semibold">{segment.value} ({segment.percentage}%)</span>
+                            <span className="font-semibold">{segment.value.toLocaleString()} ({segment.percentage}%)</span>
                         </div>
                     ))}
                 </div>

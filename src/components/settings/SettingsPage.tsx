@@ -31,7 +31,7 @@ const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) =>
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
     const { user, effectiveRole, activeSchoolId } = useAuth();
-    const { schools, backupData, restoreData, updateUser, updateSchool, promoteAllStudents } = useData();
+    const { schools, backupData, restoreData, updateUser, updateSchool } = useData();
     const { showToast } = useToast();
     const { installPrompt, clearInstallPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,8 +57,6 @@ const SettingsPage: React.FC = () => {
     });
 
     // State for Class Promotion
-    const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
-    const [isPromoting, setIsPromoting] = useState(false);
     const [isTuitionFeeModalOpen, setIsTuitionFeeModalOpen] = useState(false);
 
 
@@ -135,19 +133,6 @@ const SettingsPage: React.FC = () => {
         }
     };
 
-    const handlePromoteStudents = async () => {
-        setIsPromoting(true);
-        try {
-            await promoteAllStudents();
-        } catch (error) {
-            // Error toast is handled in DataContext
-            console.error("Promotion failed:", error);
-        } finally {
-            setIsPromoting(false);
-            setIsPromoteModalOpen(false);
-        }
-    };
-
     const handleInstallPWA = async () => {
         if (!installPrompt) return;
         try {
@@ -172,21 +157,6 @@ const SettingsPage: React.FC = () => {
                 <div className="flex justify-end space-x-2 pt-4">
                     <button type="button" onClick={() => setRestoreFile(null)} className="btn-secondary">Cancel</button>
                     <button type="button" onClick={handleConfirmRestore} className="btn-danger">Confirm Restore</button>
-                </div>
-            </Modal>
-            <Modal isOpen={isPromoteModalOpen} onClose={() => setIsPromoteModalOpen(false)} title="Confirm Student Promotion">
-                <div>
-                    <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                        Are you sure you want to promote all students? This will update the class for every active student and graduate the final year.
-                        <br />
-                        <strong>This action is irreversible.</strong>
-                    </p>
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button type="button" onClick={() => setIsPromoteModalOpen(false)} className="btn-secondary" disabled={isPromoting}>Cancel</button>
-                        <button type="button" onClick={handlePromoteStudents} className="btn-danger" disabled={isPromoting}>
-                            {isPromoting ? 'Promoting...' : 'Yes, Promote All'}
-                        </button>
-                    </div>
                 </div>
             </Modal>
             <IncreaseTuitionFeeModal
@@ -280,21 +250,6 @@ const SettingsPage: React.FC = () => {
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">Academic Year Management</h2>
                         <div className="space-y-4">
                             <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="font-medium text-secondary-900 dark:text-white">Promote All Students</h3>
-                                    <p className="text-sm text-secondary-500 mt-1 max-w-xl">
-                                        This will advance all 'Active' students to the next class level for the new academic year. 
-                                        Students in the highest class will be marked as having passed. This action cannot be undone.
-                                    </p>
-                                </div>
-                                <button 
-                                    onClick={() => setIsPromoteModalOpen(true)}
-                                    className="btn-danger flex-shrink-0"
-                                >
-                                    Promote Students
-                                </button>
-                            </div>
-                            <div className="flex items-start justify-between pt-4 border-t dark:border-secondary-700">
                                 <div>
                                     <h3 className="font-medium text-secondary-900 dark:text-white">Increase Tuition Fees</h3>
                                     <p className="text-sm text-secondary-500 mt-1 max-w-xl">

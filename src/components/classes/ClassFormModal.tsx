@@ -69,6 +69,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
             onClose();
         } catch (error) {
             console.error("Failed to save class:", error);
+            showToast('Error', 'An error occurred while saving the class.', 'error');
         } finally {
             setIsSaving(false);
         }

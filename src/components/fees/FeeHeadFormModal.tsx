@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FeeHead } from '../../types';
 import Modal from '../common/Modal';
+import { useToast } from '../../context/ToastContext';
 
 interface FeeHeadFormModalProps {
     isOpen: boolean;
@@ -10,6 +11,7 @@ interface FeeHeadFormModalProps {
 }
 
 const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, onSave, feeHeadToEdit }) => {
+    const { showToast } = useToast();
     const getInitialState = () => ({
         name: feeHeadToEdit?.name || '',
         defaultAmount: feeHeadToEdit?.defaultAmount || 0,
@@ -28,6 +30,7 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (!formData.name.trim()) {
             setError('Fee head name is required.');
             return;
@@ -47,6 +50,7 @@ const FeeHeadFormModal: React.FC<FeeHeadFormModalProps> = ({ isOpen, onClose, on
             onClose();
         } catch (error) {
             console.error("Failed to save fee head:", error);
+            showToast('Error', 'An error occurred while saving the fee head.', 'error');
         } finally {
             setIsSaving(false);
         }

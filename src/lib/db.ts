@@ -1,5 +1,6 @@
-// FIX: Import `Dexie` as a named export to ensure correct class extension and resolve typing issues.
-import { Dexie, type Table } from 'dexie';
+// FIX: Changed to a default import for Dexie as per library documentation.
+// This resolves issues where instance methods like `version()` and properties like `tables` were not found.
+import Dexie, { type Table } from 'dexie';
 import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
 
 export class EduSyncDB extends Dexie {
@@ -30,6 +31,12 @@ export class EduSyncDB extends Dexie {
             events: 'id, schoolId, date',
             notifications: 'id, userId, isRead, timestamp',
         });
+        
+        // FIX: Add a new, empty version 2. This forces Dexie to run an upgrade transaction,
+        // which can resolve issues with a corrupted or inconsistent database state
+        // from previous development versions without requiring a schema change. This
+        // is a common cause of database "hanging" on initialization.
+        this.version(2).stores({});
     }
 }
 

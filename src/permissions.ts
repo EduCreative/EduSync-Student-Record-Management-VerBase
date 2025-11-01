@@ -23,12 +23,14 @@ export enum Permission {
   CAN_MANAGE_FEES = 'CAN_MANAGE_FEES',
   CAN_MANAGE_FEE_HEADS = 'CAN_MANAGE_FEE_HEADS',
   CAN_VIEW_FINANCIAL_REPORTS = 'CAN_VIEW_FINANCIAL_REPORTS',
+  CAN_SEND_FEE_REMINDERS = 'CAN_SEND_FEE_REMINDERS',
 
   // Academic Management
   CAN_MANAGE_ATTENDANCE = 'CAN_MANAGE_ATTENDANCE',
   CAN_MANAGE_RESULTS = 'CAN_MANAGE_RESULTS',
   CAN_VIEW_ACADEMIC_REPORTS = 'CAN_VIEW_ACADEMIC_REPORTS',
   CAN_GENERATE_ID_CARDS = 'CAN_GENERATE_ID_CARDS',
+  CAN_PROMOTE_STUDENTS = 'CAN_PROMOTE_STUDENTS',
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -46,16 +48,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.CAN_MANAGE_FEES,
     Permission.CAN_MANAGE_FEE_HEADS,
     Permission.CAN_VIEW_FINANCIAL_REPORTS,
+    Permission.CAN_SEND_FEE_REMINDERS,
     Permission.CAN_MANAGE_ATTENDANCE,
     Permission.CAN_MANAGE_RESULTS,
     Permission.CAN_VIEW_ACADEMIC_REPORTS,
     Permission.CAN_GENERATE_ID_CARDS,
+    Permission.CAN_PROMOTE_STUDENTS,
   ],
 
   [UserRole.Accountant]: [
     Permission.CAN_MANAGE_FEES,
     Permission.CAN_VIEW_FINANCIAL_REPORTS,
     Permission.CAN_VIEW_STUDENTS, // To see student names for fees
+    Permission.CAN_SEND_FEE_REMINDERS,
   ],
   
   [UserRole.Teacher]: [

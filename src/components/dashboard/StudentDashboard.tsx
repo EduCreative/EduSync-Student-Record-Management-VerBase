@@ -80,7 +80,7 @@ const StudentDashboard: React.FC = () => {
                  <StatCard title="Upcoming Exams" value="2" color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<EditIcon />} />
             </div>
             
-            <BarChart title="Recent Exam Performance (%)" data={recentExamPerformance} color="#1d4ed8" />
+            <BarChart title="Recent Exam Performance (%)" data={recentExamPerformance} multiColor={true} />
 
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                  <h2 className="text-xl font-semibold mb-4">Announcements</h2>

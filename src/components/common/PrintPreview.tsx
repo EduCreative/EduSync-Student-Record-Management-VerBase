@@ -126,11 +126,13 @@ const PrintPreview: React.FC = () => {
                 </div>
             </header>
             
-            <main className="flex-1 overflow-auto p-4 md:p-8">
+            <main className="flex-1 overflow-auto p-4 md:p-8 flex justify-center">
                 <div
                     id="print-content-container"
-                    className="mx-auto"
+                    className="bg-white shadow-xl"
                     style={{
+                        width: '210mm', // A4 page width
+                        maxWidth: '100%', // Crucial for responsiveness on small screens
                         transform: `scale(${zoom})`,
                         transformOrigin: 'top center',
                         transition: 'transform 0.2s ease-out'

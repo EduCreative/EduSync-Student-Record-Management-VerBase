@@ -7,21 +7,48 @@ import { db } from '../lib/db';
 // FIX: Import the `Table` type from Dexie to be used for strong typing.
 import type { Table } from 'dexie';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
+import { formatDate } from '../constants';
+
+const numberWords: { [key: string]: number } = {
+    one: 1, two: 2, three: 3, four: 4, five: 5,
+    six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+    eleven: 11, twelve: 12
+};
 
 const getClassLevel = (name: string): number => {
     const lowerName = name.toLowerCase().trim();
-    if (lowerName.includes('playgroup')) return -5;
-    if (lowerName.includes('nursery')) return -4;
-    if (lowerName.includes('kg')) return -3;
-    if (lowerName.includes('junior')) return -2;
-    if (lowerName.includes('senior')) return -1;
+    // Normalize by removing spaces and hyphens for keyword matching
+    const normalizedName = lowerName.replace(/[\s-]+/g, '');
 
-    const match = name.match(/\d+/);
-    if (match) {
-        return parseInt(match[0], 10);
+    if (normalizedName.includes('playgroup')) return -5;
+    if (normalizedName.includes('nursery')) return -4;
+    if (normalizedName.includes('kg')) return -3; // Covers KG, K.G., etc.
+    if (normalizedName.includes('junior')) return -2;
+    if (normalizedName.includes('senior')) return -1;
+
+    let level = 1000; // Default for non-standard names to appear last
+
+    // Check for numeric digits first (e.g., "Class 1", "Grade-8")
+    const digitMatch = name.match(/\d+/);
+    if (digitMatch) {
+        level = parseInt(digitMatch[0], 10);
+    } else {
+        // If no digits, check for number words (e.g., "Class One")
+        const nameParts = lowerName.split(/[\s-]/);
+        for (const word in numberWords) {
+            if (nameParts.includes(word)) {
+                level = numberWords[word];
+                break; // Found a number word, stop searching
+            }
+        }
+    }
+
+    // Handle modifiers like "passed" to sort them after the base class
+    if (lowerName.includes('passed')) {
+        return level + 0.5;
     }
     
-    return 1000; // Put non-standard names at the end
+    return level;
 };
 
 // --- CONTEXT ---
@@ -71,8 +98,9 @@ interface DataContextType {
     bulkAddClasses: (classes: Omit<Class, 'id'>[]) => Promise<void>;
     backupData: () => Promise<void>;
     restoreData: (backupFile: File) => Promise<void>;
-    promoteAllStudents: () => Promise<void>;
+    promoteAllStudents: (exemptedStudentIds: string[]) => Promise<void>;
     increaseTuitionFees: (studentIds: string[], increaseAmount: number) => Promise<void>;
+    sendFeeReminders: (challanIds: string[]) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -907,7 +935,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const promoteAllStudents = useCallback(async () => {
+    const promoteAllStudents = useCallback(async (exemptedStudentIds: string[]) => {
         const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
         if (!effectiveSchoolId) {
             showToast('Error', 'No school selected to perform promotion.', 'error');
@@ -922,10 +950,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
 
+        const exemptedSet = new Set(exemptedStudentIds);
         // Iterate from highest to lowest class
         for (let i = sortedClasses.length - 1; i >= 0; i--) {
             const currentClass = sortedClasses[i];
-            const studentsInClass = students.filter(s => s.classId === currentClass.id && s.status === 'Active');
+            const studentsInClass = students.filter(s => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
 
             if (studentsInClass.length === 0) {
                 continue; // Skip empty class
@@ -1018,6 +1047,78 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     }, [user, activeSchoolId, students, feeHeads, showToast, addLog, fetchData]);
 
+    const sendFeeReminders = useCallback(async (challanIds: string[]) => {
+        if (!user) return;
+    
+        const challansToSend = fees.filter(f => challanIds.includes(f.id));
+        if (challansToSend.length === 0) {
+            showToast('Info', 'No challans selected for reminders.', 'info');
+            return;
+        }
+    
+        const studentMap = new Map(students.map(s => [s.id, s]));
+        const parentMap = new Map<string, User>();
+        const studentUserMap = new Map<string, User>();
+        users.forEach(u => {
+            if (u.role === UserRole.Parent && u.childStudentIds) {
+                u.childStudentIds.forEach(childId => parentMap.set(childId, u));
+            }
+            const studentProfile = students.find(s => s.userId === u.id);
+            if (studentProfile) {
+                studentUserMap.set(studentProfile.id, u);
+            }
+        });
+    
+        const notificationsToInsert: Omit<Notification, 'id' | 'isRead' | 'timestamp'>[] = [];
+        const notifiedUserChallanPairs = new Set<string>();
+    
+        for (const challan of challansToSend) {
+            const student = studentMap.get(challan.studentId);
+            if (!student) continue;
+    
+            const balance = challan.totalAmount - challan.discount - challan.paidAmount;
+            const message = `Fee Reminder for ${student.name}: The challan for ${challan.month} ${challan.year} is due on ${formatDate(challan.dueDate)}. Current balance: Rs. ${balance.toLocaleString()}`;
+    
+            const usersToNotify: User[] = [];
+            const parent = parentMap.get(student.id);
+            if (parent) usersToNotify.push(parent);
+            
+            const studentUser = studentUserMap.get(student.id);
+            if (studentUser) usersToNotify.push(studentUser);
+    
+            for (const userToNotify of usersToNotify) {
+                const shouldNotify = userToNotify.notificationPreferences?.feeDeadlines?.inApp ?? true;
+                const notificationKey = `${userToNotify.id}-${challan.id}`;
+    
+                if (shouldNotify && !notifiedUserChallanPairs.has(notificationKey)) {
+                    notificationsToInsert.push({
+                        userId: userToNotify.id,
+                        message,
+                        type: 'fee',
+                        relatedId: challan.id,
+                    });
+                    notifiedUserChallanPairs.add(notificationKey);
+                }
+            }
+        }
+    
+        if (notificationsToInsert.length === 0) {
+            showToast('Info', 'No users with active notifications found for the selected challans.', 'info');
+            return;
+        }
+    
+        const { error } = await supabase.from('notifications').insert(toSnakeCase(notificationsToInsert));
+    
+        if (error) {
+            showToast('Error', `Failed to send reminders: ${error.message}`, 'error');
+            throw error;
+        }
+    
+        showToast('Success', `Sent ${notificationsToInsert.length} fee reminders successfully.`, 'success');
+        addLog('Fee Reminders Sent', `Sent ${notificationsToInsert.length} fee reminders.`);
+    }, [user, fees, students, users, showToast, addLog]);
+
+
     const value = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
@@ -1025,6 +1126,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
         bulkAddClasses, backupData, restoreData, addUserByAdmin, promoteAllStudents, increaseTuitionFees,
+        sendFeeReminders,
     };
 
     return (

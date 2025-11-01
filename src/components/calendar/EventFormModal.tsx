@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SchoolEvent } from '../../types';
 import Modal from '../common/Modal';
+import { useToast } from '../../context/ToastContext';
 
 interface EventFormModalProps {
     isOpen: boolean;
@@ -21,7 +22,7 @@ const getTodayString = () => {
 };
 
 const EventFormModal: React.FC<EventFormModalProps> = ({ isOpen, onClose, onSave, onDelete, eventToEdit, selectedDate, isReadOnly = false }) => {
-    
+    const { showToast } = useToast();
     const getInitialFormData = () => ({
         title: '',
         date: selectedDate || getTodayString(),
@@ -66,6 +67,7 @@ const EventFormModal: React.FC<EventFormModalProps> = ({ isOpen, onClose, onSave
             onClose();
         } catch (error) {
             console.error("Failed to save event:", error);
+            showToast('Error', 'An error occurred while saving the event.', 'error');
         } finally {
             setIsSaving(false);
         }

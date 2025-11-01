@@ -106,7 +106,7 @@ const ChildCard: React.FC<{ student: Student; results: Result[] }> = ({ student,
             </div>
             {recentExamPerformance.data.length > 0 && (
                  <div className="pt-4 border-t dark:border-secondary-700">
-                    <BarChart title={recentExamPerformance.title} data={recentExamPerformance.data} color="#4f46e5" />
+                    <BarChart title={recentExamPerformance.title} data={recentExamPerformance.data} multiColor={true} />
                  </div>
             )}
         </div>

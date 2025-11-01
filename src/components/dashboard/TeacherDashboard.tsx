@@ -121,7 +121,7 @@ const TeacherDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <DoughnutChart title="Overall Attendance Summary" data={attendanceSummary} />
-                <BarChart title="Latest Exam Performance (Avg %)" data={subjectPerformance} color="#8b5cf6" />
+                <BarChart title="Latest Exam Performance (Avg %)" data={subjectPerformance} multiColor={true} />
             </div>
 
             <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">

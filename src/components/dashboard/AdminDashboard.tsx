@@ -326,7 +326,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} />
-                    <BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} />
+                    <BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} multiColor={true} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
