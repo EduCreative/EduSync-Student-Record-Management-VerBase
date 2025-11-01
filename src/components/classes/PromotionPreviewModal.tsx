@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { Class, Student } from '../../types';
 import Avatar from '../common/Avatar';
