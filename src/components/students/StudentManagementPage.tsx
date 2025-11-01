@@ -19,6 +19,7 @@ interface StudentManagementPageProps {
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
+    // FIX: Removed `showToast` from `useData` destructuring as it is not part of the context type. Toast notifications are handled within the data context methods.
     const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, schools } = useData();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
@@ -85,7 +86,28 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         }
     };
     
-    const handleImportStudents = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+    const validateStudentImport = async (data: any[]) => {
+        const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
+        const validRecords: any[] = [];
+        const invalidRecords: { record: any, reason: string, rowNum: number }[] = [];
+
+        data.forEach((item, index) => {
+            const rowNum = index + 2;
+            const className = item.className?.trim().toLowerCase();
+            const classId = className ? classNameToIdMap.get(className) : undefined;
+    
+            if (!classId) {
+                invalidRecords.push({ record: item, reason: `Class "${item.className}" not found.`, rowNum });
+            } else if (!item.name || !item.rollNumber) {
+                invalidRecords.push({ record: item, reason: `Missing required field (name or rollNumber).`, rowNum });
+            } else {
+                validRecords.push(item);
+            }
+        });
+        return { validRecords, invalidRecords };
+    };
+
+    const handleImportStudents = async (validData: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
         if (!effectiveSchoolId) {
             throw new Error("No active school selected. Cannot import students.");
         }
@@ -97,29 +119,20 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         const defaultTuitionFee = school?.defaultTuitionFee;
 
         let processed = 0;
-        const allErrors: string[] = [];
 
-        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-            const chunk = data.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
+            const chunk = validData.slice(i, i + CHUNK_SIZE);
             const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
-            const chunkErrors: string[] = [];
     
-            chunk.forEach((item, index) => {
-                const rowNum = i + index + 2; // File row number is 1-based + header
-                const className = item.className?.trim().toLowerCase();
-                const classId = className ? classNameToIdMap.get(className) : undefined;
-        
-                if (!classId) {
-                    chunkErrors.push(`Row ${rowNum}: Class "${item.className}" not found. Skipping student "${item.name}".`);
-                    return;
-                }
+            chunk.forEach(item => {
+                const classId = classNameToIdMap.get(item.className.trim().toLowerCase());
         
                 const studentData: any = {
                     ...item,
                     schoolId: effectiveSchoolId,
                     classId: classId,
-                    dateOfBirth: item.dateOfBirth || null, // Sanitize empty date strings
-                    dateOfAdmission: item.dateOfAdmission || null, // Sanitize empty date strings
+                    dateOfBirth: item.dateOfBirth || null,
+                    dateOfAdmission: item.dateOfAdmission || null,
                     openingBalance: Number(item.openingBalance) || 0,
                     userId: item.userId || null,
                 };
@@ -133,12 +146,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     feeAmountToApply = defaultTuitionFee;
                 }
 
-                if (feeAmountToApply !== null) {
-                    if (tuitionFeeHead) {
-                        studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: feeAmountToApply }];
-                    } else {
-                        chunkErrors.push(`Row ${rowNum}: 'Tuition Fee' head not found. Could not set fee for ${item.name}.`);
-                    }
+                if (feeAmountToApply !== null && tuitionFeeHead) {
+                    studentData.feeStructure = [{ feeHeadId: tuitionFeeHead.id, amount: feeAmountToApply }];
                 }
                 
                 delete studentData.className;
@@ -152,8 +161,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             }
 
             processed += chunk.length;
-            allErrors.push(...chunkErrors);
-            progressCallback({ processed, total: data.length, errors: allErrors });
+            progressCallback({ processed, total: validData.length, errors: [] });
         }
     };
 
@@ -212,6 +220,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             <ImportModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
+                onValidate={validateStudentImport}
                 onImport={handleImportStudents}
                 sampleData={sampleDataForImport}
                 fileName="Students"

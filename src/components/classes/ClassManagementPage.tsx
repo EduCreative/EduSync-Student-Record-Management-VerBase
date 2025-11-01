@@ -121,17 +121,30 @@ const ClassManagementPage: React.FC = () => {
         }
     };
 
-    const handleImportClasses = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+    const validateClassImport = async (data: any[]) => {
+        const validRecords: any[] = [];
+        const invalidRecords: { record: any, reason: string, rowNum: number }[] = [];
+
+        data.forEach((item, index) => {
+            if (!item.name || !item.name.trim()) {
+                invalidRecords.push({ record: item, reason: 'Class name is required.', rowNum: index + 2 });
+            } else {
+                validRecords.push(item);
+            }
+        });
+        return { validRecords, invalidRecords };
+    };
+
+    const handleImportClasses = async (validData: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
         if (!effectiveSchoolId) {
             throw new Error("No active school selected. Cannot import classes.");
         }
         
         const CHUNK_SIZE = 50;
         let processed = 0;
-        const errors: string[] = [];
 
-        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-            const chunk = data.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
+            const chunk = validData.slice(i, i + CHUNK_SIZE);
             const classesToImport = chunk.map(item => ({
                 name: item.name,
                 teacherId: item.teacherId || null,
@@ -143,7 +156,7 @@ const ClassManagementPage: React.FC = () => {
             }
             
             processed += chunk.length;
-            progressCallback({ processed, total: data.length, errors });
+            progressCallback({ processed, total: validData.length, errors: [] });
         }
     };
 
@@ -234,6 +247,7 @@ const ClassManagementPage: React.FC = () => {
                     <ImportModal
                         isOpen={isImportModalOpen}
                         onClose={() => setIsImportModalOpen(false)}
+                        onValidate={validateClassImport}
                         onImport={handleImportClasses}
                         sampleData={sampleDataForImport}
                         fileName="Classes"

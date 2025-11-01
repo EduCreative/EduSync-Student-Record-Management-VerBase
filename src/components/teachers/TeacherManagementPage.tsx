@@ -80,18 +80,34 @@ const TeacherManagementPage: React.FC = () => {
             await bulkAddUsers([{...profileData, password} as (Omit<User, 'id'> & { password?: string })]);
         }
     };
+
+    const validateTeacherImport = async (data: any[]) => {
+        const validRecords: any[] = [];
+        const invalidRecords: { record: any, reason: string, rowNum: number }[] = [];
+        const required = ['name', 'email', 'password'];
+
+        data.forEach((item, index) => {
+            const rowNum = index + 2;
+            const missing = required.filter(h => !item[h]);
+            if(missing.length > 0) {
+                invalidRecords.push({ record: item, reason: `Missing required fields: ${missing.join(', ')}`, rowNum });
+            } else {
+                validRecords.push(item);
+            }
+        });
+        return { validRecords, invalidRecords };
+    };
     
-    const handleImportTeachers = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+    const handleImportTeachers = async (validData: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
         if (!effectiveSchoolId) {
             throw new Error("No active school selected for import.");
         }
         
         const CHUNK_SIZE = 50;
         let processed = 0;
-        const errors: string[] = [];
 
-        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-            const chunk = data.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
+            const chunk = validData.slice(i, i + CHUNK_SIZE);
             const teachersToImport = chunk.map(item => ({
                 ...item,
                 role: UserRole.Teacher,
@@ -104,7 +120,7 @@ const TeacherManagementPage: React.FC = () => {
             }
             
             processed += chunk.length;
-            progressCallback({ processed, total: data.length, errors });
+            progressCallback({ processed, total: validData.length, errors: [] });
         }
     };
 
@@ -149,6 +165,7 @@ const TeacherManagementPage: React.FC = () => {
              <ImportModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
+                onValidate={validateTeacherImport}
                 onImport={handleImportTeachers}
                 sampleData={sampleDataForImport}
                 fileName="Teachers"

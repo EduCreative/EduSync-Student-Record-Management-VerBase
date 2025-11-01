@@ -112,18 +112,37 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
             setUserToDelete(null); 
         }
     };
+
+    const validateUserImport = async (data: any[]) => {
+        const validRecords: any[] = [];
+        const invalidRecords: { record: any, reason: string, rowNum: number }[] = [];
+        const required = ['name', 'email', 'role', 'password'];
+
+        data.forEach((item, index) => {
+            const rowNum = index + 2;
+            const missing = required.filter(h => !item[h]);
+            if(missing.length > 0) {
+                invalidRecords.push({ record: item, reason: `Missing required fields: ${missing.join(', ')}`, rowNum });
+            } else if (isOwnerGlobalView && !item.schoolId) {
+                invalidRecords.push({ record: item, reason: `Missing required field: schoolId`, rowNum });
+            }
+            else {
+                validRecords.push(item);
+            }
+        });
+        return { validRecords, invalidRecords };
+    };
     
-    const handleImportUsers = async (data: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
+    const handleImportUsers = async (validData: any[], progressCallback: (progress: { processed: number; total: number; errors: string[] }) => void) => {
         if (!effectiveSchoolId && !isOwnerGlobalView) {
             throw new Error("No active school selected for import.");
         }
     
         const CHUNK_SIZE = 50;
         let processed = 0;
-        const errors: string[] = [];
 
-        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-            const chunk = data.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
+            const chunk = validData.slice(i, i + CHUNK_SIZE);
             const usersToImport = chunk.map(item => ({
                 ...item,
                 status: 'Active',
@@ -135,7 +154,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
             }
             
             processed += chunk.length;
-            progressCallback({ processed, total: data.length, errors });
+            progressCallback({ processed, total: validData.length, errors: [] });
         }
     };
 
@@ -192,6 +211,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
             <ImportModal
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
+                onValidate={validateUserImport}
                 onImport={handleImportUsers}
                 sampleData={sampleDataForImport}
                 fileName="Users"
