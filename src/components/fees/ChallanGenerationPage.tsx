@@ -127,7 +127,7 @@ const ChallanGenerationPage: React.FC = () => {
 
         setIsGenerating(true);
         try {
-            await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate, studentIdsToGenerate);
+            await generateChallansForMonth(month, year, feeHeadsToGenerate, studentIdsToGenerate);
             setIsPreviewOpen(false); // Close modal on success
         } catch (error) {
             // Error toast is handled in DataContext

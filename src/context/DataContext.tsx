@@ -38,7 +38,7 @@ interface DataContextType {
     deleteClass: (classId: string) => Promise<void>;
     setAttendance: (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => Promise<void>;
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
-    generateChallansForMonth: (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
+    generateChallansForMonth: (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
     addFeeHead: (feeHeadData: Omit<FeeHead, 'id'>) => Promise<void>;
     updateFeeHead: (updatedFeeHead: FeeHead) => Promise<void>;
     deleteFeeHead: (feeHeadId: string) => Promise<void>;
@@ -504,7 +504,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', 'Payment recorded successfully.');
     };
     
-    const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => {
+    const generateChallansForMonth = async (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => {
         if (studentIds.length === 0) {
             showToast('Info', 'No students selected for challan generation.', 'info');
             return 0;
