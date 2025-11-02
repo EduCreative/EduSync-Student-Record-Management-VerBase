@@ -49,6 +49,7 @@ export interface Class {
     name: string;
     teacherId: string | null;
     schoolId: string;
+    sortOrder?: number;
 }
 
 export interface Student {

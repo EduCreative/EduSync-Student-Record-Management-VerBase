@@ -99,6 +99,7 @@ interface DataContextType {
     promoteAllStudents: (exemptedStudentIds: string[]) => Promise<void>;
     increaseTuitionFees: (studentIds: string[], increaseAmount: number) => Promise<void>;
     sendFeeReminders: (challanIds: string[]) => Promise<void>;
+    bulkUpdateClassOrder: (classes: { id: string; sortOrder: number }[]) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -516,7 +517,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const addClass = async (classData: Omit<Class, 'id'>) => {
-        const { data, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select().single();
+        // Get current classes for the school to determine next sort order
+        const { data: schoolClassesData } = await supabase.from('classes').select('sort_order').eq('school_id', classData.schoolId);
+        
+        const maxSortOrder = schoolClassesData && schoolClassesData.length > 0 
+            ? Math.max(...schoolClassesData.map(c => c.sort_order || 0)) 
+            : 0;
+    
+        const newClassData = { ...classData, sortOrder: maxSortOrder + 1 };
+    
+        const { data, error } = await supabase.from('classes').insert(toSnakeCase(newClassData)).select().single();
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
@@ -834,7 +844,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
-        const sortedClasses = [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name));
+        const sortedClasses = [...schoolClasses].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
 
         if (sortedClasses.length < 1) {
             showToast('Info', 'No classes found to perform promotion.', 'info');
@@ -1009,6 +1019,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addLog('Fee Reminders Sent', `Sent ${notificationsToInsert.length} fee reminders.`);
     }, [user, fees, students, users, showToast, addLog]);
 
+    const bulkUpdateClassOrder = async (classesToUpdate: { id: string; sortOrder: number }[]) => {
+        const updates = classesToUpdate.map(c => ({ id: c.id, sort_order: c.sortOrder }));
+        const { error } = await supabase.from('classes').upsert(updates);
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        await fetchData(); // Refresh local data
+        addLog('Class Order Updated', `Reordered ${classesToUpdate.length} classes.`);
+        showToast('Success', 'Class order saved successfully.');
+    };
 
     const value = {
         schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime,
@@ -1017,7 +1038,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
         bulkAddClasses, backupData, restoreData, addUserByAdmin, promoteAllStudents, increaseTuitionFees,
-        sendFeeReminders,
+        sendFeeReminders, bulkUpdateClassOrder,
     };
 
     return (

@@ -185,32 +185,31 @@ const ImportModal = <T extends Record<string, any>>({
     const renderPreviewView = () => {
         if (!previewData) return null;
         const { validRecords, invalidRecords } = previewData;
-        const sampleValid = validRecords.slice(0, 3);
-        const headers = sampleValid.length > 0 ? Object.keys(sampleValid[0]).slice(0, 5) : [];
+        const validHeaders = validRecords.length > 0 ? Object.keys(validRecords[0]) : [];
 
         return (
             <div className="space-y-4">
                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg text-center">
                     <p className="text-lg font-semibold">
-                        <span className="text-green-600">{validRecords.length}</span> valid records found.
+                        <span className="text-green-600">{validRecords.length}</span> valid records will be imported.
                     </p>
                     <p className="text-sm">
                         <span className="text-red-600">{invalidRecords.length}</span> records have errors and will be skipped.
                     </p>
                 </div>
-                
-                {sampleValid.length > 0 && (
+    
+                {validRecords.length > 0 && (
                     <div>
-                        <h4 className="font-semibold text-sm mb-2">Data Preview (first {sampleValid.length} valid records)</h4>
-                        <div className="overflow-x-auto border rounded-md dark:border-secondary-600">
+                        <h4 className="font-semibold text-sm mb-2">Valid Records to Import ({validRecords.length})</h4>
+                        <div className="max-h-48 overflow-auto border rounded-md dark:border-secondary-600">
                             <table className="w-full text-xs">
-                                <thead className="bg-secondary-100 dark:bg-secondary-700">
-                                    <tr>{headers.map(h => <th key={h} className="p-2 text-left">{h}</th>)}</tr>
+                                <thead className="sticky top-0 bg-secondary-100 dark:bg-secondary-700">
+                                    <tr>{validHeaders.map(h => <th key={h} className="p-2 text-left font-semibold">{h}</th>)}</tr>
                                 </thead>
-                                <tbody>
-                                    {sampleValid.map((row, i) => (
-                                        <tr key={i} className="border-t dark:border-secondary-600">
-                                            {headers.map(h => <td key={h} className="p-2 truncate max-w-xs">{String(row[h])}</td>)}
+                                <tbody className="divide-y dark:divide-secondary-600">
+                                    {validRecords.map((row, i) => (
+                                        <tr key={i}>
+                                            {validHeaders.map(h => <td key={h} className="p-2 truncate max-w-[150px]" title={String(row[h])}>{String(row[h])}</td>)}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -222,13 +221,20 @@ const ImportModal = <T extends Record<string, any>>({
                 {invalidRecords.length > 0 && (
                     <div>
                         <h4 className="font-semibold text-red-600 text-sm mb-2">Skipped Records ({invalidRecords.length})</h4>
-                        <ul className="text-xs list-disc list-inside max-h-32 overflow-y-auto bg-red-50 dark:bg-red-900/50 p-2 rounded-md space-y-1">
-                            {invalidRecords.map((err, i) => <li key={i}><strong>Row {err.rowNum}:</strong> {err.reason}</li>)}
-                        </ul>
+                        <div className="max-h-48 overflow-auto border rounded-md dark:border-secondary-600 p-2 space-y-2">
+                            {invalidRecords.map((err, i) => (
+                                <div key={i} className="p-2 rounded-md bg-red-50 dark:bg-red-900/50">
+                                    <p><strong>Row {err.rowNum}:</strong> {err.reason}</p>
+                                    <pre className="text-xs text-red-800 dark:text-red-200 whitespace-pre-wrap break-all mt-1 bg-white/50 dark:bg-black/20 p-1 rounded">
+                                        {JSON.stringify(err.record, null, 2)}
+                                    </pre>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
-
-                <div className="flex justify-end space-x-3 pt-2">
+    
+                <div className="flex justify-end space-x-3 pt-4 border-t dark:border-secondary-700 mt-4">
                     <button onClick={onClose} className="btn-secondary">Cancel</button>
                     <button onClick={handleConfirmImport} disabled={validRecords.length === 0} className="btn-primary">
                         Confirm Import ({validRecords.length})

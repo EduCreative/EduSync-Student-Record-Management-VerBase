@@ -126,9 +126,18 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         const tuitionFeeHead = schoolFeeHeads.find(fh => fh.name.toLowerCase() === 'tuition fee');
         const school = schools.find(s => s.id === effectiveSchoolId);
         const defaultSchoolTuitionFee = school?.defaultTuitionFee;
+
+        // Normalize data to handle potential typos like 'monthly_tuittion_fee'
+        const normalizedData = validData.map(item => {
+            if (item.monthly_tuittion_fee !== undefined && item.monthly_tuittion_fee !== null) {
+                item.monthly_tuition_fee = item.monthly_tuittion_fee;
+                delete item.monthly_tuittion_fee;
+            }
+            return item;
+        });
     
         // Check if tuition fee is provided in CSV but the corresponding fee head is missing
-        const hasTuitionFeeInCsv = validData.some(item => item.monthly_tuition_fee && Number(item.monthly_tuition_fee) >= 0);
+        const hasTuitionFeeInCsv = normalizedData.some(item => item.monthly_tuition_fee !== undefined && item.monthly_tuition_fee !== null && Number(item.monthly_tuition_fee) >= 0);
         if (hasTuitionFeeInCsv && !tuitionFeeHead) {
             throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'monthly_tuition_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
         }
@@ -138,8 +147,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         
         let processed = 0;
     
-        for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
-            const chunk = validData.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < normalizedData.length; i += CHUNK_SIZE) {
+            const chunk = normalizedData.slice(i, i + CHUNK_SIZE);
             const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
     
             chunk.forEach(item => {
@@ -217,8 +226,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         caste: "Arain",
         lastSchoolAttended: "Previous Public School",
         openingBalance: 0,
-        userId: "",
-        monthly_tuition_fee: 5000,
+        userId: "", // Optional: Link to a Parent user's ID
+        monthly_tuition_fee: 5000, // Optional: Sets custom tuition fee. Column can also be 'monthly_tuittion_fee'.
     }];
 
     const requiredHeaders = ['name', 'rollNumber', 'className', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];

@@ -55,11 +55,12 @@ const getClassLevel = (name: string): number => {
 };
 
 const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
+const DragHandleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>;
 
 
 const ClassManagementPage: React.FC = () => {
     const { user: currentUser, activeSchoolId, effectiveRole, hasPermission } = useAuth();
-    const { classes, users, students, addClass, updateClass, deleteClass, loading, bulkAddClasses, promoteAllStudents } = useData();
+    const { classes, users, students, addClass, updateClass, deleteClass, loading, bulkAddClasses, promoteAllStudents, bulkUpdateClassOrder } = useData();
     const { showToast } = useToast();
 
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
@@ -71,11 +72,13 @@ const ClassManagementPage: React.FC = () => {
     const [isPromoting, setIsPromoting] = useState(false);
     const [classToEdit, setClassToEdit] = useState<Class | null>(null);
     const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+    const [draggedItem, setDraggedItem] = useState<Class | null>(null);
     
     const canEditClasses = hasPermission(Permission.CAN_EDIT_CLASSES);
     const canDeleteClasses = hasPermission(Permission.CAN_DELETE_CLASSES);
     const canPromote = hasPermission(Permission.CAN_PROMOTE_STUDENTS);
     const canPerformActions = canEditClasses || canDeleteClasses;
+    const canReorder = hasPermission(Permission.CAN_EDIT_CLASSES);
 
     const schoolClasses = useMemo(() => {
         let filteredClasses: Class[];
@@ -84,7 +87,7 @@ const ClassManagementPage: React.FC = () => {
         } else {
             filteredClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
         }
-        return [...filteredClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name));
+        return [...filteredClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
     }, [classes, effectiveSchoolId, effectiveRole, currentUser]);
     
     const teachers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Teacher), [users, effectiveSchoolId]);
@@ -169,6 +172,7 @@ const ClassManagementPage: React.FC = () => {
 
     const handleExport = () => {
         const dataToExport = schoolClasses.map(c => ({
+            sortOrder: c.sortOrder || '',
             name: c.name,
             teacherId: c.teacherId || '',
             teacherName_for_reference: c.teacherId ? teacherMap.get(c.teacherId) || 'N/A' : 'N/A',
@@ -178,7 +182,7 @@ const ClassManagementPage: React.FC = () => {
     };
     
     const handleCalculateAndShowPreview = () => {
-        const sortedClasses = [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name));
+        const sortedClasses = schoolClasses;
     
         if (sortedClasses.length < 1) {
             showToast('Info', 'At least one class is required to perform promotion.', 'info');
@@ -223,14 +227,64 @@ const ClassManagementPage: React.FC = () => {
         }
     };
 
+    const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, item: Class) => {
+        setDraggedItem(item);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', item.id);
+        e.currentTarget.classList.add('opacity-50');
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>) => {
+        e.preventDefault();
+        e.currentTarget.classList.add('bg-primary-100', 'dark:bg-primary-900/50');
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLTableRowElement>) => {
+        e.currentTarget.classList.remove('bg-primary-100', 'dark:bg-primary-900/50');
+    };
+
+    const handleDrop = async (e: React.DragEvent<HTMLTableRowElement>, targetItem: Class) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove('bg-primary-100', 'dark:bg-primary-900/50');
+        if (!draggedItem || draggedItem.id === targetItem.id) {
+            return;
+        }
+
+        const currentItems = [...schoolClasses];
+        const draggedIndex = currentItems.findIndex(c => c.id === draggedItem.id);
+        const targetIndex = currentItems.findIndex(c => c.id === targetItem.id);
+
+        if (draggedIndex === -1 || targetIndex === -1) return;
+
+        const [reorderedItem] = currentItems.splice(draggedIndex, 1);
+        currentItems.splice(targetIndex, 0, reorderedItem);
+
+        const updates = currentItems.map((c, index) => ({
+            id: c.id,
+            sortOrder: index + 1,
+        }));
+        
+        try {
+            await bulkUpdateClassOrder(updates);
+        } catch (error) {
+            console.error("Failed to reorder classes:", error);
+        }
+    };
+    
+    const handleDragEnd = (e: React.DragEvent<HTMLTableRowElement>) => {
+        setDraggedItem(null);
+        e.currentTarget.classList.remove('opacity-50');
+    };
+
     const tableColumns = [
+        ...(canReorder ? [{ width: '5%' }] : []),
         { width: '10%' }, // ID
         { width: canPerformActions ? '25%' : '40%' }, // Name
         { width: canPerformActions ? '25%' : '30%' }, // Teacher
         { width: '20%' }, // Students
     ];
     if (canPerformActions) {
-        tableColumns.push({ width: '20%' }); // Actions
+        tableColumns.push({ width: '15%' }); // Actions
     }
 
 
@@ -310,6 +364,7 @@ const ClassManagementPage: React.FC = () => {
                             <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
                                 <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                     <tr>
+                                        {canReorder && <th scope="col" className="px-2 py-3 w-12"></th>}
                                         <th scope="col" className="px-6 py-3">ID</th>
                                         <th scope="col" className="px-6 py-3">Class Name</th>
                                         <th scope="col" className="px-6 py-3">Teacher</th>
@@ -319,7 +374,21 @@ const ClassManagementPage: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {schoolClasses.map((c, index) => (
-                                        <tr key={c.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                        <tr
+                                            key={c.id}
+                                            draggable={canReorder}
+                                            onDragStart={canReorder ? (e) => handleDragStart(e, c) : undefined}
+                                            onDragOver={canReorder ? handleDragOver : undefined}
+                                            onDragLeave={canReorder ? handleDragLeave : undefined}
+                                            onDrop={canReorder ? (e) => handleDrop(e, c) : undefined}
+                                            onDragEnd={canReorder ? handleDragEnd : undefined}
+                                            className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50"
+                                        >
+                                            {canReorder && (
+                                                <td className="px-2 py-4 text-secondary-400 cursor-move">
+                                                    <DragHandleIcon className="w-5 h-5" />
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4">{index + 1}</td>
                                             <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{c.name}</td>
                                             <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
