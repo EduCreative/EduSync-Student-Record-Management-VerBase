@@ -1,5 +1,5 @@
 // FIX: Use a named import for the Dexie class to resolve type errors where methods like version() and properties like tables were not found.
-import { Dexie, type Table } from 'dexie';
+import Dexie, { type Table } from 'dexie';
 import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
 
 export class EduSyncDB extends Dexie {

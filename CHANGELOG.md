@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2024-07-22
+
+### Fixed
+- **Student Import:** Fixed an issue where custom tuition fees from a CSV import were being ignored. The import process now correctly uses the `tuition_fee` column from the CSV file to set a student's specific fee, instead of incorrectly falling back to the school's default.
+- **Student Import Template:** Updated the sample CSV template and import logic to use `tuition_fee` instead of `monthly_tuition_fee` for clarity and consistency.
+
 ## [2.0.0] - 2024-07-22
 
 ### Added

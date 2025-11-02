@@ -148,11 +148,10 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     
         // Check if tuition fee is provided in CSV but the corresponding fee head is missing
         const hasTuitionFeeInCsv = validData.some(item => 
-            (item.monthly_tuition_fee !== undefined && item.monthly_tuition_fee !== null && String(item.monthly_tuition_fee).trim() !== '') ||
-            (item.monthly_tuittion_fee !== undefined && item.monthly_tuittion_fee !== null && String(item.monthly_tuittion_fee).trim() !== '')
+            (item.tuition_fee !== undefined && item.tuition_fee !== null && String(item.tuition_fee).trim() !== '')
         );
         if (hasTuitionFeeInCsv && !tuitionFeeHead) {
-            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'monthly_tuition_fee' or 'monthly_tuittion_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
+            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'tuition_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
         }
         
         const CHUNK_SIZE = 50;
@@ -167,9 +166,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             chunk.forEach(item => {
                 const classId = classNameToIdMap.get(item.className.trim().toLowerCase());
         
-                // Explicitly pull out values to be parsed, including typo version
-                const { openingBalance, monthly_tuition_fee, monthly_tuittion_fee, className, grNumber, gr_number, religion, ...restOfItem } = item;
-                const tuitionFeeValue = monthly_tuition_fee || monthly_tuittion_fee;
+                // Explicitly pull out values to be parsed
+                const { openingBalance, tuition_fee, className, grNumber, gr_number, religion, ...restOfItem } = item;
+                const tuitionFeeValue = tuition_fee;
                 
                 const studentData: any = {
                     ...restOfItem,
@@ -248,7 +247,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         lastSchoolAttended: "Previous Public School",
         openingBalance: 0,
         userId: "", // Optional: Link to a Parent user's ID
-        monthly_tuition_fee: 5000, // Optional: Sets custom tuition fee. This column can also be spelled 'monthly_tuittion_fee'.
+        tuition_fee: 5000, // Optional: Sets custom tuition fee. If not provided, school default is used.
     }];
 
     const requiredHeaders = ['name', 'rollNumber', 'className', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];

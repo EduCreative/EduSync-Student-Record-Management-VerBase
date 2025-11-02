@@ -808,7 +808,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error('No school selected');
         }
 
-        const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
+        // FIX: Explicitly type 'c' to fix 'unknown' type error on 'c.schoolId'.
+        const schoolClasses = classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
         // FIX: Explicitly typed sort callback parameters 'a' and 'b' as 'Class' to resolve issue where they were being inferred as 'unknown'.
         const sortedClasses: Class[] = [...schoolClasses].sort((a: Class, b: Class) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
 
@@ -821,13 +822,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Iterate from highest to lowest class
         for (let i = sortedClasses.length - 1; i >= 0; i--) {
             const currentClass = sortedClasses[i];
-            const studentsInClass = students.filter(s => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
+            // FIX: Explicitly type 's' to fix 'unknown' type error on 's.classId'.
+            const studentsInClass = students.filter((s: Student) => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
 
             if (studentsInClass.length === 0) {
                 continue; // Skip empty class
             }
 
-            const studentIds = studentsInClass.map(s => s.id);
+            // FIX: Explicitly type 's' to fix 'unknown' type error on 's.id'.
+            const studentIds = studentsInClass.map((s: Student) => s.id);
 
             if (i === sortedClasses.length - 1) { // Highest class graduates
                 const newStatus = `Class ${currentClass.name} Passed`;
