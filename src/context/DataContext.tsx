@@ -98,6 +98,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setFeeHeads([]); setEvents([]);
             setIsInitialLoad(true);
             setLastSyncTime(null);
+// FIX: Property 'tables' does not exist on type 'EduSyncDB'. This is fixed by correcting the Dexie import in `src/lib/db.ts`.
             await Promise.all(db.tables.map(table => table.clear()));
             return;
         }
@@ -203,6 +204,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             
             // --- PHASE 2: ATOMIC DATABASE WRITE ---
+// FIX: Property 'transaction' and 'tables' do not exist on type 'EduSyncDB'. This is fixed by correcting the Dexie import in `src/lib/db.ts`.
             await db.transaction('rw', db.tables, async () => {
                 const promises = [
                     schoolsData && db.schools.bulkPut(schoolsData),
@@ -810,7 +812,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
         // FIX: Explicitly type `sortedClasses` as `Class[]` and use a more robust sorting logic to resolve type inference issues where `currentClass` was being inferred as `unknown`. This also improves promotion order accuracy.
-        const sortedClasses: Class[] = [...schoolClasses].sort((a: Class, b: Class) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
+        // FIX: Removed explicit type annotation from sort callback parameters to allow for better type inference.
+        const sortedClasses: Class[] = [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
 
         if (sortedClasses.length < 1) {
             showToast('Info', 'No classes found to perform promotion.', 'info');

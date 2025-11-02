@@ -11,6 +11,7 @@ const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 export interface ChallanPreviewItem {
     student: Student;
+    className: string;
     feeItems: { description: string; amount: number }[];
     previousBalance: number;
     totalAmount: number;
@@ -98,9 +99,11 @@ const ChallanGenerationPage: React.FC = () => {
             const subTotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
             const previousBalance = student.openingBalance || 0;
             const totalAmount = subTotal + previousBalance;
+            const className = classMap.get(student.classId) || 'N/A';
 
             return {
                 student: student,
+                className,
                 feeItems,
                 previousBalance,
                 totalAmount,

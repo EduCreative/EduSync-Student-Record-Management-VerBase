@@ -84,7 +84,7 @@ const ChallanPreviewModal: React.FC<ChallanPreviewModalProps> = ({ isOpen, onClo
                                             <Avatar student={item.student} className="w-8 h-8" />
                                             <div>
                                                 <p className="font-medium">{item.student.name}</p>
-                                                <p className="text-xs text-secondary-500">{item.student.className} - Roll: {item.student.rollNumber}</p>
+                                                <p className="text-xs text-secondary-500">{item.className} - Roll: {item.student.rollNumber}</p>
                                             </div>
                                         </div>
                                     </td>
