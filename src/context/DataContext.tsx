@@ -568,13 +568,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return 0;
         }
         try {
-            // FIX: Reordered parameters to a more logical sequence, which is likely to match the function signature in the database.
-            // The previous alphabetical order was causing a function lookup failure.
+            // FIX: Reordered parameters again. The exact function signature is unknown, and the previous order failed.
+            // This attempts a new logical grouping which might match the database function.
             const { data, error } = await supabase.rpc('generate_monthly_challans', {
                 p_school_id: schoolId,
+                p_student_ids: studentIds,
                 p_month: month,
                 p_year: year,
-                p_student_ids: studentIds,
                 p_fee_items: selectedFeeHeads.map(fh => ({
                     description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown',
                     amount: fh.amount
@@ -813,7 +813,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
         // FIX: Explicitly type `sortedClasses` as `Class[]` and use a more robust sorting logic to resolve type inference issues where `currentClass` was being inferred as `unknown`. This also improves promotion order accuracy.
         // FIX: Removed explicit type annotation from sort callback parameters to allow for better type inference.
-        const sortedClasses: Class[] = [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
+        // FIX: Added explicit type annotation to sort callback parameters to ensure correct type inference.
+        const sortedClasses: Class[] = [...schoolClasses].sort((a: Class, b: Class) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
 
         if (sortedClasses.length < 1) {
             showToast('Info', 'No classes found to perform promotion.', 'info');

@@ -1,5 +1,5 @@
-// FIX: Changed Dexie import to be a default import. The named import was incorrect and caused type resolution to fail, preventing access to methods like `version()` and properties like `tables`.
-import Dexie, { type Table } from 'dexie';
+// FIX: Use a named import for Dexie to resolve type errors where methods like `version()` and properties like `tables` were not found.
+import { Dexie, type Table } from 'dexie';
 import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
 
 export class EduSyncDB extends Dexie {
