@@ -5,7 +5,6 @@ import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
 import { db } from '../lib/db';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
-import { formatDate } from '../constants';
 // FIX: Imported `getClassLevel` to enable robust sorting of classes for the promotion logic.
 import { getClassLevel } from '../utils/sorting';
 

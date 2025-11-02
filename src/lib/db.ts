@@ -1,5 +1,5 @@
-// FIX: Changed Dexie import from default to named import to match latest versions of Dexie and resolve type errors on core methods like 'version'.
-import { Dexie, type Table } from 'dexie';
+// FIX: Reverted Dexie import to a default import. The named import '{ Dexie }' does not provide the class constructor needed for subclassing, which caused errors where core methods like '.version()' and '.transaction()' were not found.
+import Dexie, { type Table } from 'dexie';
 import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
 
 export class EduSyncDB extends Dexie {
