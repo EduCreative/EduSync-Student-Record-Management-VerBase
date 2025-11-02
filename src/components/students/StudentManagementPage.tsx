@@ -115,22 +115,24 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
         data.forEach((item, index) => {
             const rowNum = index + 2;
-            const className = item.className?.trim().toLowerCase();
+            const classNameFromCsv = item.class_name || item.className;
+            const className = classNameFromCsv?.trim().toLowerCase();
             const classId = className ? classNameToIdMap.get(className) : undefined;
-            const rollNumber = item.rollNumber?.trim().toLowerCase();
+            const rollNumberFromCsv = item.roll_number || item.rollNumber;
+            const rollNumber = rollNumberFromCsv?.trim().toLowerCase();
     
             if (!classId) {
-                invalidRecords.push({ record: item, reason: `Class "${item.className}" not found.`, rowNum });
-            } else if (!item.name || !item.rollNumber) {
-                invalidRecords.push({ record: item, reason: `Missing required field (name or rollNumber).`, rowNum });
+                invalidRecords.push({ record: item, reason: `Class "${classNameFromCsv}" not found.`, rowNum });
+            } else if (!item.name || !rollNumberFromCsv) {
+                invalidRecords.push({ record: item, reason: `Missing required field (name or roll_number).`, rowNum });
             } else if (existingRollNos.has(rollNumber)) {
-                invalidRecords.push({ record: item, reason: `Roll number "${item.rollNumber}" is already in use.`, rowNum });
+                invalidRecords.push({ record: item, reason: `Roll number "${rollNumberFromCsv}" is already in use.`, rowNum });
             } else if (rollNosInCsv.has(rollNumber)) {
-                invalidRecords.push({ record: item, reason: `Duplicate roll number "${item.rollNumber}" within the CSV file.`, rowNum });
+                invalidRecords.push({ record: item, reason: `Duplicate roll number "${rollNumberFromCsv}" within the CSV file.`, rowNum });
             }
             else {
                 validRecords.push(item);
-                rollNosInCsv.add(rollNumber);
+                if (rollNumber) rollNosInCsv.add(rollNumber);
             }
         });
         return { validRecords, invalidRecords };
@@ -141,14 +143,12 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             throw new Error("No active school selected. Cannot import students.");
         }
     
-        const schoolFeeHeads = feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
-        const tuitionFeeHead = schoolFeeHeads.find(fh => fh.name.toLowerCase() === 'tuition fee');
-        const school = schools.find(s => s.id === effectiveSchoolId);
-        const defaultSchoolTuitionFee = school?.defaultTuitionFee;
-    
         const hasTuitionFeeInCsv = validData.some(item => 
             (item.tuition_fee !== undefined && item.tuition_fee !== null && String(item.tuition_fee).trim() !== '')
         );
+        const schoolFeeHeads = feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
+        const tuitionFeeHead = schoolFeeHeads.find(fh => fh.name.toLowerCase() === 'tuition fee');
+
         if (hasTuitionFeeInCsv && !tuitionFeeHead) {
             throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
         }
@@ -163,33 +163,41 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
     
             chunk.forEach(item => {
-                const classId = classNameToIdMap.get(item.className.trim().toLowerCase());
-    
-                const { openingBalance, tuition_fee, grNumber, gr_number, ...restOfItem } = item;
+                const classNameFromCsv = item.class_name || item.className;
+                const classId = classNameToIdMap.get(classNameFromCsv.trim().toLowerCase());
                 
-                // Robust parsing for numeric fields
+                const openingBalance = item.opening_balance || item.openingBalance;
                 const parsedOpeningBalance = (openingBalance !== null && openingBalance !== undefined && String(openingBalance).trim() !== '') ? parseFloat(String(openingBalance)) : 0;
-                const parsedTuitionFee = (tuition_fee !== null && tuition_fee !== undefined && String(tuition_fee).trim() !== '') ? parseFloat(String(tuition_fee)) : null;
 
-                const studentData: any = {
-                    ...restOfItem,
-                    schoolId: effectiveSchoolId,
-                    classId: classId,
-                    fatherCnic: formatCnic(item.fatherCnic),
-                    contactNumber: formatPhoneNumber(item.contactNumber),
-                    secondaryContactNumber: formatPhoneNumber(item.secondaryContactNumber),
-                    grNumber: grNumber || gr_number || null,
-                    dateOfBirth: item.dateOfBirth || null,
-                    dateOfAdmission: item.dateOfAdmission || null,
+                const studentData: Omit<Student, 'id' | 'status'> & { feeStructure?: {feeHeadId: string, amount: number}[] } = {
+                    name: item.name,
+                    rollNumber: item.roll_number || item.rollNumber,
+                    classId: classId!,
+                    schoolId: effectiveSchoolId!,
+                    fatherName: item.father_name || item.fatherName,
+                    fatherCnic: formatCnic(item.father_cnic || item.fatherCnic),
+                    dateOfBirth: item.date_of_birth || item.dateOfBirth || null,
+                    dateOfAdmission: item.date_of_admission || item.dateOfAdmission || null,
+                    contactNumber: formatPhoneNumber(item.contact_number || item.contactNumber),
+                    secondaryContactNumber: formatPhoneNumber(item.secondary_contact_number || item.secondaryContactNumber),
+                    address: item.address || '',
+                    gender: (item.gender === 'Female' || item.gender === 'female') ? 'Female' : 'Male',
+                    admittedClass: item.admitted_class || item.admittedClass,
+                    grNumber: item.gr_number || item.grNumber,
+                    religion: item.religion,
+                    caste: item.caste,
+                    lastSchoolAttended: item.last_school_attended || item.lastSchoolAttended,
                     openingBalance: isNaN(parsedOpeningBalance) ? 0 : parsedOpeningBalance,
-                    userId: item.userId || null,
+                    userId: item.user_id || item.userId || null,
                 };
                 
                 const feeStructure: { feeHeadId: string; amount: number }[] = [];
+                const school = schools.find(s => s.id === effectiveSchoolId);
+                const defaultSchoolTuitionFee = school?.defaultTuitionFee;
+                const parsedTuitionFee = (item.tuition_fee !== null && item.tuition_fee !== undefined && String(item.tuition_fee).trim() !== '') ? parseFloat(String(item.tuition_fee)) : null;
 
                 schoolFeeHeads.forEach(head => {
                     let amountToApply: number | null = null;
-                    
                     if (tuitionFeeHead && head.id === tuitionFeeHead.id) {
                         if (parsedTuitionFee !== null && !isNaN(parsedTuitionFee) && parsedTuitionFee >= 0) {
                             amountToApply = parsedTuitionFee;
@@ -202,7 +210,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     else if (head.defaultAmount > 0) {
                         amountToApply = head.defaultAmount;
                     }
-
                     if (amountToApply !== null) {
                         feeStructure.push({ feeHeadId: head.id, amount: amountToApply });
                     }
@@ -227,27 +234,27 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
     const sampleDataForImport = [{
         name: "Kamran Ahmed",
-        rollNumber: "101",
-        className: schoolClasses[0]?.name || "Grade 5",
-        fatherName: "Zulfiqar Ahmed",
-        fatherCnic: "35202-1234567-1",
-        dateOfBirth: "2010-05-15",
-        dateOfAdmission: new Date().toISOString().split('T')[0],
-        contactNumber: "0300-1234567",
-        secondaryContactNumber: "0333-7654321",
+        roll_number: "101",
+        class_name: schoolClasses[0]?.name || "Grade 5",
+        father_name: "Zulfiqar Ahmed",
+        father_cnic: "35202-1234567-1",
+        date_of_birth: "2010-05-15",
+        date_of_admission: new Date().toISOString().split('T')[0],
+        contact_number: "0300-1234567",
+        secondary_contact_number: "0333-7654321",
         address: "123 School Lane, City",
         gender: "Male",
-        admittedClass: "Grade 5",
-        grNumber: "GR-1234",
+        admitted_class: "Grade 5",
+        gr_number: "GR-1234",
         religion: "Islam",
         caste: "Arain",
-        lastSchoolAttended: "Previous Public School",
-        openingBalance: 0,
-        userId: "", // Optional: Link to a Parent user's ID
+        last_school_attended: "Previous Public School",
+        opening_balance: 0,
+        user_id: "", // Optional: Link to a Parent user's ID
         tuition_fee: 5000, // Optional: Sets custom tuition fee. If not provided, school default is used.
     }];
 
-    const requiredHeaders = ['name', 'rollNumber', 'className', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];
+    const requiredHeaders = ['name', 'roll_number', 'class_name', 'father_name', 'date_of_birth', 'contact_number', 'admitted_class'];
 
     const handleExport = () => {
         const dataToExport = filteredStudents.map(s => ({
