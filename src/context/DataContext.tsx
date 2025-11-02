@@ -39,7 +39,7 @@ interface DataContextType {
     deleteClass: (classId: string) => Promise<void>;
     setAttendance: (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => Promise<void>;
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
-    generateChallansForMonth: (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => Promise<number>;
+    generateChallansForMonth: (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
     addFeeHead: (feeHeadData: Omit<FeeHead, 'id'>) => Promise<void>;
     updateFeeHead: (updatedFeeHead: FeeHead) => Promise<void>;
     deleteFeeHead: (feeHeadId: string) => Promise<void>;
@@ -560,18 +560,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', 'Payment recorded successfully.');
     };
     
-    const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[]) => {
+    const generateChallansForMonth = async (schoolId: string, month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => {
+        if (studentIds.length === 0) {
+            showToast('Info', 'No students selected for challan generation.', 'info');
+            return 0;
+        }
         try {
-            const activeStudents = students.filter(s => s.schoolId === schoolId && s.status === 'Active');
+            // FIX: Reordered parameters to a more logical sequence, which is likely to match the function signature in the database.
+            // The previous alphabetical order was causing a function lookup failure.
             const { data, error } = await supabase.rpc('generate_monthly_challans', {
+                p_school_id: schoolId,
+                p_month: month,
+                p_year: year,
+                p_student_ids: studentIds,
                 p_fee_items: selectedFeeHeads.map(fh => ({
                     description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown',
                     amount: fh.amount
-                })),
-                p_month: month,
-                p_school_id: schoolId,
-                p_student_ids: activeStudents.map(s => s.id),
-                p_year: year
+                }))
             });
 
             if (error) throw new Error(error.message);
@@ -805,7 +810,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
         // FIX: Explicitly type `sortedClasses` as `Class[]` and use a more robust sorting logic to resolve type inference issues where `currentClass` was being inferred as `unknown`. This also improves promotion order accuracy.
-        const sortedClasses: Class[] = [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
+        const sortedClasses: Class[] = [...schoolClasses].sort((a: Class, b: Class) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
 
         if (sortedClasses.length < 1) {
             showToast('Info', 'No classes found to perform promotion.', 'info');
@@ -815,7 +820,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const exemptedSet = new Set(exemptedStudentIds);
         // Iterate from highest to lowest class
         for (let i = sortedClasses.length - 1; i >= 0; i--) {
-            const currentClass = sortedClasses[i];
+            // FIX: Explicitly type `currentClass` to resolve 'property does not exist on type unknown' error.
+            const currentClass: Class = sortedClasses[i];
             const studentsInClass = students.filter(s => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
 
             if (studentsInClass.length === 0) {
@@ -832,7 +838,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     throw error;
                 }
             } else { // Promote to next class
-                const nextClass = sortedClasses[i + 1];
+                // FIX: Explicitly type `nextClass` to resolve 'property does not exist on type unknown' error.
+                const nextClass: Class = sortedClasses[i + 1];
                 const { error } = await supabase.from('students').update({ class_id: nextClass.id }).in('id', studentIds);
                 if (error) {
                     showToast('Error', `Failed to promote students from ${currentClass.name} to ${nextClass.name}.`, 'error');

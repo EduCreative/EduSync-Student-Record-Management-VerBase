@@ -1,26 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole, FeeHead } from '../../types';
+import { UserRole, FeeHead, Student } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import ChallanPreviewModal from './ChallanPreviewModal';
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
+export interface ChallanPreviewItem {
+    student: Student;
+    feeItems: { description: string; amount: number }[];
+    previousBalance: number;
+    totalAmount: number;
+}
+
 const ChallanGenerationPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
-    const { feeHeads, generateChallansForMonth } = useData();
+    const { students, fees, classes, feeHeads, generateChallansForMonth } = useData();
     const { showToast } = useToast();
 
     const [month, setMonth] = useState(months[new Date().getMonth()]);
     const [year, setYear] = useState(currentYear);
     const [selectedFeeHeads, setSelectedFeeHeads] = useState<Map<string, { selected: boolean; amount: number }>>(new Map());
+    
+    const [isPreparingPreview, setIsPreparingPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [challanPreview, setChallanPreview] = useState<ChallanPreviewItem[]>([]);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+    const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
-    // FIX: Changed useMemo to useEffect to prevent side-effects in a memoized function.
     useEffect(() => {
         const newMap = new Map<string, { selected: boolean; amount: number }>();
         feeHeads.forEach((fh: FeeHead) => {
@@ -30,7 +42,6 @@ const ChallanGenerationPage: React.FC = () => {
     }, [feeHeads]);
 
     const handleFeeHeadToggle = (id: string) => {
-        // FIX: Explicitly type `prev` to ensure correct type inference for `current`.
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
@@ -45,7 +56,6 @@ const ChallanGenerationPage: React.FC = () => {
         const numAmount = parseInt(amount, 10);
         if (isNaN(numAmount)) return;
         
-        // FIX: Explicitly type `prev` to ensure correct type inference for `current`.
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
@@ -56,7 +66,53 @@ const ChallanGenerationPage: React.FC = () => {
         });
     };
 
-    const handleGenerate = async () => {
+    const handlePreview = async () => {
+        // FIX: Added explicit type to the filter callback parameter to resolve 'unknown' type error.
+        const feeHeadsToGenerate = Array.from(selectedFeeHeads.entries())
+            .filter((entry: [string, { selected: boolean, amount: number }]) => entry[1].selected)
+            .map(([feeHeadId, { amount }]) => ({
+                feeHeadId,
+                defaultAmount: amount,
+                name: feeHeads.find(fh => fh.id === feeHeadId)?.name || 'Unknown'
+            }));
+
+        if (feeHeadsToGenerate.length === 0) {
+            showToast('Info', 'Please select at least one fee head.', 'info');
+            return;
+        }
+
+        setIsPreparingPreview(true);
+
+        const studentsToProcess = students.filter(s => s.schoolId === effectiveSchoolId && s.status === 'Active');
+        const existingChallansForMonth = new Set(fees.filter(f => f.month === month && f.year === year).map(f => f.studentId));
+        const studentsWithoutChallan = studentsToProcess.filter(s => !existingChallansForMonth.has(s.id));
+
+        const previewData = studentsWithoutChallan.map(student => {
+            const studentFeeStructureMap = new Map((student.feeStructure || []).map(item => [item.feeHeadId, item.amount]));
+
+            const feeItems = feeHeadsToGenerate.map(fh => {
+                const amount = studentFeeStructureMap.get(fh.feeHeadId) ?? fh.defaultAmount;
+                return { description: fh.name, amount };
+            });
+
+            const subTotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
+            const previousBalance = student.openingBalance || 0;
+            const totalAmount = subTotal + previousBalance;
+
+            return {
+                student: student,
+                feeItems,
+                previousBalance,
+                totalAmount,
+            };
+        });
+
+        setChallanPreview(previewData);
+        setIsPreviewOpen(true);
+        setIsPreparingPreview(false);
+    };
+    
+    const handleConfirmGeneration = async (studentIdsToGenerate: string[]) => {
         if (!effectiveSchoolId) {
             showToast('Error', 'No school context selected.', 'error');
             return;
@@ -66,83 +122,87 @@ const ChallanGenerationPage: React.FC = () => {
             .filter(([, { selected }]) => selected)
             .map(([feeHeadId, { amount }]) => ({ feeHeadId, amount }));
 
-        if (feeHeadsToGenerate.length === 0) {
-            showToast('Info', 'Please select at least one fee head to generate challans.', 'info');
-            return;
-        }
-
         setIsGenerating(true);
         try {
-            await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate);
+            await generateChallansForMonth(effectiveSchoolId, month, year, feeHeadsToGenerate, studentIdsToGenerate);
+            setIsPreviewOpen(false); // Close modal on success
         } catch (error) {
-            console.error('Failed to generate challans:', error);
-            // Error toast is shown in DataContext
+            // Error toast is handled in DataContext
         } finally {
             setIsGenerating(false);
         }
     };
 
     return (
-        <div className="p-4 sm:p-6 space-y-6">
-            <div>
-                <h2 className="text-xl font-semibold">Generate Monthly Fee Challans</h2>
-                <p className="text-sm text-secondary-500">This will create new challans for all active students who don't already have one for the selected month and year.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <>
+            <ChallanPreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                onConfirm={handleConfirmGeneration}
+                previewData={challanPreview}
+                isGenerating={isGenerating}
+            />
+            <div className="p-4 sm:p-6 space-y-6">
                 <div>
-                    <label htmlFor="month-select" className="input-label">For Month</label>
-                    <select id="month-select" value={month} onChange={e => setMonth(e.target.value)} className="input-field">
-                        {months.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                    <h2 className="text-xl font-semibold">Generate Monthly Fee Challans</h2>
+                    <p className="text-sm text-secondary-500">This will create new challans for all active students who don't already have one for the selected month and year.</p>
                 </div>
-                <div>
-                    <label htmlFor="year-select" className="input-label">For Year</label>
-                    <select id="year-select" value={year} onChange={e => setYear(Number(e.target.value))} className="input-field">
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                </div>
-            </div>
 
-            <div>
-                <h3 className="text-lg font-medium mb-2">Include Fee Heads</h3>
-                <div className="space-y-3 p-4 border dark:border-secondary-700 rounded-lg max-h-60 overflow-y-auto">
-                    {feeHeads.map(fh => (
-                        <div key={fh.id} className="flex items-center justify-between gap-4">
-                            <label className="flex items-center space-x-3 flex-1">
-                                <input
-                                    type="checkbox"
-                                    checked={selectedFeeHeads.get(fh.id)?.selected || false}
-                                    onChange={() => handleFeeHeadToggle(fh.id)}
-                                    className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
-                                />
-                                <span>{fh.name}</span>
-                            </label>
-                            <div className="flex items-center space-x-2">
-                                <span>Rs.</span>
-                                <input
-                                    type="number"
-                                    value={selectedFeeHeads.get(fh.id)?.amount || 0}
-                                    onChange={(e) => handleAmountChange(fh.id, e.target.value)}
-                                    className="input-field w-24 text-right"
-                                    disabled={!selectedFeeHeads.get(fh.id)?.selected}
-                                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="month-select" className="input-label">For Month</label>
+                        <select id="month-select" value={month} onChange={e => setMonth(e.target.value)} className="input-field">
+                            {months.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="year-select" className="input-label">For Year</label>
+                        <select id="year-select" value={year} onChange={e => setYear(Number(e.target.value))} className="input-field">
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 className="text-lg font-medium mb-2">Include Fee Heads</h3>
+                    <div className="space-y-3 p-4 border dark:border-secondary-700 rounded-lg max-h-60 overflow-y-auto">
+                        {feeHeads.map(fh => (
+                            <div key={fh.id} className="flex items-center justify-between gap-4">
+                                <label className="flex items-center space-x-3 flex-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedFeeHeads.get(fh.id)?.selected || false}
+                                        onChange={() => handleFeeHeadToggle(fh.id)}
+                                        className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
+                                    />
+                                    <span>{fh.name}</span>
+                                </label>
+                                <div className="flex items-center space-x-2">
+                                    <span>Rs.</span>
+                                    <input
+                                        type="number"
+                                        value={selectedFeeHeads.get(fh.id)?.amount || 0}
+                                        onChange={(e) => handleAmountChange(fh.id, e.target.value)}
+                                        className="input-field w-24 text-right"
+                                        disabled={!selectedFeeHeads.get(fh.id)?.selected}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                    <button
+                        onClick={handlePreview}
+                        disabled={isPreparingPreview || isGenerating}
+                        className="btn-primary w-full sm:w-auto"
+                    >
+                        {isPreparingPreview ? 'Preparing Preview...' : 'Preview Generation'}
+                    </button>
                 </div>
             </div>
-
-            <div className="flex justify-end pt-4">
-                <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating}
-                    className="btn-primary w-full sm:w-auto"
-                >
-                    {isGenerating ? 'Generating...' : 'Generate Challans'}
-                </button>
-            </div>
-        </div>
+        </>
     );
 };
 
