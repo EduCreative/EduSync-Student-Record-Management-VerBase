@@ -566,16 +566,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return 0;
         }
         try {
-            // FIX: The RPC call was failing due to a mismatch in parameter names. Added the "p_" prefix to all parameter names to match the exact database function signature.
+            const feeHeadsMap = new Map(feeHeads.map(fh => [fh.id, fh.name]));
+
+            const feeItemsForRpc = selectedFeeHeads.map(({ feeHeadId, amount }) => ({
+                description: feeHeadsMap.get(feeHeadId) || 'Unknown Fee Head',
+                amount: amount
+            }));
+
             const { data, error } = await supabase.rpc('generate_monthly_challans', {
                 p_school_id: schoolId,
                 p_student_ids: studentIds,
                 p_month: month,
                 p_year: year,
-                p_fee_items: selectedFeeHeads.map(fh => ({
-                    description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown',
-                    amount: fh.amount
-                }))
+                p_fee_items: feeItemsForRpc
             });
 
             if (error) throw new Error(error.message);
