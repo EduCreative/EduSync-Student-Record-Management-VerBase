@@ -46,6 +46,7 @@ const ImportModal = <T extends Record<string, any>>({
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState<ImportProgress | null>(null);
     const [previewData, setPreviewData] = useState<ValidationResult<T> | null>(null);
+    const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
     const [error, setError] = useState('');
     const { showToast } = useToast();
     
@@ -55,6 +56,7 @@ const ImportModal = <T extends Record<string, any>>({
                 setFile(null);
                 setProgress(null);
                 setPreviewData(null);
+                setSelectedIndices(new Set());
                 setError('');
                 setIsProcessing(false);
                 setStage('upload');
@@ -110,6 +112,7 @@ const ImportModal = <T extends Record<string, any>>({
                 });
 
                 setPreviewData(validationResult);
+                setSelectedIndices(new Set(validationResult.validRecords.map((_, i) => i)));
                 setStage('preview');
             } catch (err: any) {
                 setError(err.message || 'Failed to process CSV file.');
@@ -125,15 +128,42 @@ const ImportModal = <T extends Record<string, any>>({
         reader.readAsText(file);
     };
 
+    const handleToggleRow = (index: number) => {
+        setSelectedIndices(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
+        });
+    };
+
+    const handleToggleAll = () => {
+        if (previewData && selectedIndices.size === previewData.validRecords.length) {
+            setSelectedIndices(new Set());
+        } else if (previewData) {
+            setSelectedIndices(new Set(previewData.validRecords.map((_, i) => i)));
+        }
+    };
+
     const handleConfirmImport = async () => {
         if (!previewData?.validRecords) return;
 
+        const recordsToImport = previewData.validRecords.filter((_, i) => selectedIndices.has(i));
+
+        if (recordsToImport.length === 0) {
+            showToast('Info', 'No records selected to import.', 'info');
+            return;
+        }
+
         setIsProcessing(true);
         setStage('importing');
-        setProgress({ processed: 0, total: previewData.validRecords.length, errors: [] });
+        setProgress({ processed: 0, total: recordsToImport.length, errors: [] });
 
         try {
-            await onImport(previewData.validRecords, (update) => {
+            await onImport(recordsToImport, (update) => {
                 setProgress(prev => ({
                     ...prev!,
                     ...update,
@@ -191,24 +221,43 @@ const ImportModal = <T extends Record<string, any>>({
             <div className="space-y-4">
                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg text-center">
                     <p className="text-lg font-semibold">
-                        <span className="text-green-600">{validRecords.length}</span> valid records will be imported.
+                        <span className="text-green-600">{validRecords.length}</span> valid records found.
                     </p>
-                    <p className="text-sm">
-                        <span className="text-red-600">{invalidRecords.length}</span> records have errors and will be skipped.
+                     <p className="text-sm">
+                        <span className="text-green-600">{selectedIndices.size} selected</span> to import. <span className="text-red-600">{invalidRecords.length}</span> records will be skipped.
                     </p>
                 </div>
     
                 {validRecords.length > 0 && (
                     <div>
-                        <h4 className="font-semibold text-sm mb-2">Valid Records to Import ({validRecords.length})</h4>
                         <div className="max-h-48 overflow-auto border rounded-md dark:border-secondary-600">
                             <table className="w-full text-xs">
                                 <thead className="sticky top-0 bg-secondary-100 dark:bg-secondary-700">
-                                    <tr>{validHeaders.map(h => <th key={h} className="p-2 text-left font-semibold">{h}</th>)}</tr>
+                                    <tr>
+                                        <th className="p-2 w-12 text-center">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded"
+                                                checked={selectedIndices.size === validRecords.length}
+                                                onChange={handleToggleAll}
+                                                aria-label="Select all"
+                                            />
+                                        </th>
+                                        {validHeaders.map(h => <th key={h} className="p-2 text-left font-semibold">{h}</th>)}
+                                    </tr>
                                 </thead>
                                 <tbody className="divide-y dark:divide-secondary-600">
                                     {validRecords.map((row, i) => (
                                         <tr key={i}>
+                                            <td className="p-2 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded"
+                                                    checked={selectedIndices.has(i)}
+                                                    onChange={() => handleToggleRow(i)}
+                                                    aria-label={`Select row ${i + 1}`}
+                                                />
+                                            </td>
                                             {validHeaders.map(h => <td key={h} className="p-2 truncate max-w-[150px]" title={String(row[h])}>{String(row[h])}</td>)}
                                         </tr>
                                     ))}
@@ -236,8 +285,8 @@ const ImportModal = <T extends Record<string, any>>({
     
                 <div className="flex justify-end space-x-3 pt-4 border-t dark:border-secondary-700 mt-4">
                     <button onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button onClick={handleConfirmImport} disabled={validRecords.length === 0} className="btn-primary">
-                        Confirm Import ({validRecords.length})
+                    <button onClick={handleConfirmImport} disabled={selectedIndices.size === 0} className="btn-primary">
+                        Confirm Import ({selectedIndices.size})
                     </button>
                 </div>
             </div>

@@ -146,12 +146,11 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         const school = schools.find(s => s.id === effectiveSchoolId);
         const defaultSchoolTuitionFee = school?.defaultTuitionFee;
     
-        // Check if tuition fee is provided in CSV but the corresponding fee head is missing
         const hasTuitionFeeInCsv = validData.some(item => 
             (item.tuition_fee !== undefined && item.tuition_fee !== null && String(item.tuition_fee).trim() !== '')
         );
         if (hasTuitionFeeInCsv && !tuitionFeeHead) {
-            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'tuition_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
+            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
         }
         
         const CHUNK_SIZE = 50;
@@ -165,11 +164,13 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     
             chunk.forEach(item => {
                 const classId = classNameToIdMap.get(item.className.trim().toLowerCase());
-        
-                // Explicitly pull out values to be parsed
-                const { openingBalance, tuition_fee, className, grNumber, gr_number, religion, ...restOfItem } = item;
-                const tuitionFeeValue = tuition_fee;
+    
+                const { openingBalance, tuition_fee, grNumber, gr_number, ...restOfItem } = item;
                 
+                // Robust parsing for numeric fields
+                const parsedOpeningBalance = (openingBalance !== null && openingBalance !== undefined && String(openingBalance).trim() !== '') ? parseFloat(String(openingBalance)) : 0;
+                const parsedTuitionFee = (tuition_fee !== null && tuition_fee !== undefined && String(tuition_fee).trim() !== '') ? parseFloat(String(tuition_fee)) : null;
+
                 const studentData: any = {
                     ...restOfItem,
                     schoolId: effectiveSchoolId,
@@ -178,24 +179,20 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     contactNumber: formatPhoneNumber(item.contactNumber),
                     secondaryContactNumber: formatPhoneNumber(item.secondaryContactNumber),
                     grNumber: grNumber || gr_number || null,
-                    religion: religion || null,
                     dateOfBirth: item.dateOfBirth || null,
                     dateOfAdmission: item.dateOfAdmission || null,
-                    // More robust parsing for openingBalance
-                    openingBalance: (openingBalance !== null && openingBalance !== undefined && String(openingBalance).trim() !== '') ? Number(openingBalance) : 0,
+                    openingBalance: isNaN(parsedOpeningBalance) ? 0 : parsedOpeningBalance,
                     userId: item.userId || null,
                 };
                 
                 const feeStructure: { feeHeadId: string; amount: number }[] = [];
-                // More robust parsing for tuition fee
-                const tuitionFeeFromCsv = (tuitionFeeValue !== null && tuitionFeeValue !== undefined && String(tuitionFeeValue).trim() !== '') ? Number(tuitionFeeValue) : null;
 
                 schoolFeeHeads.forEach(head => {
                     let amountToApply: number | null = null;
                     
                     if (tuitionFeeHead && head.id === tuitionFeeHead.id) {
-                        if (tuitionFeeFromCsv !== null && !isNaN(tuitionFeeFromCsv) && tuitionFeeFromCsv >= 0) {
-                            amountToApply = tuitionFeeFromCsv;
+                        if (parsedTuitionFee !== null && !isNaN(parsedTuitionFee) && parsedTuitionFee >= 0) {
+                            amountToApply = parsedTuitionFee;
                         } else if (defaultSchoolTuitionFee && defaultSchoolTuitionFee > 0) {
                             amountToApply = defaultSchoolTuitionFee;
                         } else if (head.defaultAmount > 0) {

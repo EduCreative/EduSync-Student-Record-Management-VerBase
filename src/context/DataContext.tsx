@@ -821,7 +821,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const exemptedSet = new Set(exemptedStudentIds);
         // Iterate from highest to lowest class
         for (let i = sortedClasses.length - 1; i >= 0; i--) {
-            const currentClass = sortedClasses[i];
+            // FIX: Explicitly cast currentClass to Class to resolve 'unknown' type error.
+            const currentClass = sortedClasses[i] as Class;
             // FIX: Explicitly type 's' to fix 'unknown' type error on 's.classId'.
             const studentsInClass = students.filter((s: Student) => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
 
@@ -840,7 +841,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     throw error;
                 }
             } else { // Promote to next class
-                const nextClass = sortedClasses[i + 1];
+                // FIX: Explicitly cast nextClass to Class to resolve 'unknown' type error.
+                const nextClass = sortedClasses[i + 1] as Class;
                 const { error } = await supabase.from('students').update({ class_id: nextClass.id }).in('id', studentIds);
                 if (error) {
                     showToast('Error', `Failed to promote students from ${currentClass.name} to ${nextClass.name}.`, 'error');
