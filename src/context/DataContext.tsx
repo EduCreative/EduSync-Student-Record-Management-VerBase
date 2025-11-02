@@ -509,30 +509,71 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Info', 'No students selected for challan generation.', 'info');
             return 0;
         }
+
         try {
+            const studentMap = new Map(students.map(s => [s.id, s]));
             const feeHeadMap = new Map(feeHeads.map(fh => [fh.id, fh.name]));
-            const feeItemsForRpc = selectedFeeHeads.map(({ feeHeadId, amount }) => ({
-                description: feeHeadMap.get(feeHeadId) || 'Unknown Fee',
-                amount: amount
-            }));
+            const challansToCreate: Omit<FeeChallan, 'id'>[] = [];
 
-            const rpcArgs = {
-                school_id: schoolId,
-                student_ids: studentIds,
-                month: month,
-                year: year,
-                fee_items: feeItemsForRpc
-            };
+            const monthIndex = new Date(Date.parse(month +" 1, 2012")).getMonth();
 
-            const { data, error } = await supabase.rpc('create_monthly_challans', rpcArgs);
+            for (const studentId of studentIds) {
+                const student = studentMap.get(studentId);
+                if (!student) continue;
 
-            if (error) throw new Error(error.message);
-            
-            const count = data || 0;
-            showToast('Success', `${count} new challans were generated for ${month}, ${year}.`, 'success');
-            addLog('Challans Generated', `${count} challans generated for ${month}, ${year}.`);
-            await fetchData();
-            return count;
+                const alreadyExists = fees.some(f => f.studentId === studentId && f.month === month && f.year === year);
+                if (alreadyExists) continue;
+
+                let previousBalance = student.openingBalance || 0;
+                fees.forEach(f => {
+                    if (f.studentId === studentId && (f.status === 'Unpaid' || f.status === 'Partial')) {
+                        previousBalance += (f.totalAmount - f.discount - f.paidAmount);
+                    }
+                });
+
+                const feeItems = selectedFeeHeads.map(({ feeHeadId, amount }) => ({
+                    description: feeHeadMap.get(feeHeadId) || 'Unknown Fee',
+                    amount: amount,
+                }));
+
+                const currentMonthTotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
+                const totalAmount = currentMonthTotal + previousBalance;
+                
+                const monthNum = (monthIndex + 1).toString().padStart(2, '0');
+                const challanNumber = `${year}${monthNum}-${student.rollNumber}`;
+                
+                const dueDate = new Date(year, monthIndex, 10).toISOString().split('T')[0];
+
+                challansToCreate.push({
+                    challanNumber,
+                    studentId,
+                    classId: student.classId,
+                    month,
+                    year,
+                    dueDate,
+                    status: 'Unpaid',
+                    feeItems,
+                    previousBalance,
+                    totalAmount,
+                    discount: 0,
+                    paidAmount: 0,
+                });
+            }
+
+            if (challansToCreate.length > 0) {
+                const { data, error } = await supabase.from('fee_challans').insert(toSnakeCase(challansToCreate)).select();
+                if (error) {
+                    throw new Error(error.message);
+                }
+                const count = data?.length || 0;
+                showToast('Success', `${count} new challans were generated for ${month}, ${year}.`, 'success');
+                addLog('Challans Generated', `${count} challans generated for ${month}, ${year}.`);
+                await fetchData();
+                return count;
+            } else {
+                showToast('Info', 'No new challans needed for the selected students.', 'info');
+                return 0;
+            }
 
         } catch (error: any) {
             showToast('Error', error.message, 'error');
