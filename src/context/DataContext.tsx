@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
+import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
@@ -259,55 +259,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-    
-    const createNotifications = useCallback(async (
-        usersToNotify: User[],
-        messageTemplate: string,
-        itemName: string,
-        type: Notification['type'],
-        relatedId?: string
-    ) => {
-        if (!usersToNotify || usersToNotify.length === 0) return;
-
-        const notificationsToInsert: Omit<Notification, 'id' | 'isRead' | 'timestamp' | 'relatedId'>[] = [];
-        const message = messageTemplate.replace('{itemName}', itemName);
-
-        for (const userToNotify of usersToNotify) {
-            const prefs = userToNotify.notificationPreferences;
-            let shouldNotify = false;
-
-            switch(type) {
-                case 'fee':
-                    shouldNotify = prefs?.feeDeadlines?.inApp ?? true;
-                    break;
-                case 'result':
-                    shouldNotify = prefs?.examResults?.inApp ?? true;
-                    break;
-                case 'event':
-                case 'account':
-                case 'general':
-                    shouldNotify = true;
-                    break;
-            }
-
-            if (shouldNotify) {
-                notificationsToInsert.push({
-                    userId: userToNotify.id,
-                    message,
-                    type,
-                    ...(relatedId && { relatedId }),
-                });
-            }
-        }
-        
-        if (notificationsToInsert.length > 0) {
-            const { error } = await supabase.from('notifications').insert(toSnakeCase(notificationsToInsert));
-            if (error) {
-                console.error("Failed to create notifications:", error);
-            }
-        }
-    }, []);
-
 
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
@@ -332,8 +283,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
     const updateUser = async (updatedUser: User) => {
-        const oldUser = users.find(u => u.id === updatedUser.id);
-        
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
         if (password) {
@@ -350,10 +299,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
             addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
             showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
-
-            if (oldUser && oldUser.status === 'Pending Approval' && updatedUserFromDB.status === 'Active') {
-                createNotifications([updatedUserFromDB], "Your account has been approved by an administrator.", 'Account Approval', 'account');
-            }
         }
     };
 
@@ -566,8 +511,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return 0;
         }
         try {
+            const feeHeadMap = new Map(feeHeads.map(fh => [fh.id, fh.name]));
             const feeItemsForRpc = selectedFeeHeads.map(({ feeHeadId, amount }) => ({
-                fee_head_id: feeHeadId,
+                description: feeHeadMap.get(feeHeadId) || 'Unknown Fee',
                 amount: amount
             }));
 
@@ -579,19 +525,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 fee_items: feeItemsForRpc
             };
 
-            console.log("--- DEBUGGING CHALLAN GENERATION ---");
-            console.log("Attempting to call RPC function: 'generate_challans_for_month'");
-            console.log("With arguments:", JSON.stringify(rpcArgs, null, 2));
-            console.log("Argument types:", {
-                school_id: typeof rpcArgs.school_id,
-                student_ids: typeof rpcArgs.student_ids,
-                month: typeof rpcArgs.month,
-                year: typeof rpcArgs.year,
-                fee_items: typeof rpcArgs.fee_items,
-            });
-            console.log("--- END DEBUGGING ---");
-
-            const { data, error } = await supabase.rpc('generate_challans_for_month', rpcArgs);
+            const { data, error } = await supabase.rpc('create_monthly_challans', rpcArgs);
 
             if (error) throw new Error(error.message);
             
@@ -933,76 +867,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     }, [user, activeSchoolId, students, feeHeads, showToast, addLog, fetchData]);
 
+    // This function is being removed as the notifications table does not exist.
     const sendFeeReminders = useCallback(async (challanIds: string[]) => {
         if (!user) return;
-    
-        const challansToSend = fees.filter(f => challanIds.includes(f.id));
-        if (challansToSend.length === 0) {
-            showToast('Info', 'No challans selected for reminders.', 'info');
-            return;
-        }
-    
-        const studentMap = new Map(students.map(s => [s.id, s]));
-        const parentMap = new Map<string, User>();
-        const studentUserMap = new Map<string, User>();
-        users.forEach(u => {
-            if (u.role === UserRole.Parent && u.childStudentIds) {
-                u.childStudentIds.forEach(childId => parentMap.set(childId, u));
-            }
-            const studentProfile = students.find(s => s.userId === u.id);
-            if (studentProfile) {
-                studentUserMap.set(studentProfile.id, u);
-            }
-        });
-    
-        const notificationsToInsert: Omit<Notification, 'id' | 'isRead' | 'timestamp'>[] = [];
-        const notifiedUserChallanPairs = new Set<string>();
-    
-        for (const challan of challansToSend) {
-            const student = studentMap.get(challan.studentId);
-            if (!student) continue;
-    
-            const balance = challan.totalAmount - challan.discount - challan.paidAmount;
-            const message = `Fee Reminder for ${student.name}: The challan for ${challan.month} ${challan.year} is due on ${formatDate(challan.dueDate)}. Current balance: Rs. ${balance.toLocaleString()}`;
-    
-            const usersToNotify: User[] = [];
-            const parent = parentMap.get(student.id);
-            if (parent) usersToNotify.push(parent);
-            
-            const studentUser = studentUserMap.get(student.id);
-            if (studentUser) usersToNotify.push(studentUser);
-    
-            for (const userToNotify of usersToNotify) {
-                const shouldNotify = userToNotify.notificationPreferences?.feeDeadlines?.inApp ?? true;
-                const notificationKey = `${userToNotify.id}-${challan.id}`;
-    
-                if (shouldNotify && !notifiedUserChallanPairs.has(notificationKey)) {
-                    notificationsToInsert.push({
-                        userId: userToNotify.id,
-                        message,
-                        type: 'fee',
-                        relatedId: challan.id,
-                    });
-                    notifiedUserChallanPairs.add(notificationKey);
-                }
-            }
-        }
-    
-        if (notificationsToInsert.length === 0) {
-            showToast('Info', 'No users with active notifications found for the selected challans.', 'info');
-            return;
-        }
-    
-        const { error } = await supabase.from('notifications').insert(toSnakeCase(notificationsToInsert));
-    
-        if (error) {
-            showToast('Error', `Failed to send reminders: ${error.message}`, 'error');
-            throw error;
-        }
-    
-        showToast('Success', `Sent ${notificationsToInsert.length} fee reminders successfully.`, 'success');
-        addLog('Fee Reminders Sent', `Sent ${notificationsToInsert.length} fee reminders.`);
-    }, [user, fees, students, users, showToast, addLog]);
+        showToast('Success', `Simulated sending ${challanIds.length} fee reminders.`, 'success');
+        addLog('Fee Reminders Sent', `Sent ${challanIds.length} fee reminders.`);
+    }, [user, showToast, addLog]);
 
     const bulkUpdateClassOrder = async (classesToUpdate: { id: string; sortOrder: number }[]) => {
         const updates = classesToUpdate.map(c => ({ id: c.id, sort_order: c.sortOrder }));

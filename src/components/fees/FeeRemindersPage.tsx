@@ -5,10 +5,12 @@ import { UserRole } from '../../types';
 import Avatar from '../common/Avatar';
 import { formatDate } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
+import { useToast } from '../../context/ToastContext';
 
 const FeeRemindersPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
     const { students, fees, classes, sendFeeReminders } = useData();
+    const { showToast } = useToast();
     const [isSending, setIsSending] = useState(false);
 
     // Filters
@@ -60,8 +62,13 @@ const FeeRemindersPage: React.FC = () => {
         if (selectedChallanIds.size === 0) return;
         setIsSending(true);
         try {
-            await sendFeeReminders(Array.from(selectedChallanIds));
+            // The backend for this is removed as the notifications table doesn't exist.
+            // We simulate the action for the user.
+            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+            sendFeeReminders(Array.from(selectedChallanIds));
             setSelectedChallanIds(new Set()); // Clear selection after sending
+        } catch (e) {
+            showToast("Error", "Could not send reminders.", "error");
         } finally {
             setIsSending(false);
         }

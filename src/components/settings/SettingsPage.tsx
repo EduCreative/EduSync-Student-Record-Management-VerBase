@@ -10,41 +10,14 @@ import ImageUpload from '../common/ImageUpload';
 import { usePWAInstall } from '../../context/PWAInstallContext';
 import IncreaseTuitionFeeModal from './IncreaseTuitionFeeModal';
 
-// A simple toggle switch component
-const ToggleSwitch: React.FC<{ enabled: boolean; onChange: (enabled: boolean) => void }> = ({ enabled, onChange }) => (
-    <button
-        type="button"
-        onClick={() => onChange(!enabled)}
-        className={`${
-            enabled ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-secondary-600'
-        } relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-secondary-800`}
-    >
-        <span
-            className={`${
-                enabled ? 'translate-x-6' : 'translate-x-1'
-            } inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}
-        />
-    </button>
-);
-
-
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
     const { user, effectiveRole, activeSchoolId } = useAuth();
-    const { schools, backupData, restoreData, updateUser, updateSchool } = useData();
+    const { schools, backupData, restoreData, updateSchool } = useData();
     const { showToast } = useToast();
     const { installPrompt, clearInstallPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
-
-    // Default preferences structure
-    const defaultPrefs = {
-        feeDeadlines: { email: true, inApp: true },
-        examResults: { email: true, inApp: true },
-    };
-
-    const [prefs, setPrefs] = useState(defaultPrefs);
-    const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
     // State for School Details
     const [isSchoolSaving, setIsSchoolSaving] = useState(false);
@@ -63,16 +36,6 @@ const SettingsPage: React.FC = () => {
 
     // Initialize forms and preferences from user data
     useEffect(() => {
-        if (user) {
-            if (user.notificationPreferences) {
-                setPrefs({
-                    feeDeadlines: { ...defaultPrefs.feeDeadlines, ...user.notificationPreferences.feeDeadlines },
-                    examResults: { ...defaultPrefs.examResults, ...user.notificationPreferences.examResults },
-                });
-            } else {
-                setPrefs(defaultPrefs);
-            }
-        }
         if (school) {
             setSchoolData({
                 name: school.name,
@@ -81,30 +44,7 @@ const SettingsPage: React.FC = () => {
                 defaultTuitionFee: school.defaultTuitionFee || 0,
             });
         }
-    }, [user, school]);
-
-    const handleToggle = (category: 'feeDeadlines' | 'examResults', type: 'email' | 'inApp') => {
-        setPrefs(currentPrefs => ({
-            ...currentPrefs,
-            [category]: {
-                ...currentPrefs[category],
-                [type]: !currentPrefs[category][type],
-            },
-        }));
-    };
-
-    const handleSavePrefs = async () => {
-        if (!user) return;
-        setIsSavingPrefs(true);
-        try {
-            await updateUser({ ...user, notificationPreferences: prefs });
-            showToast('Success', 'Notification preferences saved!', 'success');
-        } catch (error) {
-            showToast('Error', 'Could not save preferences.', 'error');
-        } finally {
-            setIsSavingPrefs(false);
-        }
-    };
+    }, [school]);
     
     const handleSchoolUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -218,39 +158,6 @@ const SettingsPage: React.FC = () => {
                         </form>
                     </div>
                 )}
-
-                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">Notification Preferences</h2>
-                    <div className="space-y-4">
-                        <div className="p-3 rounded-lg border dark:border-secondary-700">
-                             <h3 className="font-medium mb-2 text-secondary-800 dark:text-secondary-200">Fee Deadlines & Reminders</h3>
-                             <div className="flex items-center justify-between py-1">
-                                <label className="text-sm text-secondary-600 dark:text-secondary-400">In-App Notifications</label>
-                                <ToggleSwitch enabled={prefs.feeDeadlines.inApp} onChange={_ => handleToggle('feeDeadlines', 'inApp')} />
-                             </div>
-                             <div className="flex items-center justify-between py-1">
-                                <label className="text-sm text-secondary-600 dark:text-secondary-400">Email Notifications</label>
-                                <ToggleSwitch enabled={prefs.feeDeadlines.email} onChange={_ => handleToggle('feeDeadlines', 'email')} />
-                            </div>
-                        </div>
-                        <div className="p-3 rounded-lg border dark:border-secondary-700">
-                            <h3 className="font-medium mb-2 text-secondary-800 dark:text-secondary-200">Exam Results Published</h3>
-                             <div className="flex items-center justify-between py-1">
-                                <label className="text-sm text-secondary-600 dark:text-secondary-400">In-App Notifications</label>
-                                <ToggleSwitch enabled={prefs.examResults.inApp} onChange={_ => handleToggle('examResults', 'inApp')} />
-                             </div>
-                             <div className="flex items-center justify-between py-1">
-                                <label className="text-sm text-secondary-600 dark:text-secondary-400">Email Notifications</label>
-                                <ToggleSwitch enabled={prefs.examResults.email} onChange={_ => handleToggle('examResults', 'email')} />
-                            </div>
-                        </div>
-                    </div>
-                     <div className="flex justify-end pt-6 border-t dark:border-secondary-700 mt-6">
-                        <button onClick={handleSavePrefs} className="btn-primary" disabled={isSavingPrefs}>
-                            {isSavingPrefs ? 'Saving...' : 'Save Preferences'}
-                        </button>
-                    </div>
-                </div>
 
                 {effectiveRole === UserRole.Admin && (
                     <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">

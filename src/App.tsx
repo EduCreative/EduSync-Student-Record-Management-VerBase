@@ -8,7 +8,6 @@ import Layout from './components/layout/Layout';
 import { ToastProvider } from './context/ToastContext';
 import { PrintProvider, usePrint } from './context/PrintContext';
 import PrintPreview from './components/common/PrintPreview';
-import { NotificationProvider } from './context/NotificationContext';
 import RequestPasswordResetPage from './components/auth/RequestPasswordResetPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import { PWAInstallProvider } from './context/PWAInstallContext';
@@ -67,17 +66,15 @@ const App: React.FC = () => {
     <ThemeProvider>
       <SyncProvider>
         <AuthProvider>
-            <NotificationProvider>
-                <ToastProvider>
-                    <DataProvider>
-                        <PrintProvider>
-                            <PWAInstallProvider>
-                                <AppContent />
-                            </PWAInstallProvider>
-                        </PrintProvider>
-                    </DataProvider>
-                </ToastProvider>
-            </NotificationProvider>
+            <ToastProvider>
+                <DataProvider>
+                    <PrintProvider>
+                        <PWAInstallProvider>
+                            <AppContent />
+                        </PWAInstallProvider>
+                    </PrintProvider>
+                </DataProvider>
+            </ToastProvider>
         </AuthProvider>
       </SyncProvider>
     </ThemeProvider>

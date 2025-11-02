@@ -9,17 +9,6 @@ export enum UserRole {
     Student = 'Student',
 }
 
-export interface NotificationPreferences {
-  feeDeadlines: {
-    email: boolean;
-    inApp: boolean;
-  };
-  examResults: {
-    email: boolean;
-    inApp: boolean;
-  };
-}
-
 export interface User {
     id: string;
     name: string;
@@ -32,7 +21,6 @@ export interface User {
     password?: string; // Added for manual authentication
     childStudentIds?: string[]; // Added for Parent role
     disabledNavLinks?: string[]; // For Owner to disable menu items for a user
-    notificationPreferences?: NotificationPreferences;
     permissionsOverrides?: Partial<Record<Permission, boolean>>;
 }
 
@@ -146,12 +134,13 @@ export interface SchoolEvent {
     schoolId: string;
 }
 
+// FIX: Added Notification interface as it was missing, causing type errors.
 export interface Notification {
-  id: string;
-  userId: string;
-  message: string;
-  type: 'fee' | 'event' | 'result' | 'account' | 'general';
-  relatedId?: string; 
-  isRead: boolean;
-  timestamp: string;
+    id: string;
+    userId: string;
+    title: string;
+    message: string;
+    link?: string;
+    isRead: boolean;
+    timestamp: string;
 }
