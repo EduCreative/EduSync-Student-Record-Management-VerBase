@@ -573,13 +573,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 amount: amount
             }));
 
-            const { data, error } = await supabase.rpc('generate_challans', {
+            const rpcArgs = {
                 school_id: schoolId,
                 student_ids: studentIds,
                 month: month,
                 year: year,
                 fee_items: feeItemsForRpc
+            };
+
+            console.log("--- DEBUGGING CHALLAN GENERATION ---");
+            console.log("Attempting to call RPC function: 'generate_challans'");
+            console.log("With arguments:", JSON.stringify(rpcArgs, null, 2));
+            console.log("Argument types:", {
+                school_id: typeof rpcArgs.school_id,
+                student_ids: typeof rpcArgs.student_ids,
+                month: typeof rpcArgs.month,
+                year: typeof rpcArgs.year,
+                fee_items: typeof rpcArgs.fee_items,
             });
+            console.log("--- END DEBUGGING ---");
+
+            const { data, error } = await supabase.rpc('generate_challans', rpcArgs);
 
             if (error) throw new Error(error.message);
             
