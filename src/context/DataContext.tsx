@@ -566,14 +566,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return 0;
         }
         try {
-            // FIX: Reordered parameters again. The exact function signature is unknown, and the previous order failed.
-            // This attempts a new logical grouping which might match the database function.
+            // FIX: The RPC call was failing due to incorrect parameter names. Removed the "p_" prefix from all parameter names to match the expected database function signature.
             const { data, error } = await supabase.rpc('generate_monthly_challans', {
-                p_school_id: schoolId,
-                p_student_ids: studentIds,
-                p_month: month,
-                p_year: year,
-                p_fee_items: selectedFeeHeads.map(fh => ({
+                school_id: schoolId,
+                student_ids: studentIds,
+                month: month,
+                year: year,
+                fee_items: selectedFeeHeads.map(fh => ({
                     description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown',
                     amount: fh.amount
                 }))
