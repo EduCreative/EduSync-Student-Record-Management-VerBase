@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabaseClient';
 import { db } from '../lib/db';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 import { formatDate } from '../constants';
+// FIX: Imported `getClassLevel` to enable robust sorting of classes for the promotion logic.
+import { getClassLevel } from '../utils/sorting';
 
 // --- CONTEXT ---
 interface DataContextType {
@@ -562,14 +564,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const activeStudents = students.filter(s => s.schoolId === schoolId && s.status === 'Active');
             const { data, error } = await supabase.rpc('generate_monthly_challans', {
-                p_school_id: schoolId,
-                p_month: month,
-                p_year: year,
-                p_student_ids: activeStudents.map(s => s.id),
                 p_fee_items: selectedFeeHeads.map(fh => ({
                     description: feeHeads.find(h => h.id === fh.feeHeadId)?.name || 'Unknown',
                     amount: fh.amount
-                }))
+                })),
+                p_month: month,
+                p_school_id: schoolId,
+                p_student_ids: activeStudents.map(s => s.id),
+                p_year: year
             });
 
             if (error) throw new Error(error.message);
@@ -802,7 +804,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
-        const sortedClasses = [...schoolClasses].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+        // FIX: Explicitly type `sortedClasses` as `Class[]` and use a more robust sorting logic to resolve type inference issues where `currentClass` was being inferred as `unknown`. This also improves promotion order accuracy.
+        const sortedClasses: Class[] = [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
 
         if (sortedClasses.length < 1) {
             showToast('Info', 'No classes found to perform promotion.', 'info');
