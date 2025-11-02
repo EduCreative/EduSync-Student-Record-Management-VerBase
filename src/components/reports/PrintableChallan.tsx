@@ -40,16 +40,6 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 </div>
             </div>
 
-            // <div className="flex flex-col sm:flex-row justify-between items-baseline p-1 text-xs border-b">
-            //     <div className="flex justify-between w-full sm:w-1/2 sm:pr-1">
-            //         <span>Issue Date:</span>
-            //         <span className="text-right">{formatDate(new Date())}</span>
-            //     </div>
-            //     <div className="flex justify-between w-full sm:w-1/2 mt-1 sm:mt-0 sm:pl-1 sm:border-l border-gray-200">
-            //         <span className="pl-1">Due Date:</span>
-            //         <span className="font-bold text-right">{formatDate(challan.dueDate)}</span>
-            //     </div>
-            // </div>
             <div className="flex flex-col sm:flex-row justify-between items-baseline p-1 text-xs border-b">
                 <div className="flex justify-between w-full sm:w-1/2 sm:pr-1">
                     <span>Student:</span>
