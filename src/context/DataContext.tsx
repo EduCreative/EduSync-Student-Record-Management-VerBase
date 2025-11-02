@@ -573,12 +573,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 amount: amount
             }));
 
-            const { data, error } = await supabase.rpc('generate_monthly_challans', {
-                p_school_id: schoolId,
-                p_student_ids: studentIds,
-                p_month: month,
-                p_year: year,
-                p_fee_items: feeItemsForRpc
+            const { data, error } = await supabase.rpc('generate_challans', {
+                school_id: schoolId,
+                student_ids: studentIds,
+                month: month,
+                year: year,
+                fee_items: feeItemsForRpc
             });
 
             if (error) throw new Error(error.message);
