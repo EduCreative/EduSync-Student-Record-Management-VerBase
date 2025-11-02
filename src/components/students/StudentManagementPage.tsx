@@ -17,6 +17,26 @@ interface StudentManagementPageProps {
     setActiveView: (view: ActiveView) => void;
 }
 
+// Helper functions for formatting
+const formatCnic = (value: string | number | undefined): string => {
+    if (!value) return '';
+    const digits = String(value).replace(/\D/g, '').slice(0, 13);
+    if (digits.length === 13) {
+        return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12, 13)}`;
+    }
+    return String(value); // Return original if not 13 digits, allows for already-formatted input
+};
+
+const formatPhoneNumber = (value: string | number | undefined): string => {
+    if (!value) return '';
+    const digits = String(value).replace(/\D/g, '').slice(0, 11);
+     if (digits.length === 11) {
+        return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    }
+    return String(value);
+};
+
+
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
     const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, schools } = useData();
@@ -121,25 +141,18 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             throw new Error("No active school selected. Cannot import students.");
         }
     
-        // Get all relevant fee heads and school settings upfront
         const schoolFeeHeads = feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
         const tuitionFeeHead = schoolFeeHeads.find(fh => fh.name.toLowerCase() === 'tuition fee');
         const school = schools.find(s => s.id === effectiveSchoolId);
         const defaultSchoolTuitionFee = school?.defaultTuitionFee;
-
-        // Normalize data to handle potential typos like 'monthly_tuittion_fee'
-        const normalizedData = validData.map(item => {
-            if (item.monthly_tuittion_fee !== undefined && item.monthly_tuittion_fee !== null) {
-                item.monthly_tuition_fee = item.monthly_tuittion_fee;
-                delete item.monthly_tuittion_fee;
-            }
-            return item;
-        });
     
         // Check if tuition fee is provided in CSV but the corresponding fee head is missing
-        const hasTuitionFeeInCsv = normalizedData.some(item => item.monthly_tuition_fee !== undefined && item.monthly_tuition_fee !== null && Number(item.monthly_tuition_fee) >= 0);
+        const hasTuitionFeeInCsv = validData.some(item => 
+            (item.monthly_tuition_fee !== undefined && item.monthly_tuition_fee !== null && String(item.monthly_tuition_fee).trim() !== '') ||
+            (item.monthly_tuittion_fee !== undefined && item.monthly_tuittion_fee !== null && String(item.monthly_tuittion_fee).trim() !== '')
+        );
         if (hasTuitionFeeInCsv && !tuitionFeeHead) {
-            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'monthly_tuition_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
+            throw new Error("A 'Tuition Fee' head is required to import student-specific tuition fees from the 'monthly_tuition_fee' or 'monthly_tuittion_fee' column. Please go to Fee Management > Fee Heads, create a fee head named 'Tuition Fee', and try importing again.");
         }
         
         const CHUNK_SIZE = 50;
@@ -147,33 +160,42 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         
         let processed = 0;
     
-        for (let i = 0; i < normalizedData.length; i += CHUNK_SIZE) {
-            const chunk = normalizedData.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < validData.length; i += CHUNK_SIZE) {
+            const chunk = validData.slice(i, i + CHUNK_SIZE);
             const studentsToImport: Omit<Student, 'id' | 'status'>[] = [];
     
             chunk.forEach(item => {
                 const classId = classNameToIdMap.get(item.className.trim().toLowerCase());
         
+                // Explicitly pull out values to be parsed, including typo version
+                const { openingBalance, monthly_tuition_fee, monthly_tuittion_fee, className, grNumber, gr_number, religion, ...restOfItem } = item;
+                const tuitionFeeValue = monthly_tuition_fee || monthly_tuittion_fee;
+                
                 const studentData: any = {
-                    ...item,
+                    ...restOfItem,
                     schoolId: effectiveSchoolId,
                     classId: classId,
+                    fatherCnic: formatCnic(item.fatherCnic),
+                    contactNumber: formatPhoneNumber(item.contactNumber),
+                    secondaryContactNumber: formatPhoneNumber(item.secondaryContactNumber),
+                    grNumber: grNumber || gr_number || null,
+                    religion: religion || null,
                     dateOfBirth: item.dateOfBirth || null,
                     dateOfAdmission: item.dateOfAdmission || null,
-                    openingBalance: Number(item.openingBalance) || 0,
+                    // More robust parsing for openingBalance
+                    openingBalance: (openingBalance !== null && openingBalance !== undefined && String(openingBalance).trim() !== '') ? Number(openingBalance) : 0,
                     userId: item.userId || null,
                 };
                 
-                // Build the fee structure for each student
                 const feeStructure: { feeHeadId: string; amount: number }[] = [];
-                const tuitionFeeFromCsv = item.monthly_tuition_fee ? Number(item.monthly_tuition_fee) : null;
+                // More robust parsing for tuition fee
+                const tuitionFeeFromCsv = (tuitionFeeValue !== null && tuitionFeeValue !== undefined && String(tuitionFeeValue).trim() !== '') ? Number(tuitionFeeValue) : null;
 
                 schoolFeeHeads.forEach(head => {
                     let amountToApply: number | null = null;
                     
-                    // Special handling for the main "Tuition Fee"
                     if (tuitionFeeHead && head.id === tuitionFeeHead.id) {
-                        if (tuitionFeeFromCsv !== null && tuitionFeeFromCsv >= 0) {
+                        if (tuitionFeeFromCsv !== null && !isNaN(tuitionFeeFromCsv) && tuitionFeeFromCsv >= 0) {
                             amountToApply = tuitionFeeFromCsv;
                         } else if (defaultSchoolTuitionFee && defaultSchoolTuitionFee > 0) {
                             amountToApply = defaultSchoolTuitionFee;
@@ -181,7 +203,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                             amountToApply = head.defaultAmount;
                         }
                     } 
-                    // Handle all other fee heads
                     else if (head.defaultAmount > 0) {
                         amountToApply = head.defaultAmount;
                     }
@@ -195,9 +216,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     studentData.feeStructure = feeStructure;
                 }
                 
-                delete studentData.className;
-                delete studentData.monthly_tuition_fee;
-                
                 studentsToImport.push(studentData);
             });
     
@@ -209,6 +227,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             progressCallback({ processed, total: validData.length, errors: [] });
         }
     };
+
 
     const sampleDataForImport = [{
         name: "Kamran Ahmed",
@@ -223,11 +242,13 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         address: "123 School Lane, City",
         gender: "Male",
         admittedClass: "Grade 5",
+        grNumber: "GR-1234",
+        religion: "Islam",
         caste: "Arain",
         lastSchoolAttended: "Previous Public School",
         openingBalance: 0,
         userId: "", // Optional: Link to a Parent user's ID
-        monthly_tuition_fee: 5000, // Optional: Sets custom tuition fee. Column can also be 'monthly_tuittion_fee'.
+        monthly_tuition_fee: 5000, // Optional: Sets custom tuition fee. This column can also be spelled 'monthly_tuittion_fee'.
     }];
 
     const requiredHeaders = ['name', 'rollNumber', 'className', 'fatherName', 'dateOfBirth', 'contactNumber', 'admittedClass'];
@@ -246,6 +267,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             address: s.address,
             gender: s.gender,
             admittedClass: s.admittedClass,
+            grNumber: s.grNumber,
+            religion: s.religion,
             caste: s.caste,
             lastSchoolAttended: s.lastSchoolAttended,
             openingBalance: s.openingBalance,

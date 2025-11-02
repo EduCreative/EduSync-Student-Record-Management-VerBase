@@ -19,6 +19,22 @@ const getTodayString = () => {
     return localDate.toISOString().split('T')[0];
 };
 
+// Helper functions for formatting
+const formatCnic = (value: string): string => {
+    if (!value) return '';
+    const digits = value.replace(/\D/g, '').slice(0, 13);
+    if (digits.length <= 5) return digits;
+    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12, 13)}`;
+};
+
+const formatPhoneNumber = (value: string): string => {
+    if (!value) return '';
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 4) return digits;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+};
+
 const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, onSave, studentToEdit }) => {
     const { user, activeSchoolId } = useAuth();
     const { classes, users, students } = useData();
@@ -35,6 +51,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         dateOfAdmission: getTodayString(),
         admittedClass: '',
         caste: '',
+        grNumber: '',
+        religion: '',
         lastSchoolAttended: '',
         contactNumber: '',
         address: '',
@@ -68,6 +86,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     dateOfAdmission: studentToEdit.dateOfAdmission,
                     admittedClass: studentToEdit.admittedClass,
                     caste: studentToEdit.caste || '',
+                    grNumber: studentToEdit.grNumber || '',
+                    religion: studentToEdit.religion || '',
                     lastSchoolAttended: studentToEdit.lastSchoolAttended || '',
                     contactNumber: studentToEdit.contactNumber,
                     address: studentToEdit.address,
@@ -134,7 +154,15 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+
+        let formattedValue = value;
+        if (name === 'fatherCnic') {
+            formattedValue = formatCnic(value);
+        } else if (name === 'contactNumber' || name === 'secondaryContactNumber') {
+            formattedValue = formatPhoneNumber(value);
+        }
+
+        setFormData(prev => ({ ...prev, [name]: formattedValue }));
         if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };
@@ -222,7 +250,15 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     </div>
                     <div>
                         <label htmlFor="fatherCnic" className="input-label">Father's CNIC</label>
-                        <input type="text" name="fatherCnic" id="fatherCnic" value={formData.fatherCnic} onChange={handleChange} className="w-full input-field" />
+                        <input type="text" name="fatherCnic" id="fatherCnic" value={formData.fatherCnic} onChange={handleChange} className="w-full input-field" maxLength={15} placeholder="XXXXX-XXXXXXX-X" />
+                    </div>
+                     <div>
+                        <label htmlFor="grNumber" className="input-label">GR Number</label>
+                        <input type="text" name="grNumber" id="grNumber" value={formData.grNumber} onChange={handleChange} className="w-full input-field" />
+                    </div>
+                    <div>
+                        <label htmlFor="religion" className="input-label">Religion</label>
+                        <input type="text" name="religion" id="religion" value={formData.religion} onChange={handleChange} className="w-full input-field" />
                     </div>
                     <div>
                         <label htmlFor="caste" className="input-label">Caste</label>
@@ -258,12 +294,12 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     </div>
                     <div>
                         <label htmlFor="contactNumber" className="input-label">Contact Number</label>
-                        <input type="tel" name="contactNumber" id="contactNumber" value={formData.contactNumber} onChange={handleChange} className="w-full input-field" required />
+                        <input type="tel" name="contactNumber" id="contactNumber" value={formData.contactNumber} onChange={handleChange} className="w-full input-field" required maxLength={12} placeholder="XXXX-XXXXXXX" />
                         {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
                     </div>
                     <div>
                         <label htmlFor="secondaryContactNumber" className="input-label">Secondary Contact</label>
-                        <input type="tel" name="secondaryContactNumber" id="secondaryContactNumber" value={formData.secondaryContactNumber} onChange={handleChange} className="w-full input-field" />
+                        <input type="tel" name="secondaryContactNumber" id="secondaryContactNumber" value={formData.secondaryContactNumber} onChange={handleChange} className="w-full input-field" maxLength={12} placeholder="XXXX-XXXXXXX" />
                     </div>
                     <div>
                         <label htmlFor="lastSchoolAttended" className="input-label">Last School Attended</label>

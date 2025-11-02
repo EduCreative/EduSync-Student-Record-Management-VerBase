@@ -59,6 +59,8 @@ export interface Student {
     classId: string;
     schoolId: string;
     rollNumber: string;
+    grNumber?: string;
+    religion?: string;
     avatarUrl?: string | null;
     fatherName: string;
     fatherCnic: string;

@@ -103,6 +103,8 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                                     <InfoItem label="Father's CNIC" value={student.fatherCnic} />
                                     <InfoItem label="Date of Birth" value={formatDate(student.dateOfBirth)} />
                                     <InfoItem label="Gender" value={student.gender} />
+                                    <InfoItem label="GR Number" value={student.grNumber} />
+                                    <InfoItem label="Religion" value={student.religion} />
                                     <InfoItem label="Caste" value={student.caste} />
                                     <InfoItem label="Contact Number" value={student.contactNumber} />
                                     <InfoItem label="Secondary Contact" value={student.secondaryContactNumber} />

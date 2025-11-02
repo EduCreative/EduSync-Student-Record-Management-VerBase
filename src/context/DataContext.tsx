@@ -98,7 +98,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setFeeHeads([]); setEvents([]);
             setIsInitialLoad(true);
             setLastSyncTime(null);
-// FIX: Property 'tables' does not exist on type 'EduSyncDB'. This is fixed by correcting the Dexie import in `src/lib/db.ts`.
             await Promise.all(db.tables.map(table => table.clear()));
             return;
         }
@@ -204,7 +203,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             
             // --- PHASE 2: ATOMIC DATABASE WRITE ---
-// FIX: Property 'transaction' and 'tables' do not exist on type 'EduSyncDB'. This is fixed by correcting the Dexie import in `src/lib/db.ts`.
             await db.transaction('rw', db.tables, async () => {
                 const promises = [
                     schoolsData && db.schools.bulkPut(schoolsData),
@@ -811,9 +809,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
-        // FIX: Explicitly type `sortedClasses` as `Class[]` and use a more robust sorting logic to resolve type inference issues where `currentClass` was being inferred as `unknown`. This also improves promotion order accuracy.
-        // FIX: Removed explicit type annotation from sort callback parameters to allow for better type inference.
-        // FIX: Added explicit type annotation to sort callback parameters to ensure correct type inference.
+        // FIX: Explicitly typed sort callback parameters 'a' and 'b' as 'Class' to resolve issue where they were being inferred as 'unknown'.
         const sortedClasses: Class[] = [...schoolClasses].sort((a: Class, b: Class) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
 
         if (sortedClasses.length < 1) {
@@ -824,8 +820,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const exemptedSet = new Set(exemptedStudentIds);
         // Iterate from highest to lowest class
         for (let i = sortedClasses.length - 1; i >= 0; i--) {
-            // FIX: Explicitly type `currentClass` to resolve 'property does not exist on type unknown' error.
-            const currentClass: Class = sortedClasses[i];
+            const currentClass = sortedClasses[i];
             const studentsInClass = students.filter(s => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
 
             if (studentsInClass.length === 0) {
@@ -842,8 +837,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     throw error;
                 }
             } else { // Promote to next class
-                // FIX: Explicitly type `nextClass` to resolve 'property does not exist on type unknown' error.
-                const nextClass: Class = sortedClasses[i + 1];
+                const nextClass = sortedClasses[i + 1];
                 const { error } = await supabase.from('students').update({ class_id: nextClass.id }).in('id', studentIds);
                 if (error) {
                     showToast('Error', `Failed to promote students from ${currentClass.name} to ${nextClass.name}.`, 'error');
