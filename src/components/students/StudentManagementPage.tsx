@@ -36,6 +36,15 @@ const formatPhoneNumber = (value: string | number | undefined): string => {
     return String(value);
 };
 
+const parseCurrency = (value: any): number | null => {
+    if (value === null || value === undefined || String(value).trim() === '') {
+        return null;
+    }
+    const stringValue = String(value).replace(/,/g, '');
+    const parsed = parseFloat(stringValue);
+    return isNaN(parsed) ? null : parsed;
+};
+
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
@@ -144,7 +153,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         }
     
         const hasTuitionFeeInCsv = validData.some(item => 
-            (item.tuition_fee !== undefined && item.tuition_fee !== null && String(item.tuition_fee).trim() !== '')
+            (item.tuition_fee !== undefined && item.tuition_fee !== null && String(item.tuition_fee).trim() !== '') ||
+            (item.tuitionFee !== undefined && item.tuitionFee !== null && String(item.tuitionFee).trim() !== '')
         );
         const schoolFeeHeads = feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
         const tuitionFeeHead = schoolFeeHeads.find(fh => fh.name.toLowerCase() === 'tuition fee');
@@ -166,8 +176,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 const classNameFromCsv = item.class_name || item.className;
                 const classId = classNameToIdMap.get(classNameFromCsv.trim().toLowerCase());
                 
-                const openingBalance = item.opening_balance || item.openingBalance;
-                const parsedOpeningBalance = (openingBalance !== null && openingBalance !== undefined && String(openingBalance).trim() !== '') ? parseFloat(String(openingBalance)) : 0;
+                const parsedOpeningBalance = parseCurrency(item.opening_balance || item.openingBalance) ?? 0;
 
                 const studentData: Omit<Student, 'id' | 'status'> & { feeStructure?: {feeHeadId: string, amount: number}[] } = {
                     name: item.name,
@@ -187,19 +196,20 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     religion: item.religion,
                     caste: item.caste,
                     lastSchoolAttended: item.last_school_attended || item.lastSchoolAttended,
-                    openingBalance: isNaN(parsedOpeningBalance) ? 0 : parsedOpeningBalance,
+                    openingBalance: parsedOpeningBalance,
                     userId: item.user_id || item.userId || null,
                 };
                 
                 const feeStructure: { feeHeadId: string; amount: number }[] = [];
                 const school = schools.find(s => s.id === effectiveSchoolId);
                 const defaultSchoolTuitionFee = school?.defaultTuitionFee;
-                const parsedTuitionFee = (item.tuition_fee !== null && item.tuition_fee !== undefined && String(item.tuition_fee).trim() !== '') ? parseFloat(String(item.tuition_fee)) : null;
+                const tuitionFee = item.tuition_fee || item.tuitionFee;
+                const parsedTuitionFee = parseCurrency(tuitionFee);
 
                 schoolFeeHeads.forEach(head => {
                     let amountToApply: number | null = null;
                     if (tuitionFeeHead && head.id === tuitionFeeHead.id) {
-                        if (parsedTuitionFee !== null && !isNaN(parsedTuitionFee) && parsedTuitionFee >= 0) {
+                        if (parsedTuitionFee !== null && parsedTuitionFee >= 0) {
                             amountToApply = parsedTuitionFee;
                         } else if (defaultSchoolTuitionFee && defaultSchoolTuitionFee > 0) {
                             amountToApply = defaultSchoolTuitionFee;
