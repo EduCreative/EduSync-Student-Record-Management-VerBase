@@ -566,10 +566,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return 0;
         }
         try {
-            const feeHeadsMap = new Map(feeHeads.map(fh => [fh.id, fh.name]));
-
             const feeItemsForRpc = selectedFeeHeads.map(({ feeHeadId, amount }) => ({
-                description: feeHeadsMap.get(feeHeadId) || 'Unknown Fee Head',
+                fee_head_id: feeHeadId,
                 amount: amount
             }));
 
@@ -582,7 +580,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
 
             console.log("--- DEBUGGING CHALLAN GENERATION ---");
-            console.log("Attempting to call RPC function: 'generate_challans'");
+            console.log("Attempting to call RPC function: 'generate_challans_for_month'");
             console.log("With arguments:", JSON.stringify(rpcArgs, null, 2));
             console.log("Argument types:", {
                 school_id: typeof rpcArgs.school_id,
@@ -593,7 +591,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
             console.log("--- END DEBUGGING ---");
 
-            const { data, error } = await supabase.rpc('generate_challans', rpcArgs);
+            const { data, error } = await supabase.rpc('generate_challans_for_month', rpcArgs);
 
             if (error) throw new Error(error.message);
             
