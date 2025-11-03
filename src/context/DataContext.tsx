@@ -5,8 +5,6 @@ import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
 import { db } from '../lib/db';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
-// FIX: Imported `getClassLevel` to enable robust sorting of classes for the promotion logic.
-import { getClassLevel } from '../utils/sorting';
 import type { Table } from 'dexie';
 
 // --- CONTEXT ---
