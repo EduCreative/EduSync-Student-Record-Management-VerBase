@@ -65,7 +65,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
     };
 
     return (
-        <div className="min-h-screen w-full auth-gradient-bg text-white lg:grid lg:grid-cols-2">
+        <div className="min-h-screen w-full auth-gradient-bg text-white grid lg:grid-cols-2">
             <div className="hidden lg:flex flex-col items-center justify-center p-12 relative animate-in">
                 <div className="text-center space-y-6">
                     <div className="bg-white/20 p-4 rounded-full inline-block backdrop-blur-sm">
