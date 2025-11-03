@@ -194,6 +194,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 ...formData,
                 userId: formData.userId || null, 
                 openingBalance: Number(formData.openingBalance) || 0,
+                dateOfAdmission: formData.dateOfAdmission || null,
             };
 
             if (studentToEdit) {
