@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UserRole, FeeChallan, Attendance, Student } from '../../types';
 import DoughnutChart from '../charts/DoughnutChart';
-import BarChart from '../charts/BarChart';
+import BarChart, { BarChartData } from '../charts/BarChart';
 import StatCard from '../common/StatCard';
 import { ActiveView } from '../layout/Layout';
 import StatCardSkeleton from '../common/skeletons/StatCardSkeleton';
@@ -80,22 +80,39 @@ const getIconBgColor = (action: string) => {
     return 'bg-yellow-100 dark:bg-yellow-900/50';
 };
 
-const ChartHeaderWithToggle: React.FC<{ title: string; selected: 'line' | 'bar'; onChange: (type: 'line' | 'bar') => void; }> = ({ title, selected, onChange }) => (
-    <div className="flex justify-between items-center">
+const FeeChartHeader: React.FC<{
+    title: string;
+    chartType: 'line' | 'bar';
+    onChartTypeChange: (type: 'line' | 'bar') => void;
+    period: 'week' | 'month' | '30days';
+    onPeriodChange: (period: 'week' | 'month' | '30days') => void;
+}> = ({ title, chartType, onChartTypeChange, period, onPeriodChange }) => (
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="flex items-center space-x-1 rounded-lg bg-secondary-100 dark:bg-secondary-700 p-1">
-            <button 
-                onClick={() => onChange('line')} 
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${selected === 'line' ? 'bg-white dark:bg-secondary-600 shadow-sm' : 'text-secondary-600 dark:text-secondary-300'}`}
+        <div className="flex items-center gap-2">
+            <select
+                value={period}
+                onChange={(e) => onPeriodChange(e.target.value as 'week' | 'month' | '30days')}
+                className="input-field py-1 text-sm w-32"
             >
-                Line
-            </button>
-            <button 
-                onClick={() => onChange('bar')} 
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${selected === 'bar' ? 'bg-white dark:bg-secondary-600 shadow-sm' : 'text-secondary-600 dark:text-secondary-300'}`}
-            >
-                Bar
-            </button>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="30days">Last 30 Days</option>
+            </select>
+            <div className="flex items-center space-x-1 rounded-lg bg-secondary-100 dark:bg-secondary-700 p-1">
+                <button 
+                    onClick={() => onChartTypeChange('line')} 
+                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${chartType === 'line' ? 'bg-white dark:bg-secondary-600 shadow-sm' : 'text-secondary-600 dark:text-secondary-300'}`}
+                >
+                    Line
+                </button>
+                <button 
+                    onClick={() => onChartTypeChange('bar')} 
+                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${chartType === 'bar' ? 'bg-white dark:bg-secondary-600 shadow-sm' : 'text-secondary-600 dark:text-secondary-300'}`}
+                >
+                    Bar
+                </button>
+            </div>
         </div>
     </div>
 );
@@ -103,10 +120,11 @@ const ChartHeaderWithToggle: React.FC<{ title: string; selected: 'line' | 'bar';
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
-    const { users, students, getSchoolById, fees, attendance, loading, logs } = useData();
+    const { users, students, getSchoolById, fees, attendance, loading, logs, classes } = useData();
     
     const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
     const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
+    const [feePeriod, setFeePeriod] = useState<'week' | 'month' | '30days'>('30days');
 
     if (!user) return null;
     
@@ -182,26 +200,76 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     }, [attendance, schoolStudents]);
 
     const feeCollectionData = useMemo(() => {
-        const last30Days = [...Array(30)].map((_, i) => {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            return d.toISOString().split('T')[0];
-        }).reverse();
-    
         const schoolFees = fees.filter(fee => students.find(s => s.id === fee.studentId)?.schoolId === effectiveSchoolId);
-    
         const collectionsByDay: Record<string, number> = {};
         schoolFees.forEach(fee => {
-            if (fee.paidDate && fee.paidDate >= last30Days[0]) {
+            if (fee.paidDate) {
                 collectionsByDay[fee.paidDate] = (collectionsByDay[fee.paidDate] || 0) + fee.paidAmount;
             }
         });
     
-        return last30Days.map(date => ({
-            label: new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-            value: collectionsByDay[date] || 0
-        }));
-    }, [fees, students, effectiveSchoolId]);
+        if (feePeriod === 'week') {
+            const now = new Date();
+            const first = now.getDate() - now.getDay(); // First day is Sunday
+            const weekDays = [...Array(7)].map((_, i) => {
+                const d = new Date(now.getTime());
+                d.setDate(first + i);
+                return d;
+            });
+            
+            return weekDays.map(date => {
+                const dateStr = date.toISOString().split('T')[0];
+                return {
+                    label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                    value: collectionsByDay[dateStr] || 0
+                };
+            });
+        }
+    
+        if (feePeriod === 'month') {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthDays = [...Array(daysInMonth)].map((_, i) => new Date(year, month, i + 1));
+    
+            return monthDays.map(date => {
+                const dateStr = date.toISOString().split('T')[0];
+                return {
+                    label: String(date.getDate()),
+                    value: collectionsByDay[dateStr] || 0
+                };
+            });
+        }
+    
+        // Default to '30days'
+        const last30Days = [...Array(30)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return d;
+        }).reverse();
+    
+        return last30Days.map(date => {
+            const dateStr = date.toISOString().split('T')[0];
+            return {
+                label: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+                value: collectionsByDay[dateStr] || 0
+            };
+        });
+    }, [fees, students, effectiveSchoolId, feePeriod]);
+    
+    const classStrengthData = useMemo(() => {
+        if (!effectiveSchoolId) return [];
+        const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
+    
+        return schoolClasses
+            .map(c => ({
+                id: c.id,
+                label: c.name,
+                value: schoolStudents.filter(s => s.classId === c.id).length
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+    }, [classes, schoolStudents, effectiveSchoolId]);
 
     const recentLogs = useMemo(() => {
         return logs.slice(0, 5);
@@ -248,6 +316,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
         }));
 
         setModalDetails({ title: `Students: ${status}`, items });
+    };
+
+    const handleClassStrengthClick = (item: BarChartData) => {
+        setActiveView({ view: 'students', payload: { classFilter: item.id } });
     };
 
     if (loading) {
@@ -308,20 +380,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                     <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
                 </div>
 
-                <div className="lg:col-span-2">
-                    {feeChartType === 'line' ? (
-                        <LineChart
-                            title={<ChartHeaderWithToggle title="Fee Collection (Last 30 Days)" selected={feeChartType} onChange={setFeeChartType} />}
-                            data={feeCollectionData}
-                            color="#f59e0b"
-                        />
-                    ) : (
-                        <BarChart
-                            title={<ChartHeaderWithToggle title="Fee Collection (Last 30 Days)" selected={feeChartType} onChange={setFeeChartType} />}
-                            data={feeCollectionData}
-                            color="#f59e0b"
-                        />
-                    )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        {feeChartType === 'line' ? (
+                            <LineChart
+                                title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod} />}
+                                data={feeCollectionData}
+                                color="#f59e0b"
+                            />
+                        ) : (
+                            <BarChart
+                                title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod} />}
+                                data={feeCollectionData}
+                                color="#f59e0b"
+                            />
+                        )}
+                    </div>
+                    <BarChart
+                        title="Class Strength"
+                        data={classStrengthData}
+                        onClick={handleClassStrengthClick}
+                        multiColor={true}
+                    />
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

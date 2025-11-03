@@ -11,9 +11,9 @@ import { usePWAInstall } from '../../context/PWAInstallContext';
 import IncreaseTuitionFeeModal from './IncreaseTuitionFeeModal';
 
 const SettingsPage: React.FC = () => {
-    const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize } = useTheme();
+    const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData } = useTheme();
     const { user, effectiveRole, activeSchoolId } = useAuth();
-    const { schools, backupData, restoreData, updateSchool } = useData();
+    const { schools, backupData, restoreData, updateSchool, feeHeads, addFeeHead, updateFeeHead } = useData();
     const { showToast } = useToast();
     const { installPrompt, clearInstallPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,12 +23,9 @@ const SettingsPage: React.FC = () => {
     const [isSchoolSaving, setIsSchoolSaving] = useState(false);
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = schools.find(s => s.id === effectiveSchoolId);
-    const [schoolData, setSchoolData] = useState({
-        name: '',
-        address: '',
-        logoUrl: null as string | null | undefined,
-        defaultTuitionFee: 0,
-    });
+    
+    const [schoolDetails, setSchoolDetails] = useState({ name: '', address: '', logoUrl: null as string | null | undefined });
+    const [defaultTuitionFee, setDefaultTuitionFee] = useState(0);
 
     // State for Class Promotion
     const [isTuitionFeeModalOpen, setIsTuitionFeeModalOpen] = useState(false);
@@ -37,22 +34,40 @@ const SettingsPage: React.FC = () => {
     // Initialize forms and preferences from user data
     useEffect(() => {
         if (school) {
-            setSchoolData({
+            setSchoolDetails({
                 name: school.name,
                 address: school.address,
                 logoUrl: school.logoUrl,
-                defaultTuitionFee: school.defaultTuitionFee || 0,
             });
+            const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
+            setDefaultTuitionFee(tuitionFeeHead?.defaultAmount || 0);
         }
-    }, [school]);
+    }, [school, feeHeads, effectiveSchoolId]);
     
     const handleSchoolUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!school || !schoolData.name.trim()) return;
+        if (!school || !schoolDetails.name.trim() || !effectiveSchoolId) return;
 
         setIsSchoolSaving(true);
         try {
-            await updateSchool({ ...school, ...schoolData });
+            // Update school name, address, logo
+            await updateSchool({
+                id: school.id,
+                name: schoolDetails.name,
+                address: schoolDetails.address,
+                logoUrl: schoolDetails.logoUrl
+            });
+            
+            // Update or create the default tuition fee in fee_heads
+            const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
+            if (tuitionFeeHead) {
+                if (tuitionFeeHead.defaultAmount !== defaultTuitionFee) {
+                    await updateFeeHead({ ...tuitionFeeHead, defaultAmount: defaultTuitionFee });
+                }
+            } else {
+                await addFeeHead({ name: 'Tuition Fee', defaultAmount: defaultTuitionFee, schoolId: effectiveSchoolId });
+            }
+
             showToast('Success', 'School details updated!', 'success');
         } catch (error) {
             showToast('Error', 'Failed to update school details.', 'error');
@@ -110,7 +125,7 @@ const SettingsPage: React.FC = () => {
 
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">Appearance</h2>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <label className="font-medium text-secondary-700 dark:text-secondary-300">Theme</label>
                             <button onClick={toggleTheme} className="btn-secondary">
@@ -125,6 +140,29 @@ const SettingsPage: React.FC = () => {
                                 <button onClick={increaseFontSize} className="btn-secondary px-3">+</button>
                             </div>
                         </div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <label id="highlight-label" className="font-medium text-secondary-700 dark:text-secondary-300">Highlight Missing Data</label>
+                                <p className="text-sm text-secondary-500">Visually emphasize empty fields on student profiles.</p>
+                            </div>
+                             <button
+                                type="button"
+                                role="switch"
+                                aria-checked={highlightMissingData}
+                                aria-labelledby="highlight-label"
+                                onClick={toggleHighlightMissingData}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                                    highlightMissingData ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-secondary-600'
+                                }`}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        highlightMissingData ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -133,22 +171,22 @@ const SettingsPage: React.FC = () => {
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">School Details</h2>
                         <form onSubmit={handleSchoolUpdate} className="space-y-4">
                              <ImageUpload 
-                                imageUrl={schoolData.logoUrl}
-                                onChange={(newLogoUrl) => setSchoolData(prev => ({...prev, logoUrl: newLogoUrl}))}
+                                imageUrl={schoolDetails.logoUrl}
+                                onChange={(newLogoUrl) => setSchoolDetails(prev => ({...prev, logoUrl: newLogoUrl}))}
                                 bucketName="logos"
                                 />
                             <div>
                                 <label className="input-label">School Name</label>
-                                <input type="text" value={schoolData.name} onChange={e => setSchoolData(p => ({...p, name: e.target.value}))} className="input-field" />
+                                <input type="text" value={schoolDetails.name} onChange={e => setSchoolDetails(p => ({...p, name: e.target.value}))} className="input-field" />
                             </div>
                              <div>
                                 <label className="input-label">Address</label>
-                                <textarea value={schoolData.address} onChange={e => setSchoolData(p => ({...p, address: e.target.value}))} className="input-field" rows={2}></textarea>
+                                <textarea value={schoolDetails.address} onChange={e => setSchoolDetails(p => ({...p, address: e.target.value}))} className="input-field" rows={2}></textarea>
                             </div>
                             <div>
                                 <label className="input-label">Default Monthly Tuition Fee</label>
-                                <input type="number" value={schoolData.defaultTuitionFee} onChange={e => setSchoolData(p => ({...p, defaultTuitionFee: Number(e.target.value)}))} className="input-field" />
-                                <p className="text-xs text-secondary-500 mt-1">This fee will be applied to new students or during CSV import if no specific tuition fee is provided.</p>
+                                <input type="number" value={defaultTuitionFee} onChange={e => setDefaultTuitionFee(Number(e.target.value))} className="input-field" />
+                                <p className="text-xs text-secondary-500 mt-1">This updates the default amount on the 'Tuition Fee' head and is used for new students or CSV imports.</p>
                             </div>
                             <div className="flex justify-end">
                                 <button type="submit" className="btn-primary" disabled={isSchoolSaving}>

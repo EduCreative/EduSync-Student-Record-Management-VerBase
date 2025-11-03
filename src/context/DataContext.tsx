@@ -511,8 +511,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         try {
-            const studentMap = new Map(students.map(s => [s.id, s]));
-            const feeHeadMap = new Map(feeHeads.map(fh => [fh.id, fh.name]));
+            // FIX: Add explicit types to Map constructor and map callbacks to ensure correct type inference.
+            const studentMap = new Map<string, Student>(students.map((s: Student) => [s.id, s]));
+            const feeHeadMap = new Map<string, string>(feeHeads.map((fh: FeeHead) => [fh.id, fh.name]));
             const challansToCreate: Omit<FeeChallan, 'id'>[] = [];
 
             const monthIndex = new Date(Date.parse(month +" 1, 2012")).getMonth();
@@ -629,11 +630,44 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
-        const { error } = await supabase.from('results').upsert(toSnakeCase(resultsToSave), { onConflict: 'student_id, class_id, exam, subject' });
-        if (error) {
-            showToast('Error', error.message, 'error');
-            throw new Error(error.message);
+        if (resultsToSave.length === 0) {
+            return; // Nothing to save
         }
+
+        const { classId, exam, subject } = resultsToSave[0];
+        const studentIds = resultsToSave.map(r => r.studentId);
+        
+        const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+        if (!effectiveSchoolId) {
+            showToast('Error', 'No school context available.', 'error');
+            throw new Error('No school context available.');
+        }
+
+        // Step 1: Delete existing records for these students for this exam/subject
+        const { error: deleteError } = await supabase
+            .from('results')
+            .delete()
+            .eq('class_id', classId)
+            .eq('exam', exam)
+            .eq('subject', subject)
+            .in('student_id', studentIds);
+
+        if (deleteError) {
+            showToast('Error', `Failed to clear previous results: ${deleteError.message}`, 'error');
+            throw new Error(deleteError.message);
+        }
+
+        // Step 2: Insert the new records with school_id
+        const resultsWithSchoolId = resultsToSave.map(r => ({ ...r, schoolId: effectiveSchoolId }));
+        const { error: insertError } = await supabase.from('results').insert(toSnakeCase(resultsWithSchoolId));
+
+        if (insertError) {
+            showToast('Error', `Failed to save new results: ${insertError.message}`, 'error');
+            // This is not ideal as we have deleted the old results. A transaction would be better, but requires an RPC.
+            // For now, this is the best we can do without schema changes or RPCs.
+            throw new Error(insertError.message);
+        }
+
         await fetchData();
         addLog('Results Saved', `${resultsToSave.length} results saved for exam: ${resultsToSave[0]?.exam}.`);
         showToast('Success', 'Results have been saved successfully.');

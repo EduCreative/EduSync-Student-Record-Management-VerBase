@@ -35,7 +35,7 @@ const ResultsEntry: React.FC = () => {
         // FIX: Explicitly type 's' to ensure correct type inference.
         return students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
     }, [students, selectedClassId]);
-
+    
     useEffect(() => {
         if (userClasses.length > 0 && !selectedClassId) {
             setSelectedClassId(userClasses[0].id);
@@ -96,7 +96,7 @@ const ResultsEntry: React.FC = () => {
             await saveResults(resultsToSave);
         } catch (error) {
             console.error("Failed to save results:", error);
-            showToast('Error', 'Could not save results. Please try again.', 'error');
+            // The toast is shown in DataContext, so we don't need another one here.
         } finally {
             setIsSaving(false);
         }

@@ -29,7 +29,6 @@ export interface School {
     name: string;
     address: string;
     logoUrl?: string | null;
-    defaultTuitionFee?: number;
 }
 
 export interface Class {
@@ -112,6 +111,7 @@ export interface Result {
     subject: string;
     marks: number;
     totalMarks: number;
+    schoolId?: string;
 }
 
 export interface ActivityLog {

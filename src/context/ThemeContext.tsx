@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
@@ -12,6 +13,8 @@ interface ThemeContextType {
     increaseFontSize: () => void;
     decreaseFontSize: () => void;
     resetFontSize: () => void;
+    highlightMissingData: boolean;
+    toggleHighlightMissingData: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -19,9 +22,10 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>('light');
     const [fontSize, setFontSizeState] = useState<FontSize>('base');
+    const [highlightMissingData, setHighlightMissingData] = useState<boolean>(true);
 
     useEffect(() => {
-        // Theme initialization from localStorage or system preference
+        // Theme initialization
         const storedTheme = localStorage.getItem('theme') as Theme | null;
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (storedTheme) {
@@ -30,11 +34,15 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setTheme('dark');
         }
 
-        // Font size initialization from localStorage
+        // Font size initialization
         const storedFontSize = localStorage.getItem('fontSize') as FontSize | null;
         if (storedFontSize) {
             setFontSizeState(storedFontSize);
         }
+
+        // Highlight missing data initialization
+        const storedHighlight = localStorage.getItem('highlightMissingData');
+        setHighlightMissingData(storedHighlight === null ? true : storedHighlight === 'true');
     }, []);
 
     // Effect to apply theme class to <html> element
@@ -85,8 +93,16 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         applyFontSize('base');
     };
 
+    const toggleHighlightMissingData = () => {
+        setHighlightMissingData(prev => {
+            const newValue = !prev;
+            localStorage.setItem('highlightMissingData', String(newValue));
+            return newValue;
+        });
+    };
+
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, fontSize, increaseFontSize, decreaseFontSize, resetFontSize }}>
+        <ThemeContext.Provider value={{ theme, toggleTheme, fontSize, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData }}>
             {children}
         </ThemeContext.Provider>
     );

@@ -9,8 +9,9 @@ import { Permission } from '../../permissions';
 import ChallanRangeReportModal from './ChallanRangeReportModal';
 import StudentIdCardModal from './StudentIdCardModal';
 import AttendanceReportModal from './AttendanceReportModal';
+import MissingDataReportModal from './MissingDataReportModal';
 
-type ReportType = 'feeCollection' | 'defaulter' | 'classList' | 'bulkChallan' | 'reportCard' | 'challanRange' | 'studentIdCard' | 'attendance';
+type ReportType = 'feeCollection' | 'defaulter' | 'classList' | 'bulkChallan' | 'reportCard' | 'challanRange' | 'studentIdCard' | 'attendance' | 'missingData';
 
 interface ReportsPageProps {}
 
@@ -85,6 +86,12 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
             description: "Generate and print professional ID cards for an entire class.",
             icon: <IdCardIcon className="w-6 h-6" />,
         },
+        { 
+            id: 'missingData' as ReportType,
+            title: "Missing Data Report",
+            description: "Identify students with incomplete profile information.",
+            icon: <FileWarningIcon className="w-6 h-6" />,
+        },
     ];
 
     const availableReports = allReports.filter(report => {
@@ -93,7 +100,7 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
             case 'defaulter':
                 return hasPermission(Permission.CAN_VIEW_FINANCIAL_REPORTS);
             case 'classList':
-                // FIX: Corrected permission check from CAN_VIEW_STUDENT_LISTS to CAN_VIEW_STUDENTS.
+            case 'missingData':
                 return hasPermission(Permission.CAN_VIEW_STUDENTS);
             case 'bulkChallan':
             case 'challanRange':
@@ -118,6 +125,7 @@ const ReportsPage: React.FC<ReportsPageProps> = () => {
             <ReportCardModal isOpen={activeReport === 'reportCard'} onClose={() => setActiveReport(null)} />
             <StudentIdCardModal isOpen={activeReport === 'studentIdCard'} onClose={() => setActiveReport(null)} />
             <AttendanceReportModal isOpen={activeReport === 'attendance'} onClose={() => setActiveReport(null)} />
+            <MissingDataReportModal isOpen={activeReport === 'missingData'} onClose={() => setActiveReport(null)} />
 
             <div className="space-y-6">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Reports Center</h1>
@@ -143,6 +151,7 @@ const AwardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmln
 const PrinterIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></svg>;
 const IdCardIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M14 14a2 2 0 0 0-2-2h-2"/><path d="M14 10h4"/><path d="M14 14h4"/></svg>;
 const CheckSquareIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
+const FileWarningIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>;
 
 
 export default ReportsPage;

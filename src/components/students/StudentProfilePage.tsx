@@ -8,6 +8,7 @@ import StudentFeeStructure from './StudentFeeStructure';
 import StudentFeeHistory from './StudentFeeHistory';
 import StudentResults from './StudentResults';
 import StudentAttendance from './StudentAttendance';
+import { useTheme } from '../../context/ThemeContext';
 
 interface StudentProfilePageProps {
     studentId: string;
@@ -133,12 +134,32 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
     );
 };
 
-const InfoItem: React.FC<{ label: string; value?: string | number | null; className?: string, bold?: boolean }> = ({ label, value, className, bold }) => (
-    <div className={className}>
-        <dt className="text-sm font-medium text-secondary-500 dark:text-secondary-400">{label}</dt>
-        <dd className={`mt-1 text-sm ${bold ? 'font-bold text-lg' : ''} text-secondary-900 dark:text-white`}>{value || 'N/A'}</dd>
-    </div>
-);
+const InfoItem: React.FC<{ label: string; value?: string | number | null; className?: string, bold?: boolean }> = ({ label, value, className, bold }) => {
+    const { highlightMissingData } = useTheme();
+    const isMissing = value === null || value === undefined || String(value).trim() === '' || value === 'N/A' || value === 'Invalid Date';
+    
+    const content = isMissing ? (highlightMissingData ? 'Not Provided' : 'N/A') : value;
+    let style = `mt-1 text-sm ${bold ? 'font-bold text-lg' : ''}`;
+
+    if (isMissing) {
+        if (highlightMissingData) {
+            style += ' text-golden-600 dark:text-golden-400 italic';
+        } else {
+            style += ' text-secondary-500 dark:text-secondary-400';
+        }
+    } else {
+        style += ' text-secondary-900 dark:text-white';
+    }
+
+    return (
+        <div className={className}>
+            <dt className="text-sm font-medium text-secondary-500 dark:text-secondary-400">{label}</dt>
+            <dd className={style}>
+                {content}
+            </dd>
+        </div>
+    );
+};
 
 const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 

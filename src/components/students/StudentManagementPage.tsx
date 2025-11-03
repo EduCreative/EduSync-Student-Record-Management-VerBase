@@ -174,7 +174,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     
             chunk.forEach(item => {
                 const classNameFromCsv = item.class_name || item.className;
-                const classId = classNameToIdMap.get(classNameFromCsv.trim().toLowerCase());
+                // FIX: Ensure classNameFromCsv is a string before calling trim/toLowerCase to prevent runtime errors when its value is undefined.
+                const classId = classNameToIdMap.get(String(classNameFromCsv || '').trim().toLowerCase());
                 
                 const parsedOpeningBalance = parseCurrency(item.opening_balance || item.openingBalance) ?? 0;
 
@@ -185,8 +186,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     schoolId: effectiveSchoolId!,
                     fatherName: item.father_name || item.fatherName,
                     fatherCnic: formatCnic(item.father_cnic || item.fatherCnic),
-                    dateOfBirth: item.date_of_birth || item.dateOfBirth || null,
-                    dateOfAdmission: item.date_of_admission || item.dateOfAdmission || null,
+                    dateOfBirth: item.date_of_birth || item.dateOfBirth || '',
+                    dateOfAdmission: item.date_of_admission || item.dateOfAdmission || '',
                     contactNumber: formatPhoneNumber(item.contact_number || item.contactNumber),
                     secondaryContactNumber: formatPhoneNumber(item.secondary_contact_number || item.secondaryContactNumber),
                     address: item.address || '',
@@ -201,8 +202,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 };
                 
                 const feeStructure: { feeHeadId: string; amount: number }[] = [];
-                const school = schools.find(s => s.id === effectiveSchoolId);
-                const defaultSchoolTuitionFee = school?.defaultTuitionFee;
                 const tuitionFee = item.tuition_fee || item.tuitionFee;
                 const parsedTuitionFee = parseCurrency(tuitionFee);
 
@@ -211,8 +210,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     if (tuitionFeeHead && head.id === tuitionFeeHead.id) {
                         if (parsedTuitionFee !== null && parsedTuitionFee >= 0) {
                             amountToApply = parsedTuitionFee;
-                        } else if (defaultSchoolTuitionFee && defaultSchoolTuitionFee > 0) {
-                            amountToApply = defaultSchoolTuitionFee;
                         } else if (head.defaultAmount > 0) {
                             amountToApply = head.defaultAmount;
                         }
