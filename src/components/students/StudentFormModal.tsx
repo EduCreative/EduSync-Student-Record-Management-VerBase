@@ -160,20 +160,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
             newErrors.rollNumber = 'This roll number is already in use.';
         }
         
-        // Check for duplicate GR number
-        if (formData.grNumber) {
-            const isDuplicateGr = students.some(s => 
-                s.schoolId === effectiveSchoolId && 
-                s.grNumber &&
-                s.grNumber.trim().toLowerCase() === formData.grNumber.trim().toLowerCase() && 
-                s.id !== studentToEdit?.id
-            );
-            if (isDuplicateGr) {
-                newErrors.grNumber = 'This GR number is already in use.';
-            }
-        }
-
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };

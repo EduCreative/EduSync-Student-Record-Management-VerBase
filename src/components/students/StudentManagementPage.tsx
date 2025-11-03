@@ -117,9 +117,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const validateStudentImport = async (data: any[]) => {
         const classNameToIdMap = new Map(schoolClasses.map(c => [`${c.name}${c.section ? ` - ${c.section}` : ''}`.toLowerCase(), c.id]));
         const existingRollNos = new Set(students.filter(s => s.schoolId === effectiveSchoolId).map(s => s.rollNumber.trim().toLowerCase()));
-        const existingGrNos = new Set(students.filter(s => s.schoolId === effectiveSchoolId && s.grNumber).map(s => s.grNumber!.trim().toLowerCase()));
         const rollNosInCsv = new Set<string>();
-        const grNosInCsv = new Set<string>();
 
         const validRecords: any[] = [];
         const invalidRecords: { record: any, reason: string, rowNum: number }[] = [];
@@ -131,8 +129,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             const classId = className ? classNameToIdMap.get(className) : undefined;
             const rollNumberFromCsv = item.roll_number || item.rollNumber;
             const rollNumber = String(rollNumberFromCsv || '').trim().toLowerCase();
-            const grNumberFromCsv = item.gr_number || item.grNumber;
-            const grNumber = grNumberFromCsv ? String(grNumberFromCsv).trim().toLowerCase() : null;
     
             if (!classId) {
                 invalidRecords.push({ record: item, reason: `Class "${classNameFromCsv}" not found.`, rowNum });
@@ -142,14 +138,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 invalidRecords.push({ record: item, reason: `Duplicate roll number "${rollNumberFromCsv}" is already in use.`, rowNum });
             } else if (rollNosInCsv.has(rollNumber)) {
                 invalidRecords.push({ record: item, reason: `Duplicate roll number "${rollNumberFromCsv}" within the CSV file.`, rowNum });
-            } else if (grNumber && existingGrNos.has(grNumber)) {
-                invalidRecords.push({ record: item, reason: `Duplicate GR number "${grNumberFromCsv}" is already in use.`, rowNum });
-            } else if (grNumber && grNosInCsv.has(grNumber)) {
-                invalidRecords.push({ record: item, reason: `Duplicate GR number "${grNumberFromCsv}" within the CSV file.`, rowNum });
             } else {
                 validRecords.push(item);
                 if (rollNumber) rollNosInCsv.add(rollNumber);
-                if (grNumber) grNosInCsv.add(grNumber);
             }
         });
         return { validRecords, invalidRecords };
