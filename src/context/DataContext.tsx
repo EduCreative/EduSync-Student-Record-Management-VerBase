@@ -602,10 +602,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         try {
-            // FIX: Add explicit types to Map constructor and map callbacks to ensure correct type inference.
             const studentMap = new Map<string, Student>(students.map((s: Student) => [s.id, s]));
             const feeHeadMap = new Map<string, string>(feeHeads.map((fh: FeeHead) => [fh.id, fh.name]));
             const challansToCreate: Omit<FeeChallan, 'id'>[] = [];
+            const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+            const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
 
             const monthIndex = new Date(Date.parse(month +" 1, 2012")).getMonth();
 
@@ -623,10 +624,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     }
                 });
 
-                const feeItems = selectedFeeHeads.map(({ feeHeadId, amount }) => ({
-                    description: feeHeadMap.get(feeHeadId) || 'Unknown Fee',
-                    amount: amount,
-                }));
+                const studentFeeStructureMap = new Map((student.feeStructure || []).map(item => [item.feeHeadId, item.amount]));
+
+                const feeItems = selectedFeeHeads.map(({ feeHeadId, amount }) => {
+                    let finalAmount = amount;
+                    // If this is the tuition fee head, prioritize the student's specific fee
+                    if (tuitionFeeHead && feeHeadId === tuitionFeeHead.id) {
+                        finalAmount = studentFeeStructureMap.get(feeHeadId) ?? amount; // Fallback to default if not set for student
+                    }
+                    return {
+                        description: feeHeadMap.get(feeHeadId) || 'Unknown Fee',
+                        amount: finalAmount,
+                    };
+                });
 
                 const currentMonthTotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
                 const totalAmount = currentMonthTotal + previousBalance;

@@ -168,30 +168,45 @@ const ChallanGenerationPage: React.FC = () => {
 
                 <div>
                     <h3 className="text-lg font-medium mb-2">Include Fee Heads</h3>
-                    <div className="space-y-3 p-4 border dark:border-secondary-700 rounded-lg max-h-60 overflow-y-auto">
-                        {feeHeads.map(fh => (
-                            <div key={fh.id} className="flex items-center justify-between gap-4">
-                                <label className="flex items-center space-x-3 flex-1">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedFeeHeads.get(fh.id)?.selected || false}
-                                        onChange={() => handleFeeHeadToggle(fh.id)}
-                                        className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500"
-                                    />
-                                    <span>{fh.name}</span>
-                                </label>
-                                <div className="flex items-center space-x-2">
-                                    <span>Rs.</span>
-                                    <input
-                                        type="number"
-                                        value={selectedFeeHeads.get(fh.id)?.amount || 0}
-                                        onChange={(e) => handleAmountChange(fh.id, e.target.value)}
-                                        className="input-field w-24 text-right"
-                                        disabled={!selectedFeeHeads.get(fh.id)?.selected}
-                                    />
+                    <div className="space-y-2 p-2 border dark:border-secondary-700 rounded-lg max-h-60 overflow-y-auto">
+                        {feeHeads.map(fh => {
+                            const isTuitionFee = fh.name.toLowerCase() === 'tuition fee';
+                            const rowClass = isTuitionFee
+                                ? "flex items-center justify-between gap-4 p-2 rounded-md bg-blue-50 dark:bg-blue-900/20"
+                                : "flex items-center justify-between gap-4 p-2";
+
+                            return (
+                                <div key={fh.id} className={rowClass}>
+                                    <label className="flex items-start space-x-3 flex-1 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedFeeHeads.get(fh.id)?.selected || false}
+                                            onChange={() => handleFeeHeadToggle(fh.id)}
+                                            className="h-4 w-4 rounded border-secondary-300 text-primary-600 focus:ring-primary-500 mt-1"
+                                        />
+                                        <div>
+                                            <span>{fh.name}</span>
+                                            {isTuitionFee && (
+                                                <p className="text-xs text-blue-600 dark:text-blue-400">
+                                                    Amount will be taken from each student's record. This is a fallback amount.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </label>
+                                    <div className="flex items-center space-x-2">
+                                        <span>Rs.</span>
+                                        <input
+                                            type="number"
+                                            value={selectedFeeHeads.get(fh.id)?.amount || 0}
+                                            onChange={(e) => handleAmountChange(fh.id, e.target.value)}
+                                            className="input-field w-24 text-right"
+                                            disabled={!selectedFeeHeads.get(fh.id)?.selected}
+                                            title={isTuitionFee ? "Default amount for students without a custom fee structure." : ""}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
