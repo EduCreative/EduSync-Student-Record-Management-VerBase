@@ -100,8 +100,9 @@ const ResultsEntry: React.FC = () => {
         }
     };
 
-    const exams = useMemo(() => ["Quiz 1", "Mid-Term", "Quiz 2", "Final Exam", ...[...new Set(results.map(r => r.exam))] ], [results]);
-    const subjects = useMemo(() => ["English", "Mathematics", "Science", "History", "Geography", "Art", ...[...new Set(results.map(r => r.subject))] ], [results]);
+    const exams = useMemo(() => [...new Set(results.map(r => r.exam))].sort(), [results]);
+    const subjects = useMemo(() => [...new Set(results.map(r => r.subject))].sort(), [results]);
+
 
     return (
         <div className="space-y-6">
@@ -109,18 +110,27 @@ const ResultsEntry: React.FC = () => {
             
             <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <select value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
-                        <option value="">Select Class</option>
-                        {userClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    <select value={selectedExam} onChange={e => setSelectedExam(e.target.value)} className="input-field">
-                        <option value="">Select Exam</option>
-                        {exams.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
-                     <select value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)} className="input-field">
-                        <option value="">Select Subject</option>
-                        {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                     <div>
+                        <label htmlFor="class-select" className="input-label">Select Class</label>
+                        <select id="class-select" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
+                            <option value="">Select Class</option>
+                            {userClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="exam-input" className="input-label">Exam</label>
+                        <input id="exam-input" list="exams-list" value={selectedExam} onChange={e => setSelectedExam(e.target.value)} className="input-field" placeholder="E.g., Mid-Term"/>
+                        <datalist id="exams-list">
+                            {exams.map(e => <option key={e} value={e} />)}
+                        </datalist>
+                    </div>
+                    <div>
+                        <label htmlFor="subject-input" className="input-label">Subject</label>
+                        <input id="subject-input" list="subjects-list" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)} className="input-field" placeholder="E.g., Mathematics" />
+                        <datalist id="subjects-list">
+                            {subjects.map(s => <option key={s} value={s} />)}
+                        </datalist>
+                    </div>
                 </div>
             </div>
 

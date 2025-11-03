@@ -101,17 +101,28 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     feeStructure: studentToEdit.feeStructure || [],
                 });
             } else {
-                const studentRollNumbers = students
-                    .filter(s => s.schoolId === effectiveSchoolId)
+                const schoolStudents = students.filter(s => s.schoolId === effectiveSchoolId);
+                
+                // Calculate next roll number
+                const studentRollNumbers = schoolStudents
                     .map(s => parseInt(s.rollNumber, 10))
                     .filter(n => !isNaN(n));
                 
                 const maxRollNo = studentRollNumbers.length > 0 ? Math.max(...studentRollNumbers) : 0;
                 const nextRollNo = String(maxRollNo + 1);
 
+                // Calculate next GR number
+                const studentGrNumbers = schoolStudents
+                    .map(s => s.grNumber ? parseInt(String(s.grNumber).replace(/\D/g, ''), 10) : 0)
+                    .filter(n => !isNaN(n));
+
+                const maxGrNo = studentGrNumbers.length > 0 ? Math.max(...studentGrNumbers) : 0;
+                const nextGrNo = String(maxGrNo + 1);
+
                 setFormData({
                     ...getInitialFormData(),
                     rollNumber: nextRollNo,
+                    grNumber: nextGrNo,
                 });
             }
             setErrors({});
@@ -140,14 +151,28 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         if (!formData.admittedClass.trim()) newErrors.admittedClass = 'Admitted in Class is required.';
         
         // Check for duplicate roll number
-        const isDuplicate = students.some(s => 
+        const isDuplicateRoll = students.some(s => 
             s.schoolId === effectiveSchoolId && 
             s.rollNumber.trim().toLowerCase() === formData.rollNumber.trim().toLowerCase() && 
             s.id !== studentToEdit?.id
         );
-        if (isDuplicate) {
+        if (isDuplicateRoll) {
             newErrors.rollNumber = 'This roll number is already in use.';
         }
+        
+        // Check for duplicate GR number
+        if (formData.grNumber) {
+            const isDuplicateGr = students.some(s => 
+                s.schoolId === effectiveSchoolId && 
+                s.grNumber &&
+                s.grNumber.trim().toLowerCase() === formData.grNumber.trim().toLowerCase() && 
+                s.id !== studentToEdit?.id
+            );
+            if (isDuplicateGr) {
+                newErrors.grNumber = 'This GR number is already in use.';
+            }
+        }
+
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -256,6 +281,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                      <div>
                         <label htmlFor="grNumber" className="input-label">GR Number</label>
                         <input type="text" name="grNumber" id="grNumber" value={formData.grNumber} onChange={handleChange} className="w-full input-field" />
+                        {errors.grNumber && <p className="text-red-500 text-xs mt-1">{errors.grNumber}</p>}
                     </div>
                     <div>
                         <label htmlFor="religion" className="input-label">Religion</label>

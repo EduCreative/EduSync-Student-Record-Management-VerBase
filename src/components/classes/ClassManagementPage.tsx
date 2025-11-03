@@ -13,8 +13,8 @@ import PromotionPreviewModal from './PromotionPreviewModal';
 import { useToast } from '../../context/ToastContext';
 import { getClassLevel } from '../../utils/sorting';
 
-const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
-const DragHandleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>;
+const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
+const DragHandleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>;
 
 
 const ClassManagementPage: React.FC = () => {
@@ -133,6 +133,7 @@ const ClassManagementPage: React.FC = () => {
         const dataToExport = schoolClasses.map(c => ({
             sortOrder: c.sortOrder || '',
             name: c.name,
+            section: c.section || '',
             teacherId: c.teacherId || '',
             teacherName_for_reference: c.teacherId ? teacherMap.get(c.teacherId) || 'N/A' : 'N/A',
             studentCount_for_reference: studentCountMap[c.id] || 0,
@@ -159,14 +160,12 @@ const ClassManagementPage: React.FC = () => {
                     from: fromClass,
                     to: toClass,
                     totalStudentCount: totalStudentCount,
-                    type: 'promote'
                 });
             } else {
                 plan.push({
                     from: fromClass,
-                    to: null,
+                    to: null, // Indicates graduation
                     totalStudentCount: totalStudentCount,
-                    type: 'graduate'
                 });
             }
         }
@@ -174,20 +173,9 @@ const ClassManagementPage: React.FC = () => {
         setIsPromoteModalOpen(true);
     };
 
-    const handleConfirmPromotion = async (exemptedStudentIds: string[]) => {
+    const handleConfirmPromotion = async (mappings: Record<string, string | 'graduate'>, exemptedStudentIds: string[]) => {
         setIsPromoting(true);
         try {
-            // FIX: The promoteAllStudents function expects mappings and exempted IDs.
-            // The mappings are derived from the promotionPlan state.
-            const mappings: Record<string, string | 'graduate'> = promotionPlan.reduce((acc, step) => {
-                if (step.type === 'promote' && step.to) {
-                    acc[step.from.id] = step.to.id;
-                } else if (step.type === 'graduate') {
-                    acc[step.from.id] = 'graduate';
-                }
-                return acc;
-            }, {} as Record<string, string | 'graduate'>);
-
             await promoteAllStudents(mappings, exemptedStudentIds);
         } catch (error) {
             console.error("Promotion failed:", error);
@@ -287,6 +275,7 @@ const ClassManagementPage: React.FC = () => {
                     promotionPlan={promotionPlan}
                     isPromoting={isPromoting}
                     allStudents={students}
+                    allClasses={schoolClasses}
                 />
             )}
             <Modal isOpen={!!classToDelete} onClose={() => setClassToDelete(null)} title="Confirm Class Deletion">
@@ -360,7 +349,7 @@ const ClassManagementPage: React.FC = () => {
                                                 </td>
                                             )}
                                             <td className="px-6 py-4">{index + 1}</td>
-                                            <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{c.name}</td>
+                                            <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</td>
                                             <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
                                             <td className="px-6 py-4">{studentCountMap[c.id] || 0}</td>
                                             {canPerformActions && (
