@@ -217,21 +217,39 @@ const AttendanceMarker: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                                            {statuses.map(s => (
-                                                <button
-                                                    key={s}
-                                                    onClick={() => handleStatusChange(student.id, s)}
-                                                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-sm transition-all duration-150 flex items-center justify-center ${
-                                                        status === s
-                                                        ? `${getStatusBtnClass(s)} text-white shadow-md scale-110`
-                                                        : 'bg-secondary-200 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-300 hover:bg-secondary-300 dark:hover:bg-secondary-600'
-                                                    }`}
-                                                    aria-label={`Mark as ${s}`}
-                                                    title={`Mark as ${s}`}
-                                                >
-                                                    {s[0]}
-                                                </button>
-                                            ))}
+                                            {statuses.map(s => {
+                                                const isSelected = status === s;
+                                                let buttonClass = 'w-8 h-8 sm:w-9 sm:h-9 rounded-full font-bold text-sm transition-all duration-200 ease-in-out flex items-center justify-center ';
+
+                                                if (isSelected) {
+                                                    buttonClass += 'text-white shadow-lg scale-110 ring-2 ring-offset-2 dark:ring-offset-secondary-800 ';
+                                                    switch (s) {
+                                                        case 'Present':
+                                                            buttonClass += 'bg-green-500 ring-green-500';
+                                                            break;
+                                                        case 'Absent':
+                                                            buttonClass += 'bg-red-500 ring-red-500';
+                                                            break;
+                                                        case 'Leave':
+                                                            buttonClass += 'bg-yellow-500 ring-yellow-500';
+                                                            break;
+                                                    }
+                                                } else {
+                                                    buttonClass += 'bg-secondary-200 dark:bg-secondary-700 text-secondary-500 dark:text-secondary-400 hover:bg-secondary-300 dark:hover:bg-secondary-600 opacity-75 hover:opacity-100';
+                                                }
+                                                
+                                                return (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => handleStatusChange(student.id, s)}
+                                                        className={buttonClass}
+                                                        aria-label={`Mark as ${s}`}
+                                                        title={`Mark as ${s}`}
+                                                    >
+                                                        {s[0]}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );

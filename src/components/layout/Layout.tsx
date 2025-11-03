@@ -72,16 +72,6 @@ const Layout: React.FC = () => {
                     return <ClassManagementPage />;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
-            case 'subjects':
-                if ([UserRole.Admin].includes(effectiveRole as UserRole)) {
-                    return <SubjectManagementPage />;
-                }
-                return <Dashboard setActiveView={setActiveView} />;
-            case 'exams':
-                if ([UserRole.Admin].includes(effectiveRole as UserRole)) {
-                    return <ExamManagementPage />;
-                }
-                return <Dashboard setActiveView={setActiveView} />;
             case 'students':
                 if ([UserRole.Admin, UserRole.Accountant, UserRole.Teacher].includes(effectiveRole as UserRole)) {
                      return <StudentManagementPage setActiveView={setActiveView} />;

@@ -104,8 +104,6 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     [UserRole.Admin]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
         { name: 'Class Management', path: '/classes', icon: <SchoolIcon /> },
-        { name: 'Subjects', path: '/subjects', icon: <BookmarkIcon /> },
-        { name: 'Exams', path: '/exams', icon: <FileEditIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
         { name: 'Scan & Pay', path: '/scan-pay', icon: <ScanIcon /> },
