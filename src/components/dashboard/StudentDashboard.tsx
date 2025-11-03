@@ -66,7 +66,7 @@ const StudentDashboard: React.FC = () => {
             <div className="flex items-center space-x-4">
                  <Avatar student={studentProfile} className="w-20 h-20" />
                  <div>
-                    <h1 className="text-3xl font-bold text-shine">Welcome, {user.name}!</h1>
+                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Welcome, {user.name}!</h1>
                     <p className="text-secondary-500 dark:text-secondary-400">
                         {studentClass?.name} | Roll No: {studentProfile.rollNumber}
                     </p>
@@ -74,15 +74,15 @@ const StudentDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                 <div className="animate-in" style={{ animationDelay: '100ms' }}><StatCard title="My Attendance" value="98%" color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<CheckCircleIcon />} /></div>
-                 <div className="animate-in" style={{ animationDelay: '200ms' }}><StatCard title="Overall Grade" value="A+" color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<AwardIcon />} /></div>
-                 <div className="animate-in" style={{ animationDelay: '300ms' }}><StatCard title="Fee Status" value="Paid" color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} /></div>
-                 <div className="animate-in" style={{ animationDelay: '400ms' }}><StatCard title="Upcoming Exams" value="2" color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<EditIcon />} /></div>
+                 <StatCard title="My Attendance" value="98%" color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<CheckCircleIcon />} />
+                 <StatCard title="Overall Grade" value="A+" color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<AwardIcon />} />
+                 <StatCard title="Fee Status" value="Paid" color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
+                 <StatCard title="Upcoming Exams" value="2" color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<EditIcon />} />
             </div>
             
-            <div className="animate-in" style={{ animationDelay: '500ms' }}><BarChart title="Recent Exam Performance (%)" data={recentExamPerformance} multiColor={true} /></div>
+            <BarChart title="Recent Exam Performance (%)" data={recentExamPerformance} multiColor={true} />
 
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg animate-in" style={{ animationDelay: '600ms' }}>
+            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
                  <h2 className="text-xl font-semibold mb-4">Announcements</h2>
                  <ul className="space-y-3 list-disc list-inside text-secondary-600 dark:text-secondary-400">
                     <li>Parent-Teacher Meeting scheduled for next Friday.</li>

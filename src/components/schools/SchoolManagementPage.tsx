@@ -89,7 +89,7 @@ const SchoolCard: React.FC<{
 }> = ({ school, stats, onViewAsAdmin, onDetails, onEdit, onDelete }) => {
     const { hasPermission } = useAuth();
     return (
-        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02]">
+        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1">
             <div className="p-5">
                 <div className="flex items-start space-x-4">
                     {school.logoUrl ? (
@@ -191,17 +191,16 @@ const SchoolManagementPage: React.FC<SchoolManagementPageProps> = ({ setActiveVi
                     )}
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {schools.map((school, index) => (
-                        <div key={school.id} className="animate-in" style={{ animationDelay: `${index * 100}ms` }}>
-                            <SchoolCard
-                                school={school}
-                                stats={schoolStats.get(school.id) || { studentCount: 0, classCount: 0 }}
-                                onDetails={() => setActiveView({ view: 'schoolDetails', payload: { schoolId: school.id } })}
-                                onViewAsAdmin={() => handleSchoolClick(school.id)}
-                                onEdit={() => { setSchoolToEdit(school); setIsModalOpen(true); }}
-                                onDelete={() => setSchoolToDelete(school)}
-                            />
-                        </div>
+                    {schools.map(school => (
+                        <SchoolCard
+                            key={school.id}
+                            school={school}
+                            stats={schoolStats.get(school.id) || { studentCount: 0, classCount: 0 }}
+                            onDetails={() => setActiveView({ view: 'schoolDetails', payload: { schoolId: school.id } })}
+                            onViewAsAdmin={() => handleSchoolClick(school.id)}
+                            onEdit={() => { setSchoolToEdit(school); setIsModalOpen(true); }}
+                            onDelete={() => setSchoolToDelete(school)}
+                        />
                     ))}
                 </div>
             </div>

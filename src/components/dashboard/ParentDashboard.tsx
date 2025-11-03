@@ -58,12 +58,10 @@ const ParentDashboard: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-shine">Parent's Dashboard</h1>
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Parent's Dashboard</h1>
             <div className="space-y-6">
-                {myChildren.map((child, index) => (
-                    <div key={child.id} className="animate-in" style={{ animationDelay: `${index * 150}ms` }}>
-                        <ChildCard student={child} results={results} />
-                    </div>
+                {myChildren.map(child => (
+                    <ChildCard key={child.id} student={child} results={results} />
                 ))}
             </div>
         </div>
@@ -102,7 +100,7 @@ const ChildCard: React.FC<{ student: Student; results: Result[] }> = ({ student,
                 <StatCard title="Attendance" value="95%" color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<CheckCircleIcon />} />
                 <StatCard title="Overall Grade" value="A" color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<AwardIcon />} />
                 <StatCard title="Fee Status" value="Paid" color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
-                <button className="h-full flex items-center justify-center p-4 bg-secondary-50 dark:bg-secondary-700 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-600 active:scale-95">
+                <button className="h-full flex items-center justify-center p-4 bg-secondary-50 dark:bg-secondary-700 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-600">
                     <span className="font-semibold">View Full Details &rarr;</span>
                 </button>
             </div>

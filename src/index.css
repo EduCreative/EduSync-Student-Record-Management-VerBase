@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
-
 @layer components {
   .skeleton-bg {
     @apply bg-secondary-200 dark:bg-secondary-700 animate-shimmer;
@@ -42,7 +35,7 @@
 
   /* Centralized Button Styles */
   .btn {
-    @apply px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95;
+    @apply px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
     @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
@@ -53,43 +46,6 @@
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
   }
-  
-  .animate-in {
-    animation: fade-in-up 0.5s ease-out forwards;
-    opacity: 0;
-  }
-
-  /* Text Shine Effect */
-  .text-shine {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-700 via-primary-500 to-secondary-400 dark:from-primary-400 dark:via-primary-200 dark:to-secondary-400;
-    background-size: 200% auto;
-    animation: text-shine 3s linear infinite;
-  }
-
-  /* Animated background for Login/Register Pages */
-  .auth-gradient-bg {
-    @apply bg-gradient-to-br from-primary-700 via-purple-700 to-primary-950;
-    background-size: 200% 200%;
-    animation: gradient-flow 15s ease infinite;
-  }
-  
-  /* Standardized inputs for auth pages */
-  .input-auth {
-      @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400;
-  }
-
-  /* Animated dot grid for main layout */
-  .dot-grid-bg {
-    @apply bg-secondary-100 dark:bg-secondary-900;
-    background-image: radial-gradient(theme('colors.secondary.300') 1px, transparent 1px), radial-gradient(theme('colors.secondary.300') 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-position: 0 0, 20px 20px;
-    animation: background-pan 20s linear infinite;
-  }
-  .dark .dot-grid-bg {
-    background-image: radial-gradient(theme('colors.secondary.700') 1px, transparent 1px), radial-gradient(theme('colors.secondary.700') 1px, transparent 1px);
-  }
-
 
   /* Print Styles for Reports */
   .printable-report table {

@@ -65,8 +65,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
     };
 
     return (
-        <div className="min-h-screen w-full auth-gradient-bg text-white grid lg:grid-cols-2">
-            <div className="hidden lg:flex flex-col items-center justify-center p-12 relative animate-in">
+        <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 to-primary-950 text-white lg:grid lg:grid-cols-2 relative">
+            <div className="absolute inset-0 opacity-10">
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M40 0V80M0 40H80" stroke="white" strokeWidth="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
+            </div>
+            <div className="hidden lg:flex flex-col items-center justify-center p-12 relative">
                 <div className="text-center space-y-6">
                     <div className="bg-white/20 p-4 rounded-full inline-block backdrop-blur-sm">
                         <EduSyncLogo className="h-20 w-20 text-white" />
@@ -82,8 +85,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                     &copy; {new Date().getFullYear()} EduSync. All rights reserved.
                 </div>
             </div>
-            <div className="grid place-items-center p-6 sm:p-12 w-full lg:py-0 relative">
-                <div className="w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 animate-in" style={{ animationDelay: '200ms' }}>
+            <div className="flex items-center justify-center p-6 sm:p-12 w-full lg:py-0 relative">
+                <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10">
                     <div className="mb-8 text-center lg:text-left">
                         <h2 className="text-3xl font-bold tracking-tight text-white">
                             Sign In
@@ -105,7 +108,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="input-auth"
+                                    className="pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400"
                                     placeholder="you@example.com"
                                     required
                                     aria-label="Email Address"
@@ -122,7 +125,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="input-auth"
+                                    className="pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400"
                                     placeholder="••••••••••••"
                                     required
                                     aria-label="Password"
@@ -151,7 +154,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-white text-primary-800 font-bold py-3 px-4 rounded-lg hover:bg-primary-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center active:scale-95"
+                            className="w-full bg-white text-primary-800 font-bold py-3 px-4 rounded-lg hover:bg-primary-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                         >
                             {loading ? <SpinnerIcon /> : 'Sign In'}
                         </button>
@@ -164,7 +167,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                     </div>
 
                     <div className="flex items-center justify-center gap-4">
-                        <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/20 transition active:scale-95">
+                        <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-white/30 rounded-lg text-sm font-medium text-white hover:bg-white/20 transition">
                            <GoogleIcon className="w-5 h-5 fill-white" /> Sign in with Google
                         </button>
                     </div>

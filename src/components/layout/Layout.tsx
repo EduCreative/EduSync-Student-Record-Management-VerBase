@@ -144,7 +144,7 @@ const Layout: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen dot-grid-bg text-secondary-800 dark:text-secondary-200">
+        <div className="flex h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200">
             <ToastContainer />
             <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
             <Sidebar 
@@ -156,10 +156,8 @@ const Layout: React.FC = () => {
             />
             <div className="flex flex-col flex-1 overflow-y-auto">
                 <Header setSidebarOpen={setSidebarOpen} setActiveView={setActiveView} openAboutModal={() => setIsAboutModalOpen(true)} />
-                <main className="p-4 md:p-8 overflow-hidden">
-                    <div key={activeView.view} className="animate-in">
-                        {renderContent()}
-                    </div>
+                <main className="p-4 md:p-8">
+                    {renderContent()}
                 </main>
             </div>
         </div>
