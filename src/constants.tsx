@@ -78,6 +78,14 @@ function ScanIcon(props: SVGProps<SVGSVGElement>) {
   return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
 }
 
+function BookmarkIcon(props: SVGProps<SVGSVGElement>) {
+  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+}
+
+function FileEditIcon(props: SVGProps<SVGSVGElement>) {
+    return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2h-5.5"/><polyline points="14 2 14 8 20 8"/><path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l.99-3.95L10.42 12.61z"/></svg>
+}
+
 export function DownloadIcon(props: SVGProps<SVGSVGElement>) {
     return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
 }
@@ -96,6 +104,8 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     [UserRole.Admin]: [
         { name: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
         { name: 'Class Management', path: '/classes', icon: <SchoolIcon /> },
+        { name: 'Subjects', path: '/subjects', icon: <BookmarkIcon /> },
+        { name: 'Exams', path: '/exams', icon: <FileEditIcon /> },
         { name: 'Students', path: '/students', icon: <UsersIcon /> },
         { name: 'Fee Management', path: '/fees', icon: <DollarSignIcon /> },
         { name: 'Scan & Pay', path: '/scan-pay', icon: <ScanIcon /> },

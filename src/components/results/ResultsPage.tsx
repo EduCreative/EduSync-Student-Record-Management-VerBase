@@ -8,7 +8,7 @@ import ResultsViewer from './ResultsViewer';
 
 const ResultsEntry: React.FC = () => {
     const { user, effectiveRole, activeSchoolId } = useAuth();
-    const { classes, students, results, saveResults } = useData();
+    const { classes, students, results, subjects, exams, saveResults } = useData();
     const [isSaving, setIsSaving] = useState(false);
 
     const [selectedClassId, setSelectedClassId] = useState('');
@@ -76,8 +76,8 @@ const ResultsEntry: React.FC = () => {
     };
     
     const handleSaveResults = async () => {
-        if (!selectedClassId || !selectedExam || !selectedSubject) {
-            alert("Please select class, exam, and subject.");
+        if (!selectedClassId || !selectedExam.trim() || !selectedSubject.trim()) {
+            alert("Please select a class and provide both an exam and a subject name.");
             return;
         }
         setIsSaving(true);
@@ -86,8 +86,8 @@ const ResultsEntry: React.FC = () => {
                 .map(([studentId, { marks: studentMarks, totalMarks }]) => ({
                     studentId,
                     classId: selectedClassId,
-                    exam: selectedExam,
-                    subject: selectedSubject,
+                    exam: selectedExam.trim(),
+                    subject: selectedSubject.trim(),
                     marks: studentMarks,
                     totalMarks: totalMarks,
                 }));
@@ -100,8 +100,17 @@ const ResultsEntry: React.FC = () => {
         }
     };
 
-    const exams = useMemo(() => [...new Set(results.map(r => r.exam))].sort(), [results]);
-    const subjects = useMemo(() => [...new Set(results.map(r => r.subject))].sort(), [results]);
+    const examsList = useMemo(() => {
+        const examsFromResults = results.map(r => r.exam);
+        const managedExams = exams.map(e => e.name);
+        return [...new Set([...examsFromResults, ...managedExams])].sort();
+    }, [results, exams]);
+    
+    const subjectsList = useMemo(() => {
+        const subjectsFromResults = results.map(r => r.subject);
+        const managedSubjects = subjects.map(s => s.name);
+        return [...new Set([...subjectsFromResults, ...managedSubjects])].sort();
+    }, [results, subjects]);
 
 
     return (
@@ -121,14 +130,14 @@ const ResultsEntry: React.FC = () => {
                         <label htmlFor="exam-input" className="input-label">Exam</label>
                         <input id="exam-input" list="exams-list" value={selectedExam} onChange={e => setSelectedExam(e.target.value)} className="input-field" placeholder="E.g., Mid-Term"/>
                         <datalist id="exams-list">
-                            {exams.map(e => <option key={e} value={e} />)}
+                            {examsList.map(e => <option key={e} value={e} />)}
                         </datalist>
                     </div>
                     <div>
                         <label htmlFor="subject-input" className="input-label">Subject</label>
                         <input id="subject-input" list="subjects-list" value={selectedSubject} onChange={e => setSelectedSubject(e.target.value)} className="input-field" placeholder="E.g., Mathematics" />
                         <datalist id="subjects-list">
-                            {subjects.map(s => <option key={s} value={s} />)}
+                            {subjectsList.map(s => <option key={s} value={s} />)}
                         </datalist>
                     </div>
                 </div>

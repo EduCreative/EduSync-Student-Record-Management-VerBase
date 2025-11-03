@@ -216,6 +216,14 @@ CREATE TABLE public.classes (
   CONSTRAINT classes_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES auth.users(id),
   CONSTRAINT classes_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)
 );
+CREATE TABLE public.exams (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  school_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT exams_pkey PRIMARY KEY (id),
+  CONSTRAINT exams_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)
+);
 CREATE TABLE public.fee_challans (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   challan_number character varying NOT NULL UNIQUE,
@@ -322,4 +330,12 @@ CREATE TABLE public.students (
   CONSTRAINT students_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
   CONSTRAINT students_class_id_fkey FOREIGN KEY (class_id) REFERENCES public.classes(id),
   CONSTRAINT students_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)
+);
+CREATE TABLE public.subjects (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  school_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT subjects_pkey PRIMARY KEY (id),
+  CONSTRAINT subjects_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)
 );

@@ -40,6 +40,18 @@ export interface Class {
     sortOrder?: number;
 }
 
+export interface Subject {
+    id: string;
+    name: string;
+    schoolId: string;
+}
+
+export interface Exam {
+    id: string;
+    name: string;
+    schoolId: string;
+}
+
 export interface Student {
     id: string;
     userId?: string | null;

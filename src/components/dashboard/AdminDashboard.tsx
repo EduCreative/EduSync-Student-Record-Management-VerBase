@@ -17,7 +17,7 @@ const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?:
      <button 
         onClick={onClick} 
         disabled={!onClick}
-        className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-secondary-50 dark:disabled:hover:bg-secondary-700"
+        className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-secondary-50 dark:disabled:hover:bg-secondary-700 active:scale-95"
     >
         {icon}
         <span className="text-sm font-medium">{title}</span>
@@ -380,19 +380,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             </Modal>
             <div className="space-y-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Admin Dashboard</h1>
+                    <h1 className="text-4xl font-bold text-shine">Admin Dashboard</h1>
                     <p className="text-secondary-500 dark:text-secondary-400">Welcome back, {user.name}. Here's what's happening at {school?.name}.</p>
                 </div>
             
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} />
-                    <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} />
-                    <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
-                    <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
+                    <div className="animate-in" style={{ animationDelay: '100ms' }}><StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} /></div>
+                    <div className="animate-in" style={{ animationDelay: '200ms' }}><StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} /></div>
+                    <div className="animate-in" style={{ animationDelay: '300ms' }}><StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} /></div>
+                    <div className="animate-in" style={{ animationDelay: '400ms' }}><StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} /></div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div>
+                    <div className="animate-in" style={{ animationDelay: '500ms' }}>
                         {feeChartType === 'line' ? (
                             <LineChart
                                 title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod} />}
@@ -407,21 +407,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                             />
                         )}
                     </div>
-                    <BarChart
-                        title="Class Strength"
-                        data={classStrengthData}
-                        onClick={handleClassStrengthClick}
-                        multiColor={true}
-                    />
+                    <div className="animate-in" style={{ animationDelay: '600ms' }}>
+                        <BarChart
+                            title="Class Strength"
+                            data={classStrengthData}
+                            onClick={handleClassStrengthClick}
+                            multiColor={true}
+                        />
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} />
-                    <BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} multiColor={true} />
+                    <div className="animate-in" style={{ animationDelay: '700ms' }}><DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} /></div>
+                    <div className="animate-in" style={{ animationDelay: '800ms' }}><BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} multiColor={true} /></div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg animate-in" style={{ animationDelay: '900ms' }}>
                         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                         <div className="grid grid-cols-2 gap-4">
                             <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
@@ -431,7 +433,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg animate-in" style={{ animationDelay: '1000ms' }}>
                         <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
                         {recentLogs.length > 0 ? (
                             <ul className="space-y-4">

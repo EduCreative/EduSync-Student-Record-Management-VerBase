@@ -1,7 +1,7 @@
 // FIX: Reverted Dexie import to a default import. The named import '{ Dexie }' does not provide the class constructor needed for subclassing, which caused errors where core methods like '.version()' and '.transaction()' were not found.
 import * as DexieModule from 'dexie';
 import type { Table } from 'dexie';
-import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification } from '../types';
+import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Notification, Subject, Exam } from '../types';
 
 // FIX: Use namespace import and extract default to ensure correct class constructor for extension.
 const Dexie = (DexieModule as any).default;
@@ -18,6 +18,8 @@ export class EduSyncDB extends Dexie {
     feeHeads!: Table<FeeHead, string>;
     events!: Table<SchoolEvent, string>;
     notifications!: Table<Notification, string>;
+    subjects!: Table<Subject, string>;
+    exams!: Table<Exam, string>;
 
     constructor() {
         super('EduSyncDB');
@@ -40,6 +42,14 @@ export class EduSyncDB extends Dexie {
         // from previous development versions, which can cause the DB to hang.
         this.version(2).stores({});
         
+        this.version(3).stores({
+            subjects: 'id, schoolId, name'
+        });
+
+        this.version(4).stores({
+            exams: 'id, schoolId, name'
+        });
+
         this.on('blocked', () => {
             console.warn(
               `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`

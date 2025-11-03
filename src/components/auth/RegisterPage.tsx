@@ -117,13 +117,13 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
 
     if (success) {
         return (
-            <div className="min-h-screen w-full bg-gradient-to-br from-purple-800 to-indigo-950 flex flex-col justify-center items-center p-4 text-white">
-                <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 text-center">
+            <div className="min-h-screen w-full auth-gradient-bg flex flex-col justify-center items-center p-4 text-white">
+                <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 text-center animate-in">
                     <h1 className="text-2xl font-bold">Registration Successful!</h1>
                     <p className="text-purple-200 mt-4">
                         Your account has been created. An administrator will need to approve your account before you can log in.
                     </p>
-                    <button onClick={onSwitchToLogin} className="mt-6 w-full bg-white text-purple-800 font-bold py-3 px-4 rounded-lg hover:bg-purple-100 transition-colors">
+                    <button onClick={onSwitchToLogin} className="mt-6 w-full bg-white text-purple-800 font-bold py-3 px-4 rounded-lg hover:bg-purple-100 transition-colors active:scale-95">
                         Back to Login
                     </button>
                 </div>
@@ -132,11 +132,8 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     }
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-purple-800 to-indigo-950 text-white lg:grid lg:grid-cols-2 relative">
-             <div className="absolute inset-0 opacity-10">
-                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M40 0V80M0 40H80" stroke="white" strokeWidth="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
-            </div>
-            <div className="hidden lg:flex flex-col items-center justify-center p-12 relative">
+        <div className="min-h-screen w-full auth-gradient-bg text-white lg:grid lg:grid-cols-2">
+            <div className="hidden lg:flex flex-col items-center justify-center p-12 relative animate-in">
                 <div className="text-center space-y-6">
                      <div className="bg-white/20 p-4 rounded-full inline-block backdrop-blur-sm">
                         <EduSyncLogo className="h-20 w-20 text-white" />
@@ -153,7 +150,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 </div>
             </div>
              <div className="flex items-center justify-center p-6 sm:p-12 w-full lg:py-0 relative">
-                <div className="w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10">
+                <div className="w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 animate-in" style={{ animationDelay: '200ms' }}>
                     <div className="mb-8 text-center lg:text-left">
                         <h2 className="text-3xl font-bold tracking-tight text-white">
                             Create Account
@@ -218,7 +215,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             </div>
                         </div>
                         <div className="pt-2">
-                            <button type="submit" disabled={loading} className="w-full bg-white text-purple-800 font-bold py-3 px-4 rounded-lg hover:bg-purple-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                            <button type="submit" disabled={loading} className="w-full bg-white text-purple-800 font-bold py-3 px-4 rounded-lg hover:bg-purple-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center active:scale-95">
                                 {loading ? <SpinnerIcon /> : 'Create Account'}
                             </button>
                         </div>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent } from '../types';
+import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam } from '../types';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
@@ -13,6 +13,8 @@ interface DataContextType {
     schools: School[];
     users: User[];
     classes: Class[];
+    subjects: Subject[];
+    exams: Exam[];
     students: Student[];
     attendance: Attendance[];
     fees: FeeChallan[];
@@ -35,6 +37,12 @@ interface DataContextType {
     addClass: (classData: Omit<Class, 'id'>) => Promise<void>;
     updateClass: (updatedClass: Class) => Promise<void>;
     deleteClass: (classId: string) => Promise<void>;
+    addSubject: (subjectData: Omit<Subject, 'id'>) => Promise<void>;
+    updateSubject: (updatedSubject: Subject) => Promise<void>;
+    deleteSubject: (subjectId: string) => Promise<void>;
+    addExam: (examData: Omit<Exam, 'id'>) => Promise<void>;
+    updateExam: (updatedExam: Exam) => Promise<void>;
+    deleteExam: (examId: string) => Promise<void>;
     setAttendance: (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => Promise<void>;
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
     generateChallansForMonth: (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
@@ -80,6 +88,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [schools, setSchools] = useState<School[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
+    const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [exams, setExams] = useState<Exam[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [attendance, setAttendanceState] = useState<Attendance[]>([]);
     const [fees, setFees] = useState<FeeChallan[]>([]);
@@ -91,7 +101,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const fetchData = useCallback(async () => {
         if (!user) {
             setLoading(false);
-            setSchools([]); setUsers([]); setClasses([]); setStudents([]);
+            setSchools([]); setUsers([]); setClasses([]); setSubjects([]); setExams([]); setStudents([]);
             setAttendanceState([]); setFees([]); setResults([]); setLogs([]);
             setFeeHeads([]); setEvents([]);
             setIsInitialLoad(true);
@@ -109,6 +119,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setSchools(await db.schools.toArray());
                 setUsers(await db.users.toArray());
                 setClasses(await db.classes.toArray());
+                setSubjects(await db.subjects.toArray());
+                setExams(await db.exams.toArray());
                 setStudents(await db.students.toArray());
                 setAttendanceState(await db.attendance.toArray());
                 setFees(await db.fees.toArray());
@@ -161,11 +173,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // --- PHASE 1: FETCH ALL DATA ---
             const [
-                schoolsData, usersData, classesData, feeHeadsData, eventsData, logsData, studentsData
+                schoolsData, usersData, classesData, subjectsData, examsData, feeHeadsData, eventsData, logsData, studentsData
             ] = await Promise.all([
                 fetchTable('schools'),
                 fetchTable('profiles', { filterBySchool: true }),
                 fetchTable('classes', { filterBySchool: true }),
+                fetchTable('subjects', { filterBySchool: true }),
+                fetchTable('exams', { filterBySchool: true }),
                 fetchTable('fee_heads', { filterBySchool: true }),
                 fetchTable('school_events', { filterBySchool: true }),
                 fetchTable('activity_logs', { order: 'timestamp', limit: 100, filterBySchool: true }),
@@ -206,6 +220,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     schoolsData && db.schools.bulkPut(schoolsData),
                     usersData && db.users.bulkPut(usersData),
                     classesData && db.classes.bulkPut(classesData),
+                    subjectsData && db.subjects.bulkPut(subjectsData),
+                    examsData && db.exams.bulkPut(examsData),
                     feeHeadsData && db.feeHeads.bulkPut(feeHeadsData),
                     eventsData && db.events.bulkPut(eventsData),
                     logsData && db.logs.bulkPut(logsData),
@@ -234,6 +250,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (schoolsData) setSchools(schoolsData);
             if (usersData) setUsers(usersData);
             if (classesData) setClasses(classesData);
+            if (subjectsData) setSubjects(subjectsData);
+            if (examsData) setExams(examsData);
             if (feeHeadsData) setFeeHeads(feeHeadsData);
             if (eventsData) setEvents(eventsData);
             if (logsData) setLogs(logsData);
@@ -469,6 +487,80 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `Class ${classToDelete.name} has been deleted.`);
     };
 
+    const addSubject = async (subjectData: Omit<Subject, 'id'>) => {
+        const { error } = await supabase.from('subjects').insert(toSnakeCase(subjectData)).select().single();
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        await fetchData();
+        addLog('Subject Added', `New subject created: ${subjectData.name}.`);
+        showToast('Success', `Subject ${subjectData.name} created.`);
+    };
+
+    const updateSubject = async (updatedSubject: Subject) => {
+        const { error } = await supabase.from('subjects').update(toSnakeCase(updatedSubject)).eq('id', updatedSubject.id).select().single();
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        await fetchData();
+        addLog('Subject Updated', `Subject updated for ${updatedSubject.name}.`);
+        showToast('Success', `${updatedSubject.name}'s details have been updated.`);
+    };
+
+    const deleteSubject = async (subjectId: string) => {
+        const subjectToDelete = subjects.find(s => s.id === subjectId);
+        if (!subjectToDelete) return;
+
+        const { error } = await supabase.from('subjects').delete().eq('id', subjectId);
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        
+        await fetchData();
+        addLog('Subject Deleted', `Subject deleted: ${subjectToDelete.name}.`);
+        showToast('Success', `Subject ${subjectToDelete.name} has been deleted.`);
+    };
+
+    const addExam = async (examData: Omit<Exam, 'id'>) => {
+        const { error } = await supabase.from('exams').insert(toSnakeCase(examData)).select().single();
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        await fetchData();
+        addLog('Exam Added', `New exam created: ${examData.name}.`);
+        showToast('Success', `Exam ${examData.name} created.`);
+    };
+
+    const updateExam = async (updatedExam: Exam) => {
+        const { error } = await supabase.from('exams').update(toSnakeCase(updatedExam)).eq('id', updatedExam.id).select().single();
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        await fetchData();
+        addLog('Exam Updated', `Exam updated for ${updatedExam.name}.`);
+        showToast('Success', `${updatedExam.name}'s details have been updated.`);
+    };
+
+    const deleteExam = async (examId: string) => {
+        const examToDelete = exams.find(s => s.id === examId);
+        if (!examToDelete) return;
+
+        const { error } = await supabase.from('exams').delete().eq('id', examId);
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        
+        await fetchData();
+        addLog('Exam Deleted', `Exam deleted: ${examToDelete.name}.`);
+        showToast('Success', `Exam ${examToDelete.name} has been deleted.`);
+    };
+
     const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => {
         const { error } = await supabase.from('attendance').upsert(toSnakeCase(attendanceData.map(d => ({...d, date}))), { onConflict: 'student_id, date' }).select();
         if (error) {
@@ -632,9 +724,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (resultsToSave.length === 0) {
             return; // Nothing to save
         }
-
-        const { classId, exam, subject } = resultsToSave[0];
-        const studentIds = resultsToSave.map(r => r.studentId);
         
         const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
         if (!effectiveSchoolId) {
@@ -642,7 +731,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error('No school context available.');
         }
 
-        // Step 1: Delete existing records for these students for this exam/subject
+        const { classId, exam, subject } = resultsToSave[0];
+        
+        // Auto-create exam if it doesn't exist
+        const examExists = exams.some(e => e.name.toLowerCase() === exam.toLowerCase() && e.schoolId === effectiveSchoolId);
+        if (!examExists) {
+            const { error: examInsertError } = await supabase.from('exams').insert({
+                name: exam,
+                school_id: effectiveSchoolId
+            });
+            if (examInsertError) {
+                showToast('Error', `Failed to create new exam: ${examInsertError.message}`, 'error');
+                throw new Error(examInsertError.message);
+            }
+        }
+
+        // Auto-create subject if it doesn't exist
+        const subjectExists = subjects.some(s => s.name.toLowerCase() === subject.toLowerCase() && s.schoolId === effectiveSchoolId);
+        if (!subjectExists) {
+            const { error: subjectInsertError } = await supabase.from('subjects').insert({
+                name: subject,
+                school_id: effectiveSchoolId
+            });
+            if (subjectInsertError) {
+                showToast('Error', `Failed to create new subject: ${subjectInsertError.message}`, 'error');
+                throw new Error(subjectInsertError.message);
+            }
+        }
+
+        // Upsert results
+        const studentIds = resultsToSave.map(r => r.studentId);
         const { error: deleteError } = await supabase
             .from('results')
             .delete()
@@ -656,19 +774,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(deleteError.message);
         }
 
-        // Step 2: Insert the new records with school_id
         const resultsWithSchoolId = resultsToSave.map(r => ({ ...r, schoolId: effectiveSchoolId }));
         const { error: insertError } = await supabase.from('results').insert(toSnakeCase(resultsWithSchoolId));
 
         if (insertError) {
             showToast('Error', `Failed to save new results: ${insertError.message}`, 'error');
-            // This is not ideal as we have deleted the old results. A transaction would be better, but requires an RPC.
-            // For now, this is the best we can do without schema changes or RPCs.
             throw new Error(insertError.message);
         }
 
         await fetchData();
-        addLog('Results Saved', `${resultsToSave.length} results saved for exam: ${resultsToSave[0]?.exam}.`);
+        addLog('Results Saved', `${resultsToSave.length} results saved for exam: ${exam}.`);
         showToast('Success', 'Results have been saved successfully.');
     };
     
@@ -936,10 +1051,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', 'Class order saved successfully.');
     };
 
-    const value = {
-        schools, users, classes, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime,
+    const value: DataContextType = {
+        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
-        addClass, updateClass, deleteClass, setAttendance, recordFeePayment, generateChallansForMonth,
+        addClass, updateClass, deleteClass, addSubject, updateSubject, deleteSubject,
+        addExam, updateExam, deleteExam, setAttendance, recordFeePayment, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
         bulkAddClasses, backupData, restoreData, addUserByAdmin, promoteAllStudents, increaseTuitionFees,

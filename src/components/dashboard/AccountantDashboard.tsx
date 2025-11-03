@@ -8,7 +8,7 @@ import DoughnutChart from '../charts/DoughnutChart';
 import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; }> = ({ title, icon }) => (
-     <button className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center">
+     <button className="flex flex-col items-center justify-center space-y-2 p-4 bg-secondary-50 dark:bg-secondary-700 dark:bg-opacity-50 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 dark:hover:bg-opacity-50 hover:text-primary-600 transition-all text-center active:scale-95">
         {icon}
         <span className="text-sm font-medium">{title}</span>
     </button>
@@ -115,23 +115,23 @@ const AccountantDashboard: React.FC = () => {
     return (
         <div className="space-y-8">
              <div>
-                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Accountant Dashboard</h1>
+                 <h1 className="text-3xl font-bold text-shine">Accountant Dashboard</h1>
                  <p className="text-secondary-500 dark:text-secondary-400">Manage finances for {school?.name}.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} />
-                <StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
-                <StatCard title="Overdue Invoices" value={stats.overdueInvoices} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertCircleIcon />} />
-                <StatCard title="Total Students" value={stats.totalStudentsInSchool} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} />
+                <div className="animate-in" style={{ animationDelay: '100ms' }}><StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} /></div>
+                <div className="animate-in" style={{ animationDelay: '200ms' }}><StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} /></div>
+                <div className="animate-in" style={{ animationDelay: '300ms' }}><StatCard title="Overdue Invoices" value={stats.overdueInvoices} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertCircleIcon />} /></div>
+                <div className="animate-in" style={{ animationDelay: '400ms' }}><StatCard title="Total Students" value={stats.totalStudentsInSchool} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} /></div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} multiColor={true} />
-                <DoughnutChart title="Outstanding Fees" data={outstandingFees} />
+                <div className="animate-in" style={{ animationDelay: '500ms' }}><BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} multiColor={true} /></div>
+                <div className="animate-in" style={{ animationDelay: '600ms' }}><DoughnutChart title="Outstanding Fees" data={outstandingFees} /></div>
             </div>
 
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg animate-in" style={{ animationDelay: '700ms' }}>
                 <h2 className="text-xl font-semibold mb-4">Financial Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <QuickAction title="Generate Challans" icon={<FilePlusIcon className="w-8 h-8"/>} />

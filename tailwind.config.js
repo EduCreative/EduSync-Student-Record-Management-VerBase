@@ -20,10 +20,32 @@ export default {
         shimmer: {
           '0%': { backgroundPosition: '200% 0' },
           '100%': { backgroundPosition: '-200% 0' },
+        },
+        'gradient-flow': {
+          '0%': { 'background-position': '0% 50%' },
+          '50%': { 'background-position': '100% 50%' },
+          '100%': { 'background-position': '0% 50%' },
+        },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'text-shine': {
+          '0%': { 'background-position': '200% center' },
+          '100%': { 'background-position': '-200% center' },
+        },
+        'background-pan': {
+          '0%': { 'background-position': '15% 0%' },
+          '50%': { 'background-position': '85% 100%' },
+          '100%': { 'background-position': '15% 0%' },
         }
       },
       animation: {
         shimmer: 'shimmer 1.5s ease-in-out infinite',
+        'gradient-flow': 'gradient-flow 15s ease infinite',
+        'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+        'text-shine': 'text-shine 3s linear infinite',
+        'background-pan': 'background-pan 20s linear infinite',
       },
     }
   },
