@@ -82,8 +82,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                     classId: studentToEdit.classId,
                     fatherName: studentToEdit.fatherName,
                     fatherCnic: studentToEdit.fatherCnic,
-                    dateOfBirth: studentToEdit.dateOfBirth,
-                    dateOfAdmission: studentToEdit.dateOfAdmission,
+                    dateOfBirth: studentToEdit.dateOfBirth || '',
+                    dateOfAdmission: studentToEdit.dateOfAdmission || '',
                     admittedClass: studentToEdit.admittedClass,
                     caste: studentToEdit.caste || '',
                     grNumber: studentToEdit.grNumber || '',
@@ -195,6 +195,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                 userId: formData.userId || null, 
                 openingBalance: Number(formData.openingBalance) || 0,
                 dateOfAdmission: formData.dateOfAdmission || null,
+                dateOfBirth: formData.dateOfBirth || null,
             };
 
             if (studentToEdit) {

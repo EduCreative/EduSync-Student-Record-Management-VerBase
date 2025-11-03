@@ -64,8 +64,8 @@ export interface Student {
     avatarUrl?: string | null;
     fatherName: string;
     fatherCnic: string;
-    dateOfBirth: string;
-    dateOfAdmission: string;
+    dateOfBirth: string | null;
+    dateOfAdmission: string | null;
     contactNumber: string;
     secondaryContactNumber?: string;
     address: string;
