@@ -73,6 +73,11 @@
     animation: gradient-flow 15s ease infinite;
   }
   
+  /* Standardized inputs for auth pages */
+  .input-auth {
+      @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400;
+  }
+
   /* Animated dot grid for main layout */
   .dot-grid-bg {
     @apply bg-secondary-100 dark:bg-secondary-900;

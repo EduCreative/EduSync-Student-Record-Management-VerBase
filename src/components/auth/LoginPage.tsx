@@ -82,8 +82,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                     &copy; {new Date().getFullYear()} EduSync. All rights reserved.
                 </div>
             </div>
-            <div className="flex items-center justify-center p-6 sm:p-12 w-full lg:py-0 relative">
-                <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 animate-in" style={{ animationDelay: '200ms' }}>
+            <div className="grid place-items-center p-6 sm:p-12 w-full lg:py-0 relative">
+                <div className="w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 animate-in" style={{ animationDelay: '200ms' }}>
                     <div className="mb-8 text-center lg:text-left">
                         <h2 className="text-3xl font-bold tracking-tight text-white">
                             Sign In
@@ -105,7 +105,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                    className="input-auth"
                                     placeholder="you@example.com"
                                     required
                                     aria-label="Email Address"
@@ -122,7 +122,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                    className="input-auth"
                                     placeholder="••••••••••••"
                                     required
                                     aria-label="Password"

@@ -47,7 +47,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onResetSuccess })
 
     return (
         <div className="min-h-screen w-full auth-gradient-bg flex items-center justify-center p-6 sm:p-12">
-            <div className="w-full max-w-md bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 animate-in">
+            <div className="w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10 animate-in">
                 <div className="mb-8 text-center">
                     <EduSyncLogo className="h-12 w-12 text-white mx-auto mb-4" />
                     <h2 className="text-3xl font-bold tracking-tight text-white">
@@ -65,7 +65,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onResetSuccess })
                             <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-primary-200/80"/>
                             <input
                                 id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                                className="pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-white/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                className="input-auth"
                                 placeholder="••••••••••••" required
                             />
                         </div>
@@ -76,7 +76,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onResetSuccess })
                             <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-primary-200/80"/>
                             <input
                                 id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-white/20 text-white placeholder-primary-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                className="input-auth"
                                 placeholder="••••••••••••" required
                             />
                         </div>
