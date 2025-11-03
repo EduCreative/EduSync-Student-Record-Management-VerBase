@@ -138,7 +138,7 @@ export const NAV_LINKS: Record<UserRole, { name: string; path: string; icon: Rea
     ],
 };
 
-export const formatDate = (dateString?: string | Date): string => {
+export const formatDate = (dateString?: string | Date | null): string => {
     if (!dateString) return 'N/A';
     try {
         const date = new Date(dateString);
