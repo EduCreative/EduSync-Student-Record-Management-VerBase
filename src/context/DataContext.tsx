@@ -7,6 +7,7 @@ import { db } from '../lib/db';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 // FIX: Imported `getClassLevel` to enable robust sorting of classes for the promotion logic.
 import { getClassLevel } from '../utils/sorting';
+import type { Table } from 'dexie';
 
 // --- CONTEXT ---
 interface DataContextType {
@@ -97,7 +98,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setFeeHeads([]); setEvents([]);
             setIsInitialLoad(true);
             setLastSyncTime(null);
-            await Promise.all(db.tables.map(table => table.clear()));
+            await Promise.all(db.tables.map((table: Table) => table.clear()));
             return;
         }
 
