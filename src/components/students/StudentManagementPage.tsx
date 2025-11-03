@@ -48,7 +48,7 @@ const parseCurrency = (value: any): number | null => {
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
-    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, schools } = useData();
+    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads } = useData();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
@@ -174,7 +174,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     
             chunk.forEach(item => {
                 const classNameFromCsv = item.class_name || item.className;
-                // FIX: Ensure classNameFromCsv is a string before calling trim/toLowerCase to prevent runtime errors when its value is undefined.
+                // FIX: In `handleImportStudents`, ensured `classNameFromCsv` is treated as a string before calling `.trim().toLowerCase()` to prevent runtime errors when its value is null or undefined.
                 const classId = classNameToIdMap.get(String(classNameFromCsv || '').trim().toLowerCase());
                 
                 const parsedOpeningBalance = parseCurrency(item.opening_balance || item.openingBalance) ?? 0;

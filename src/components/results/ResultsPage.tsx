@@ -5,12 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole, Result, Class, Student } from '../../types';
 import Avatar from '../common/Avatar';
 import ResultsViewer from './ResultsViewer';
-import { useToast } from '../../context/ToastContext';
 
 const ResultsEntry: React.FC = () => {
     const { user, effectiveRole, activeSchoolId } = useAuth();
     const { classes, students, results, saveResults } = useData();
-    const { showToast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
 
     const [selectedClassId, setSelectedClassId] = useState('');
