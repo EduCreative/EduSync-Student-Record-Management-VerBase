@@ -39,10 +39,10 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
-    const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
+    const classMap = useMemo(() => new Map(classes.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [classes]);
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
-    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const reportData = useMemo(() => {
         // FIX: Define interfaces for student and class group summaries to ensure type safety in reduce and map operations.
@@ -271,7 +271,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                     <label htmlFor="class-filter" className="input-label">Filter by Class</label>
                     <select id="class-filter" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                         <option value="all">All Classes</option>
-                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                     </select>
                 </div>
                  <div>

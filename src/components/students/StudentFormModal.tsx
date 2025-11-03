@@ -123,7 +123,8 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
         if (!studentToEdit && formData.classId) {
             const selectedClass = schoolClasses.find(c => c.id === formData.classId);
             if (selectedClass) {
-                setFormData(prev => ({ ...prev, admittedClass: selectedClass.name }));
+                const fullName = `${selectedClass.name}${selectedClass.section ? ` - ${selectedClass.section}` : ''}`;
+                setFormData(prev => ({ ...prev, admittedClass: fullName }));
             }
         }
     }, [formData.classId, studentToEdit, schoolClasses]);
@@ -220,7 +221,7 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         <label htmlFor="classId" className="input-label">Class</label>
                         <select name="classId" id="classId" value={formData.classId} onChange={handleChange} className="w-full input-field" required>
                             <option value="">Select Class</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                         </select>
                         {errors.classId && <p className="text-red-500 text-xs mt-1">{errors.classId}</p>}
                     </div>
@@ -284,7 +285,10 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
                         <label htmlFor="admittedClass" className="input-label">Admitted in Class</label>
                         <select name="admittedClass" id="admittedClass" value={formData.admittedClass} onChange={handleChange} className="w-full input-field" required>
                             <option value="">Select Admission Class</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                            {schoolClasses.map(c => {
+                                const fullName = `${c.name}${c.section ? ` - ${c.section}` : ''}`;
+                                return <option key={c.id} value={fullName}>{fullName}</option>
+                            })}
                         </select>
                         {errors.admittedClass && <p className="text-red-500 text-xs mt-1">{errors.admittedClass}</p>}
                     </div>

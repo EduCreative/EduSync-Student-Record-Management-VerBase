@@ -56,7 +56,7 @@ interface DataContextType {
     bulkAddClasses: (classes: Omit<Class, 'id'>[]) => Promise<void>;
     backupData: () => Promise<void>;
     restoreData: (backupFile: File) => Promise<void>;
-    promoteAllStudents: (exemptedStudentIds: string[]) => Promise<void>;
+    promoteAllStudents: (mappings: Record<string, string | 'graduate'>, exemptedStudentIds: string[]) => Promise<void>;
     increaseTuitionFees: (studentIds: string[], increaseAmount: number) => Promise<void>;
     sendFeeReminders: (challanIds: string[]) => Promise<void>;
     bulkUpdateClassOrder: (classes: { id: string; sortOrder: number }[]) => Promise<void>;
@@ -824,59 +824,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const promoteAllStudents = useCallback(async (exemptedStudentIds: string[]) => {
-        const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
-        if (!effectiveSchoolId) {
-            showToast('Error', 'No school selected to perform promotion.', 'error');
-            throw new Error('No school selected');
-        }
-
-        // FIX: Explicitly type 'c' to fix 'unknown' type error on 'c.schoolId'.
-        const schoolClasses = classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
-        // FIX: Explicitly typed sort callback parameters 'a' and 'b' as 'Class' to resolve issue where they were being inferred as 'unknown'.
-        const sortedClasses: Class[] = [...schoolClasses].sort((a: Class, b: Class) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
-
-        if (sortedClasses.length < 1) {
-            showToast('Info', 'No classes found to perform promotion.', 'info');
-            return;
-        }
-
+    const promoteAllStudents = useCallback(async (mappings: Record<string, string | 'graduate'>, exemptedStudentIds: string[]) => {
         const exemptedSet = new Set(exemptedStudentIds);
-        // Iterate from highest to lowest class
-        for (let i = sortedClasses.length - 1; i >= 0; i--) {
-            // FIX: Explicitly cast currentClass to Class to resolve 'unknown' type error.
-            const currentClass = sortedClasses[i] as Class;
-            // FIX: Explicitly type 's' to fix 'unknown' type error on 's.classId'.
-            const studentsInClass = students.filter((s: Student) => s.classId === currentClass.id && s.status === 'Active' && !exemptedSet.has(s.id));
-
-            if (studentsInClass.length === 0) {
-                continue; // Skip empty class
-            }
-
-            // FIX: Explicitly type 's' to fix 'unknown' type error on 's.id'.
-            const studentIds = studentsInClass.map((s: Student) => s.id);
-
-            if (i === sortedClasses.length - 1) { // Highest class graduates
-                const newStatus = `Class ${currentClass.name} Passed`;
-                const { error } = await supabase.from('students').update({ status: newStatus }).in('id', studentIds);
-                if (error) {
-                    showToast('Error', `Failed to graduate students from ${currentClass.name}.`, 'error');
-                    throw error;
+        const updates: { id: string, class_id?: string, status?: string }[] = [];
+    
+        for (const fromClassId in mappings) {
+            const toClassIdOrAction = mappings[fromClassId];
+            const studentsToProcess = students.filter(s => s.classId === fromClassId && s.status === 'Active' && !exemptedSet.has(s.id));
+    
+            studentsToProcess.forEach(student => {
+                if (toClassIdOrAction === 'graduate') {
+                    const fromClass = classes.find(c => c.id === fromClassId);
+                    updates.push({ id: student.id, status: `Passed ${fromClass?.name || ''}`.trim() });
+                } else {
+                    updates.push({ id: student.id, class_id: toClassIdOrAction });
                 }
-            } else { // Promote to next class
-                // FIX: Explicitly cast nextClass to Class to resolve 'unknown' type error.
-                const nextClass = sortedClasses[i + 1] as Class;
-                const { error } = await supabase.from('students').update({ class_id: nextClass.id }).in('id', studentIds);
-                if (error) {
-                    showToast('Error', `Failed to promote students from ${currentClass.name} to ${nextClass.name}.`, 'error');
-                    throw error;
-                }
+            });
+        }
+        
+        if (updates.length > 0) {
+            const { error } = await supabase.from('students').upsert(updates);
+            if (error) {
+                showToast('Error', `Failed to promote students.`, 'error');
+                throw error;
             }
         }
         
-        addLog('Students Promoted', `Promoted students for the new academic year.`);
-        showToast('Success', 'All students have been promoted successfully.', 'success');
+        addLog('Students Promoted', `Promoted/Graduated ${updates.length} students.`);
+        showToast('Success', 'All selected students have been promoted successfully.', 'success');
         await fetchData();
+
     }, [user, activeSchoolId, classes, students, showToast, addLog, fetchData]);
 
     const increaseTuitionFees = useCallback(async (studentIds: string[], increaseAmount: number) => {

@@ -26,7 +26,7 @@ const FeeManagementPage: React.FC = () => {
             
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                 <div className="border-b border-secondary-200 dark:border-secondary-700">
-                    <nav className="-mb-px flex space-x-6 px-6" aria-label="Tabs">
+                    <nav className="-mb-px flex space-x-4 sm:space-x-6 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
                         {tabs.map(tab => (
                             (!tab.permission || hasPermission(tab.permission)) && (
                                 <button

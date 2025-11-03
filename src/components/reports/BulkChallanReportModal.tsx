@@ -28,9 +28,9 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
-    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
-    const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
+    const classMap = useMemo(() => new Map(classes.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [classes]);
 
     const reportData = useMemo(() => {
         if (!classId) return [];
@@ -75,7 +75,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                         <select id="class-select" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                             <option value="">-- Choose a class --</option>
                             <option value="all">All Classes</option>
-                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                         </select>
                     </div>
                     <div>

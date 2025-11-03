@@ -34,6 +34,7 @@ export interface School {
 export interface Class {
     id: string;
     name: string;
+    section?: string | null;
     teacherId: string | null;
     schoolId: string;
     sortOrder?: number;

@@ -3,8 +3,9 @@ import React, { useState, useEffect, type FC, type ReactNode } from 'react';
 // FIX: Export the BarChartData interface so it can be used in other components.
 export interface BarChartData {
     label: string;
-    value: number;
+    value: number; // Total value for the bar
     color?: string;
+    segments?: { value: number; color: string; label: string }[];
     [key: string]: any;
 }
 
@@ -58,6 +59,8 @@ const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, 
     const handleMouseOut = () => {
         setTooltip(null);
     };
+    
+    const legendItems = data[0]?.segments?.map(s => ({ label: s.label, color: s.color }));
 
     return (
         <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full" onMouseLeave={handleMouseOut}>
@@ -75,26 +78,56 @@ const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, 
                 </div>
             )}
             <div className="mb-4">{title}</div>
-            <div className="flex justify-around items-end h-48 space-x-2">
-                {data.map((item, index) => (
-                    <div 
-                        key={index} 
-                        className="flex flex-col items-center flex-1 group h-full justify-end" 
-                        onClick={() => onClick && onClick(item)}
-                        onMouseOver={(e) => handleMouseOver(e, item)}
-                        onMouseMove={handleMouseMove}
-                    >
+            
+            {legendItems && (
+                <div className="flex justify-center gap-4 text-xs mb-2">
+                    {legendItems.map(item => (
+                        <div key={item.label} className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }}></span>
+                            <span>{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="w-full overflow-x-auto pb-4">
+                <div className="flex items-end h-48 space-x-2" style={{ minWidth: `${data.length * 40}px` }}>
+                    {data.map((item, index) => (
                         <div 
-                            className={`w-full rounded-t-md bar-item ${onClick ? 'cursor-pointer' : ''}`}
-                            style={{ 
-                                height: isAnimated ? `${(item.value / maxValue) * 100}%` : '0%',
-                                backgroundColor: item.color || (multiColor ? CHART_COLORS[index % CHART_COLORS.length] : color),
-                            }}
-                            title={`${item.label}: ${item.value}`}
-                        ></div>
-                        <span className="text-xs text-secondary-500 mt-2 truncate">{item.label}</span>
-                    </div>
-                ))}
+                            key={index} 
+                            className="flex flex-col items-center flex-1 group h-full justify-end" 
+                            onClick={() => onClick && onClick(item)}
+                        >
+                            <div 
+                                className={`w-full rounded-t-md bar-item flex flex-col-reverse ${onClick ? 'cursor-pointer' : ''}`}
+                                style={{ 
+                                    height: isAnimated ? `${(item.value / maxValue) * 100}%` : '0%',
+                                    backgroundColor: item.segments ? 'transparent' : (item.color || (multiColor ? CHART_COLORS[index % CHART_COLORS.length] : color)),
+                                }}
+                                onMouseOver={(e) => handleMouseOver(e, item)}
+                                onMouseMove={handleMouseMove}
+                            >
+                                {item.segments?.map((segment, segIndex) => (
+                                    <div
+                                        key={segIndex}
+                                        className="w-full"
+                                        style={{
+                                            height: item.value > 0 ? `${(segment.value / item.value) * 100}%` : '0%',
+                                            backgroundColor: segment.color,
+                                            transition: 'height 0.5s ease-out'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.stopPropagation();
+                                            handleMouseOver(e, { ...item, value: segment.value, label: `${item.label} (${segment.label})` });
+                                        }}
+                                        onMouseMove={handleMouseMove}
+                                    ></div>
+                                ))}
+                            </div>
+                            <span className="text-xs text-secondary-500 mt-2 truncate">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

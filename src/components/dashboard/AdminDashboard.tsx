@@ -11,6 +11,7 @@ import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 import LineChart from '../charts/LineChart';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
+import { getClassLevel } from '../../utils/sorting';
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -124,7 +125,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     
     const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
     const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
-    const [feePeriod, setFeePeriod] = useState<'week' | 'month' | '30days'>('30days');
+    const [feePeriod, setFeePeriod] = useState<'week' | 'month' | '30days'>('week');
 
     if (!user) return null;
     
@@ -261,14 +262,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const classStrengthData = useMemo(() => {
         if (!effectiveSchoolId) return [];
         const schoolClasses = classes.filter(c => c.schoolId === effectiveSchoolId);
+
+        const sortedClasses = [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
     
-        return schoolClasses
-            .map(c => ({
-                id: c.id,
-                label: c.name,
-                value: schoolStudents.filter(s => s.classId === c.id).length
-            }))
-            .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+        return sortedClasses.map(c => {
+                const studentsInClass = schoolStudents.filter(s => s.classId === c.id);
+                const maleCount = studentsInClass.filter(s => s.gender === 'Male').length;
+                const femaleCount = studentsInClass.filter(s => s.gender === 'Female').length;
+                
+                return {
+                    id: c.id,
+                    label: `${c.name}${c.section ? ` - ${c.section}` : ''}`,
+                    value: studentsInClass.length, // Total value
+                    segments: [
+                        { value: maleCount, color: '#3b82f6', label: 'Male' },
+                        { value: femaleCount, color: '#ec4899', label: 'Female' }
+                    ]
+                };
+            });
     }, [classes, schoolStudents, effectiveSchoolId]);
 
     const recentLogs = useMemo(() => {

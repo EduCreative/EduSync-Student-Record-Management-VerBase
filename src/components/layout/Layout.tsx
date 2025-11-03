@@ -23,6 +23,7 @@ import ClassManagementPage from '../classes/ClassManagementPage';
 import UserProfilePage from '../users/UserProfilePage';
 import SchoolDetailsPage from '../schools/SchoolDetailsPage';
 import ChallanScannerPage from '../challan-scanner/ChallanScannerPage';
+import AboutModal from '../common/AboutModal';
 
 export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'schools' | 'schoolDetails' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | 'userProfile' | 'scan-pay' | string;
 
@@ -35,6 +36,7 @@ const Layout: React.FC = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeView, setActiveView] = useState<ActiveView>({ view: 'dashboard' });
     const { effectiveRole } = useAuth();
+    const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
 
     const renderContent = () => {
         switch (activeView.view) {
@@ -132,6 +134,7 @@ const Layout: React.FC = () => {
     return (
         <div className="flex h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200">
             <ToastContainer />
+            <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
             <Sidebar 
                 sidebarOpen={sidebarOpen} 
                 setSidebarOpen={setSidebarOpen} 
@@ -140,7 +143,7 @@ const Layout: React.FC = () => {
                 effectiveRole={effectiveRole as UserRole}
             />
             <div className="flex flex-col flex-1 overflow-y-auto">
-                <Header setSidebarOpen={setSidebarOpen} setActiveView={setActiveView} />
+                <Header setSidebarOpen={setSidebarOpen} setActiveView={setActiveView} openAboutModal={() => setIsAboutModalOpen(true)} />
                 <main className="p-4 md:p-8">
                     {renderContent()}
                 </main>

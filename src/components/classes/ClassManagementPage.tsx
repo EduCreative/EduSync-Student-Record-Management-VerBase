@@ -13,8 +13,8 @@ import PromotionPreviewModal from './PromotionPreviewModal';
 import { useToast } from '../../context/ToastContext';
 import { getClassLevel } from '../../utils/sorting';
 
-const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
-const DragHandleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>;
+const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
+const DragHandleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>;
 
 
 const ClassManagementPage: React.FC = () => {
@@ -177,7 +177,18 @@ const ClassManagementPage: React.FC = () => {
     const handleConfirmPromotion = async (exemptedStudentIds: string[]) => {
         setIsPromoting(true);
         try {
-            await promoteAllStudents(exemptedStudentIds);
+            // FIX: The promoteAllStudents function expects mappings and exempted IDs.
+            // The mappings are derived from the promotionPlan state.
+            const mappings: Record<string, string | 'graduate'> = promotionPlan.reduce((acc, step) => {
+                if (step.type === 'promote' && step.to) {
+                    acc[step.from.id] = step.to.id;
+                } else if (step.type === 'graduate') {
+                    acc[step.from.id] = 'graduate';
+                }
+                return acc;
+            }, {} as Record<string, string | 'graduate'>);
+
+            await promoteAllStudents(mappings, exemptedStudentIds);
         } catch (error) {
             console.error("Promotion failed:", error);
         } finally {

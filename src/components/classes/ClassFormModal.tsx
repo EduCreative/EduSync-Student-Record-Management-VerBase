@@ -17,7 +17,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
     const { users } = useData();
     const { showToast } = useToast();
 
-    const [formData, setFormData] = useState({ name: '', teacherId: '' });
+    const [formData, setFormData] = useState({ name: '', section: '', teacherId: '' });
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -30,9 +30,9 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
     useEffect(() => {
         if (isOpen) {
             if (classToEdit) {
-                setFormData({ name: classToEdit.name, teacherId: classToEdit.teacherId || '' });
+                setFormData({ name: classToEdit.name, section: classToEdit.section || '', teacherId: classToEdit.teacherId || '' });
             } else {
-                setFormData({ name: '', teacherId: '' });
+                setFormData({ name: '', section: '', teacherId: '' });
             }
             setError('');
         }
@@ -57,6 +57,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
         try {
             const saveData = {
                 ...formData,
+                section: formData.section.trim() || null,
                 teacherId: formData.teacherId || null,
                 schoolId: effectiveSchoolId,
             };
@@ -78,10 +79,16 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ isOpen, onClose, onSave
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={classToEdit ? 'Edit Class' : 'Add New Class'}>
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-                <div>
-                    <label htmlFor="name" className="input-label">Class Name</label>
-                    <input type="text" name="name" id="name" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} className="input-field" />
-                    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="name" className="input-label">Class/Grade Name</label>
+                        <input type="text" name="name" id="name" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} className="input-field" placeholder="e.g., Class 1, Grade 5"/>
+                        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+                    </div>
+                     <div>
+                        <label htmlFor="section" className="input-label">Section (optional)</label>
+                        <input type="text" name="section" id="section" value={formData.section} onChange={e => setFormData(p => ({...p, section: e.target.value}))} className="input-field" placeholder="e.g., A, Blue, Morning" />
+                    </div>
                 </div>
                 <div>
                     <label htmlFor="teacherId" className="input-label">Assign Teacher</label>

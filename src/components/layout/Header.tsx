@@ -69,9 +69,10 @@ const SyncStatus: React.FC = () => {
 interface HeaderProps {
     setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
     setActiveView: (view: ActiveView) => void;
+    openAboutModal: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
+const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView, openAboutModal }) => {
     const { user, logout, activeSchoolId, switchSchoolContext } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { schools, getSchoolById } = useData();
@@ -232,6 +233,15 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView }) => {
                                     className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
                                 >
                                     Settings
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        openAboutModal();
+                                        setProfileOpen(false);
+                                    }}
+                                    className="w-full text-left block px-4 py-2 text-sm text-secondary-700 dark:text-secondary-200 hover:bg-secondary-100 dark:hover:bg-secondary-700"
+                                >
+                                    About EduSync
                                 </button>
                                 <button
                                     onClick={() => {

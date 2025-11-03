@@ -66,7 +66,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const canDelete = hasPermission(Permission.CAN_DELETE_STUDENTS);
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
-    const classMap = useMemo(() => new Map(schoolClasses.map(c => [c.id, c.name])), [schoolClasses]);
+    const classMap = useMemo(() => new Map(schoolClasses.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [schoolClasses]);
 
     const filteredStudents = useMemo(() => {
         return students.filter(student => {
@@ -115,7 +115,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     };
     
     const validateStudentImport = async (data: any[]) => {
-        const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
+        const classNameToIdMap = new Map(schoolClasses.map(c => [`${c.name}${c.section ? ` - ${c.section}` : ''}`.toLowerCase(), c.id]));
         const existingRollNos = new Set(students.filter(s => s.schoolId === effectiveSchoolId).map(s => s.rollNumber.trim().toLowerCase()));
         const rollNosInCsv = new Set<string>();
 
@@ -135,7 +135,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             } else if (!item.name || !rollNumberFromCsv) {
                 invalidRecords.push({ record: item, reason: `Missing required field (name or roll_number).`, rowNum });
             } else if (existingRollNos.has(rollNumber)) {
-                invalidRecords.push({ record: item, reason: `Roll number "${rollNumberFromCsv}" is already in use.`, rowNum });
+                invalidRecords.push({ record: item, reason: `Duplicate roll number "${rollNumberFromCsv}" is already in use.`, rowNum });
             } else if (rollNosInCsv.has(rollNumber)) {
                 invalidRecords.push({ record: item, reason: `Duplicate roll number "${rollNumberFromCsv}" within the CSV file.`, rowNum });
             }
@@ -164,7 +164,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         }
         
         const CHUNK_SIZE = 50;
-        const classNameToIdMap = new Map(schoolClasses.map(c => [c.name.toLowerCase(), c.id]));
+        const classNameToIdMap = new Map(schoolClasses.map(c => [`${c.name}${c.section ? ` - ${c.section}` : ''}`.toLowerCase(), c.id]));
         
         let processed = 0;
     
@@ -242,7 +242,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const sampleDataForImport = [{
         name: "Kamran Ahmed",
         roll_number: "101",
-        class_name: schoolClasses[0]?.name || "Grade 5",
+        class_name: schoolClasses[0] ? `${schoolClasses[0].name}${schoolClasses[0].section ? ` - ${schoolClasses[0].section}` : ''}` : "Grade 5 - A",
         father_name: "Zulfiqar Ahmed",
         father_cnic: "35202-1234567-1",
         date_of_birth: "2010-05-15",
@@ -251,7 +251,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
         secondary_contact_number: "0333-7654321",
         address: "123 School Lane, City",
         gender: "Male",
-        admitted_class: "Grade 5",
+        admitted_class: schoolClasses[0] ? `${schoolClasses[0].name}${schoolClasses[0].section ? ` - ${schoolClasses[0].section}` : ''}` : "Grade 5 - A",
         gr_number: "GR-1234",
         religion: "Islam",
         caste: "Arain",
@@ -337,7 +337,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                         <input type="text" placeholder="Search by name or roll no..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-field" />
                         <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="input-field">
                             <option value="all">All Classes</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                         </select>
                         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="input-field">
                             <option value="all">All Statuses</option>

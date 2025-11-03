@@ -20,7 +20,12 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
     const [activeTab, setActiveTab] = useState('details');
 
     const student = useMemo(() => students.find(s => s.id === studentId), [students, studentId]);
-    const studentClass = useMemo(() => student ? classes.find(c => c.id === student.classId) : null, [classes, student]);
+    const studentClass = useMemo(() => {
+        if (!student) return null;
+        const cls = classes.find(c => c.id === student.classId);
+        if (!cls) return null;
+        return { ...cls, fullName: `${cls.name}${cls.section ? ` - ${cls.section}` : ''}` };
+    }, [classes, student]);
     
     const feeSummary = useMemo(() => {
         const studentFees = fees.filter(f => f.studentId === studentId);
@@ -62,7 +67,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             <Badge color={student.status === 'Active' ? 'green' : 'secondary'}>{student.status}</Badge>
                         </div>
                         <p className="text-secondary-500 dark:text-secondary-400 mt-1">
-                            {studentClass?.name || 'N/A'} | Roll No: {student.rollNumber}
+                            {studentClass?.fullName || 'N/A'} | Roll No: {student.rollNumber}
                         </p>
                         <div className="mt-4 flex flex-wrap gap-4">
                             <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>
