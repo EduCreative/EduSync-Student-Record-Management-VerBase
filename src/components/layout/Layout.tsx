@@ -24,10 +24,8 @@ import UserProfilePage from '../users/UserProfilePage';
 import SchoolDetailsPage from '../schools/SchoolDetailsPage';
 import ChallanScannerPage from '../challan-scanner/ChallanScannerPage';
 import AboutModal from '../common/AboutModal';
-import SubjectManagementPage from '../subjects/SubjectManagementPage';
-import ExamManagementPage from '../exams/ExamManagementPage';
 
-export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'subjects' | 'exams' | 'schools' | 'schoolDetails' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | 'userProfile' | 'scan-pay' | string;
+export type ViewType = 'dashboard' | 'overview' | 'users' | 'students' | 'studentProfile' | 'teachers' | 'accountants' | 'classes' | 'schools' | 'schoolDetails' | 'settings' | 'results' | 'logs' | 'attendance' | 'fees' | 'calendar' | 'leavingCertificate' | 'reports' | 'userProfile' | 'scan-pay' | string;
 
 export interface ActiveView {
     view: ViewType;

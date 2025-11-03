@@ -10,9 +10,9 @@ export function EduSyncLogo(props: SVGProps<SVGSVGElement>) {
       {/* Tilted Graduation Cap */}
       <g transform="rotate(-15 12 11)">
         {/* Cap top */}
-        <path d="M4 10l8-4 8 4-8 4-8-4z" stroke="currentColor" fill="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+        <path d="M4 10l8-4 8 4-8 4-8-4z" stroke="black" fill="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
         {/* Cap body */}
-        <path d="M8 12v4c2 2 6 2 8 0v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+        <path d="M8 12v4c2 2 6 2 8 0v-4" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
         {/* Tassel */}
         <path d="M17.5 10V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
       </g>
@@ -76,14 +76,6 @@ function CalendarIcon(props: SVGProps<SVGSVGElement>) {
 
 function ScanIcon(props: SVGProps<SVGSVGElement>) {
   return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
-}
-
-function BookmarkIcon(props: SVGProps<SVGSVGElement>) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-}
-
-function FileEditIcon(props: SVGProps<SVGSVGElement>) {
-    return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2h-5.5"/><polyline points="14 2 14 8 20 8"/><path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l.99-3.95L10.42 12.61z"/></svg>
 }
 
 export function DownloadIcon(props: SVGProps<SVGSVGElement>) {
