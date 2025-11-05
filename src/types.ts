@@ -106,7 +106,7 @@ export interface FeeChallan {
     month: string;
     year: number;
     dueDate: string;
-    status: 'Paid' | 'Unpaid' | 'Partial';
+    status: 'Paid' | 'Unpaid' | 'Partial' | 'Cancelled';
     feeItems: { description: string; amount: number }[];
     previousBalance: number;
     totalAmount: number;

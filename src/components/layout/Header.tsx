@@ -75,13 +75,15 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView, openAboutModal }) => {
     const { user, logout, activeSchoolId, switchSchoolContext } = useAuth();
     const { theme, toggleTheme } = useTheme();
-    const { schools, getSchoolById } = useData();
+    const { schools, getSchoolById, fetchData, loading, isInitialLoad } = useData();
     const { isOnline } = useSync();
     const [profileOpen, setProfileOpen] = useState(false);
     const [schoolSwitcherOpen, setSchoolSwitcherOpen] = useState(false);
 
     const profileDropdownRef = useRef<HTMLDivElement>(null);
     const schoolSwitcherRef = useRef<HTMLDivElement>(null);
+
+    const isSyncing = loading && !isInitialLoad;
 
     // Close on click outside
     useEffect(() => {
@@ -197,6 +199,15 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, setActiveView, openAbou
                         <span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></span>
                         <span>{isOnline ? 'Online' : 'Offline'}</span>
                     </div>
+
+                    <button
+                        onClick={() => fetchData()}
+                        disabled={isSyncing}
+                        className="p-2 rounded-full text-secondary-500 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Refresh Data"
+                    >
+                        <SyncIcon className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    </button>
 
                     <button onClick={toggleTheme} className="p-2 rounded-full text-secondary-500 hover:bg-secondary-100 dark:text-secondary-400 dark:hover:bg-secondary-700" title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
                        {theme === 'dark' ? <SunIcon/> : <MoonIcon/>}

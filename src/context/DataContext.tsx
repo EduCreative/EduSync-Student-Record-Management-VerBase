@@ -27,6 +27,7 @@ interface DataContextType {
     lastSyncTime: Date | null;
 
     // Data functions
+    fetchData: () => Promise<void>;
     getSchoolById: (schoolId: string) => School | undefined;
     updateUser: (updatedUser: User) => Promise<void>;
     deleteUser: (userId: string) => Promise<void>;
@@ -45,6 +46,7 @@ interface DataContextType {
     deleteExam: (examId: string) => Promise<void>;
     setAttendance: (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => Promise<void>;
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
+    cancelChallan: (challanId: string) => Promise<void>;
     generateChallansForMonth: (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
     addFeeHead: (feeHeadData: Omit<FeeHead, 'id'>) => Promise<void>;
     updateFeeHead: (updatedFeeHead: FeeHead) => Promise<void>;
@@ -325,15 +327,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
     
-        const { error } = await supabase.from('profiles').delete().eq('id', userId);
+        const { error } = await supabase.from('profiles').update({ status: 'Inactive' }).eq('id', userId);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
     
-        setUsers(prev => prev.filter(u => u.id !== userId));
-        addLog('User Deleted', `User profile deleted for ${userToDelete.name}.`);
-        showToast('Success', `${userToDelete.name}'s profile has been deleted.`);
+        await fetchData();
+        addLog('User Deactivated', `User profile for ${userToDelete.name} has been set to Inactive.`);
+        showToast('Success', `${userToDelete.name}'s profile has been deactivated.`);
     };
     
     const addUserByAdmin = async (userData: (Omit<User, 'id'> & { password?: string })) => {
@@ -426,15 +428,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const studentToDelete = students.find(s => s.id === studentId);
         if (!studentToDelete) return;
 
-        const { error } = await supabase.from('students').delete().eq('id', studentId);
+        const { error } = await supabase.from('students').update({ status: 'Archived' }).eq('id', studentId);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
         
         await fetchData();
-        addLog('Student Deleted', `Student profile deleted for ${studentToDelete.name}.`);
-        showToast('Success', `${studentToDelete.name}'s profile has been deleted.`);
+        addLog('Student Archived', `Student profile archived for ${studentToDelete.name}.`);
+        showToast('Success', `${studentToDelete.name}'s profile has been archived.`);
     };
 
     const addClass = async (classData: Omit<Class, 'id'>) => {
@@ -595,6 +597,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', 'Payment recorded successfully.');
     };
     
+    const cancelChallan = async (challanId: string) => {
+        const challan = fees.find(f => f.id === challanId);
+        if (!challan) throw new Error('Challan not found.');
+        if (challan.status === 'Paid') {
+            const msg = 'Cannot cancel a challan that has already been paid.';
+            showToast('Error', msg, 'error');
+            throw new Error(msg);
+        }
+
+        const { error } = await supabase.from('fee_challans')
+            .update({ status: 'Cancelled' })
+            .eq('id', challanId);
+
+        if (error) {
+            showToast('Error', error.message, 'error');
+            throw new Error(error.message);
+        }
+        await fetchData();
+        addLog('Challan Cancelled', `Challan ${challan.challanNumber} was cancelled.`);
+        showToast('Success', 'Challan has been cancelled.');
+    };
+
     const generateChallansForMonth = async (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => {
         if (studentIds.length === 0) {
             showToast('Info', 'No students selected for challan generation.', 'info');
@@ -1062,10 +1086,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const value: DataContextType = {
-        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime,
+        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, fetchData,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, addSubject, updateSubject, deleteSubject,
-        addExam, updateExam, deleteExam, setAttendance, recordFeePayment, generateChallansForMonth,
+        addExam, updateExam, deleteExam, setAttendance, recordFeePayment, cancelChallan, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
         bulkAddClasses, backupData, restoreData, addUserByAdmin, promoteAllStudents, increaseTuitionFees,

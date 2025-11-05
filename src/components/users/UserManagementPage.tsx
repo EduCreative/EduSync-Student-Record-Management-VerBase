@@ -220,14 +220,13 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
             <Modal
                 isOpen={!!userToDelete}
                 onClose={() => setUserToDelete(null)}
-                title="Confirm User Deletion"
+                title="Confirm User Deactivation"
             >
                 <div>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                        Are you sure you want to permanently delete the user{' '}
+                        Are you sure you want to deactivate the user{' '}
                         <strong className="text-secondary-800 dark:text-secondary-200">{userToDelete?.name}</strong>?
-                        <br />
-                        This action cannot be undone.
+                        They will no longer be able to log in. Their record will not be permanently deleted.
                     </p>
                     <div className="mt-6 flex justify-end space-x-3">
                         <button
@@ -242,7 +241,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                             onClick={handleDeleteUser}
                             className="btn-danger"
                         >
-                            Delete
+                            Deactivate
                         </button>
                     </div>
                 </div>
@@ -374,7 +373,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ payload }) => {
                                                                     onClick={() => setUserToDelete(user)} 
                                                                     className="font-medium text-red-600 dark:text-red-500 hover:underline"
                                                                 >
-                                                                    Delete
+                                                                    Deactivate
                                                                 </button>
                                                              )}
                                                         </div>

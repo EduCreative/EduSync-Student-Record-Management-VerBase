@@ -6,15 +6,17 @@ import Avatar from '../common/Avatar';
 import FeePaymentModal from './FeePaymentModal';
 import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
+import Modal from '../common/Modal';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const FeeCollectionPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
-    const { students, fees, classes } = useData();
+    const { students, fees, classes, cancelChallan } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [challanToPay, setChallanToPay] = useState<FeeChallan | null>(null);
+    const [challanToCancel, setChallanToCancel] = useState<FeeChallan | null>(null);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     
@@ -43,8 +45,16 @@ const FeeCollectionPage: React.FC = () => {
     const getStatusColor = (status: FeeChallan['status']) => {
         if (status === 'Paid') return 'green';
         if (status === 'Unpaid') return 'red';
-        return 'yellow';
+        if (status === 'Cancelled') return 'secondary';
+        return 'yellow'; // Partial
     }
+
+    const handleConfirmCancel = async () => {
+        if (challanToCancel) {
+            await cancelChallan(challanToCancel.id);
+            setChallanToCancel(null);
+        }
+    };
 
     return (
         <>
@@ -55,6 +65,19 @@ const FeeCollectionPage: React.FC = () => {
                     challan={challanToPay}
                     student={selectedStudent}
                 />
+            )}
+            {challanToCancel && (
+                <Modal
+                    isOpen={!!challanToCancel}
+                    onClose={() => setChallanToCancel(null)}
+                    title="Confirm Challan Cancellation"
+                >
+                    <p>Are you sure you want to cancel the challan for <strong>{challanToCancel.month} {challanToCancel.year}</strong>? This action cannot be undone.</p>
+                    <div className="mt-6 flex justify-end space-x-3">
+                        <button type="button" onClick={() => setChallanToCancel(null)} className="btn-secondary">Back</button>
+                        <button type="button" onClick={handleConfirmCancel} className="btn-danger">Confirm Cancel</button>
+                    </div>
+                </Modal>
             )}
             <div className="p-4 sm:p-6 space-y-4">
                 <div className="relative">
@@ -108,9 +131,14 @@ const FeeCollectionPage: React.FC = () => {
                                             </div>
                                             <p className="text-sm text-secondary-500">Due: {formatDate(challan.dueDate)} | Total: Rs. {(challan.totalAmount - challan.discount).toLocaleString()}</p>
                                         </div>
-                                        <button onClick={() => setChallanToPay(challan)} className="btn-primary">
-                                            Record Payment
-                                        </button>
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                                            <button onClick={() => setChallanToPay(challan)} className="btn-primary flex-grow">
+                                                Record Payment
+                                            </button>
+                                            <button onClick={() => setChallanToCancel(challan)} className="btn-secondary flex-grow">
+                                                Cancel Challan
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             ) : (

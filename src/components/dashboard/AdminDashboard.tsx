@@ -163,10 +163,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             return acc;
         }, {} as Record<FeeChallan['status'], number>);
         
+        // FIX: Added 'Cancelled' property to satisfy the Record<FeeChallan['status'], string> type.
         const statusColors: Record<FeeChallan['status'], string> = {
             Paid: '#10b981',
             Unpaid: '#ef4444',
             Partial: '#f59e0b',
+            Cancelled: '#64748b'
         };
 
         return (['Paid', 'Unpaid', 'Partial'] as const).map(status => ({

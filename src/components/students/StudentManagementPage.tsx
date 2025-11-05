@@ -54,7 +54,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
     const [searchTerm, setSearchTerm] = useState('');
     const [classFilter, setClassFilter] = useState<string>('all');
-    const [statusFilter, setStatusFilter] = useState<Student['status'] | 'all'>('all');
+    const [statusFilter, setStatusFilter] = useState<Student['status'] | 'all'>('Active');
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
@@ -180,7 +180,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 const studentData: Omit<Student, 'id' | 'status'> & { feeStructure?: {feeHeadId: string, amount: number}[] } = {
                     name: item.name,
                     rollNumber: item.roll_number || item.rollNumber,
-                    classId: classId!,
+                    // FIX: Explicitly cast classId to string to resolve 'unknown' type error. The validation step ensures it's not undefined.
+                    classId: classId as string,
                     schoolId: effectiveSchoolId!,
                     fatherName: item.father_name || item.fatherName,
                     fatherCnic: formatCnic(item.father_cnic || item.fatherCnic),
@@ -190,7 +191,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                     secondaryContactNumber: formatPhoneNumber(item.secondary_contact_number || item.secondaryContactNumber),
                     address: item.address || '',
                     gender: (item.gender === 'Female' || item.gender === 'female') ? 'Female' : 'Male',
-                    admittedClass: item.admitted_class || item.admittedClass,
+                    admittedClass: (item.admitted_class || item.admittedClass) as string,
                     grNumber: item.gr_number || item.grNumber,
                     religion: item.religion,
                     caste: item.caste,
@@ -302,14 +303,14 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 fileName="Students"
                 requiredHeaders={requiredHeaders}
             />
-            <Modal isOpen={!!studentToDelete} onClose={() => setStudentToDelete(null)} title="Confirm Student Deletion">
+            <Modal isOpen={!!studentToDelete} onClose={() => setStudentToDelete(null)} title="Confirm Student Archival">
                 <div>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                        Are you sure you want to delete <strong className="text-secondary-800 dark:text-secondary-200">{studentToDelete?.name}</strong>? This action cannot be undone.
+                        Are you sure you want to archive <strong className="text-secondary-800 dark:text-secondary-200">{studentToDelete?.name}</strong>? Their record will be hidden from active lists but not permanently deleted.
                     </p>
                     <div className="mt-6 flex justify-end space-x-3">
                         <button type="button" onClick={() => setStudentToDelete(null)} className="btn-secondary">Cancel</button>
-                        <button type="button" onClick={handleDeleteStudent} className="btn-danger">Delete</button>
+                        <button type="button" onClick={handleDeleteStudent} className="btn-danger">Archive Student</button>
                     </div>
                 </div>
             </Modal>
@@ -342,6 +343,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                             <option value="Left">Left</option>
+                            <option value="Archived">Archived</option>
                         </select>
                     </div>
                 </div>
@@ -386,7 +388,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                                             <button onClick={() => handleOpenModal(student)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
                                                         )}
                                                         {canDelete && (
-                                                            <button onClick={() => setStudentToDelete(student)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                            <button onClick={() => setStudentToDelete(student)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Archive</button>
                                                         )}
                                                     </div>
                                                 </td>
