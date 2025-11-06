@@ -29,7 +29,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         const timeoutId = setTimeout(() => {
             console.warn(`Supabase request timed out: ${url}`);
             controller.abort();
-        }, 15000); // 15s timeout
+        }, 20000); // 20s timeout
 
         try {
           const response = await fetch(url, {
@@ -39,7 +39,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           return response;
         } catch (error) {
           if ((error as Error).name === 'AbortError') {
-            throw new Error('Request timed out. Please check your network and try again.');
+            throw new Error('Request timed out. Please check your network connection. A firewall might be blocking access to the server.');
           }
           throw error;
         } finally {

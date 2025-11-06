@@ -25,6 +25,7 @@ interface DataContextType {
     loading: boolean;
     isInitialLoad: boolean;
     lastSyncTime: Date | null;
+    syncError: string | null;
 
     // Data functions
     fetchData: () => Promise<void>;
@@ -87,6 +88,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [loading, setLoading] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+    const [syncError, setSyncError] = useState<string | null>(null);
     const [schools, setSchools] = useState<School[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
@@ -137,6 +139,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(true);
 
         try {
+            setSyncError(null); // Clear previous errors on new sync attempt
             const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
 
             // Pure fetcher function without side effects
@@ -168,7 +171,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (error) {
                     console.error(`Error fetching ${tableName}:`, error);
                     showToast('Data Sync Error', `Could not load latest data for ${tableName}.`, 'error');
-                    return null;
+                    // Throw the error to be caught by the main try/catch block
+                    throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
                 }
                 return toCamelCase(data || []);
             };
@@ -202,6 +206,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
                         if (error) {
                             console.error(`Error fetching chunk for ${tableName}:`, error);
+                            throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
                         } else if (data) {
                             allData = allData.concat(data);
                         }
@@ -265,9 +270,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             setLastSyncTime(new Date());
             
-        } catch (error) {
+        } catch (error: any) {
+            const errorMessage = error.message || 'An unknown error occurred during sync.';
             console.error("A critical error occurred during data fetching:", error);
-            showToast('Error', 'Failed to load latest data. Displaying cached data.', 'error');
+            setSyncError(errorMessage);
+            showToast('Sync Failed', 'Could not load latest data. Displaying cached information.', 'error');
         } finally {
             setLoading(false);
             if(isInitialLoad) setIsInitialLoad(false);
@@ -1086,7 +1093,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const value: DataContextType = {
-        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, fetchData,
+        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, syncError, fetchData,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, addSubject, updateSubject, deleteSubject,
         addExam, updateExam, deleteExam, setAttendance, recordFeePayment, cancelChallan, generateChallansForMonth,

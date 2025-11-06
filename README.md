@@ -36,7 +36,7 @@ EduSync is packed with features designed to streamline school management:
 - **Custom Fee Heads:** Create and manage custom fee categories (e.g., "Tuition Fee", "Lab Fee").
 - **Automated Challan Generation:** Automatically generate monthly fee challans for entire classes.
 - **Fee Collection & Tracking:** Record full or partial fee payments and track discounts. View, print, and save individual fee challans.
-- **Scan & Pay:** Accountants can use the device camera to scan barcodes on fee challans for instant lookup and payment recording.
+- **Scan & Pay:** A dedicated module for Admins and Accountants to quickly process payments. Use the device camera to scan a fee challan's barcode for instant lookup, or use the manual entry fallback for damaged barcodes. The system displays full challan details and allows for immediate payment recording.
 - **Fee Reminders:** Send in-app notifications to parents and students for outstanding fee challans.
 
 #### 📊 **Reporting & Analytics**

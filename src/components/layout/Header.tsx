@@ -11,6 +11,8 @@ import { useSync } from '../../context/SyncContext';
 const SyncIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 const CheckCircleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 const CloudOffIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/></svg>;
+const AlertTriangleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+
 
 const timeAgo = (date: Date | null): string => {
     if (!date) return '';
@@ -31,10 +33,19 @@ const timeAgo = (date: Date | null): string => {
 };
 
 const SyncStatus: React.FC = () => {
-    const { loading, isInitialLoad, lastSyncTime, schools } = useData();
+    const { loading, isInitialLoad, lastSyncTime, schools, syncError } = useData();
     const { isOnline } = useSync();
 
     const isSyncing = loading && !isInitialLoad;
+
+    if (syncError) {
+        return (
+            <div className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400" title={`Sync Error: ${syncError}`}>
+                <AlertTriangleIcon className="w-3.5 h-3.5" />
+                <span>Sync Failed</span>
+            </div>
+        );
+    }
 
     if (isSyncing) {
         return (
