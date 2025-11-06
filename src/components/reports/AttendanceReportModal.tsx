@@ -4,8 +4,9 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { UserRole } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { formatDate } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
+import PrintableReportLayout from './PrintableReportLayout';
 
 interface AttendanceReportModalProps {
     isOpen: boolean;
@@ -86,24 +87,11 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
     const handleGenerate = () => {
         const selectedClass = schoolClasses.find(c => c.id === classId);
         const content = (
-            <div className="printable-report p-4">
-                <div className="flex items-center gap-4 pb-4 border-b mb-4">
-                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
-                        )}
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-bold">{school?.name}</h1>
-                        <p className="text-sm">{school?.address}</p>
-                    </div>
-                </div>
-
-                <h1 className="text-xl font-bold mb-1 text-center">Attendance Report</h1>
-                <p className="text-center">Class: {selectedClass?.name || 'All Classes'}</p>
-                <p className="text-center mb-4">From: {formatDate(startDate)} To: {formatDate(endDate)}</p>
+            <PrintableReportLayout
+                school={school}
+                title="Attendance Report"
+                subtitle={`Class: ${selectedClass?.name || 'All Classes'} | From: ${formatDate(startDate)} To: ${formatDate(endDate)}`}
+            >
                 <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
                     <thead>
                         <tr>
@@ -140,7 +128,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </PrintableReportLayout>
         );
         showPrintPreview(content, "EduSync - Attendance Report");
     };

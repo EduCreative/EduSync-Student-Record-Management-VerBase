@@ -47,40 +47,6 @@
     @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
   }
 
-  /* Print Styles for Reports */
-  .printable-report table {
-    @apply border-collapse;
-  }
-  .printable-report th,
-  .printable-report td {
-    @apply border border-secondary-400; /* Darker border for better visibility */
-  }
-  
-  .printable-report th {
-    @apply bg-secondary-100;
-  }
-
-  /* Improve border visibility on report cards and other bordered elements in reports */
-  .printable-result-card .border {
-    @apply border-secondary-400;
-  }
-
-  /* Specific styles for better print appearance */
-  @media print {
-    body {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .printable-report th {
-      background-color: #f1f5f9 !important; /* Tailwind secondary-100 */
-    }
-    .challan-wrapper {
-      height: 95mm;
-      overflow: visible !important; /* Ensure content is not clipped by the fixed height */
-      @apply flex-row; /* Ensure side-by-side for printing */
-    }
-  }
-
   /* Challan Print Styles */
   .printable-challan-container {
     @apply space-y-2;
@@ -175,5 +141,109 @@
   }
   g:hover > .line-point {
     r: 6;
+  }
+}
+
+/* --- ADVANCED PRINT STYLES --- */
+@media print {
+  @page {
+    size: A4;
+    margin: 0.75in;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    print-color-adjust: exact;
+    counter-reset: page;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+
+  /* Layout for repeating headers/footers */
+  .printable-container {
+    position: relative;
+  }
+  .page-header, .page-footer {
+    position: fixed;
+    left: 0.75in;
+    right: 0.75in;
+  }
+  .page-header {
+    top: 0;
+    padding-bottom: 10px;
+  }
+  .page-footer {
+    bottom: 0;
+    padding-top: 5px;
+  }
+  .page-header-space, .page-footer-space {
+    height: 120px; /* Adjust based on header/footer height */
+  }
+  .page-footer-space {
+    height: 40px;
+  }
+  .page-footer .page-number::after {
+    content: counter(page);
+  }
+  .page-content {
+    counter-increment: page;
+  }
+  .printable-report {
+    padding: 0 !important;
+  }
+
+  /* General table print improvements */
+  .printable-report table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+  .printable-report th, .printable-report td {
+    border: 1px solid #94a3b8; /* secondary-400 */
+    padding: 4px 6px;
+  }
+  .printable-report th {
+    background-color: #f1f5f9 !important; /* secondary-100 */
+  }
+
+  /* Repeating table headers */
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Page break control */
+  .printable-report > div, .printable-report table {
+    page-break-inside: auto;
+  }
+  .printable-report tr, .printable-report .class-group-container {
+    page-break-inside: avoid;
+  }
+  .printable-result-card, .challan-wrapper, .id-card {
+    page-break-inside: avoid !important;
+  }
+  .printable-result-card, .challan-wrapper {
+    page-break-after: always;
+  }
+
+  /* Hide print previewer scrollbars */
+  .print-preview-root main::-webkit-scrollbar {
+    display: none;
+  }
+  .print-preview-root main {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Specific tweaks for better print appearance */
+  .challan-wrapper {
+    height: 95mm;
+    overflow: visible !important;
+    @apply flex-row;
   }
 }

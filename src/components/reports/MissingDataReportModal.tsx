@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
-import { EduSyncLogo } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
+import PrintableReportLayout from './PrintableReportLayout';
 
 interface MissingDataReportModalProps {
     isOpen: boolean;
@@ -77,22 +77,11 @@ const MissingDataReportModal: React.FC<MissingDataReportModalProps> = ({ isOpen,
 
     const handleGenerate = () => {
         const content = (
-            <div className="printable-report p-4 font-sans">
-                <div className="flex items-center gap-4 pb-4 border-b mb-4">
-                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
-                        )}
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-bold">{school?.name}</h1>
-                        <p className="text-sm">{school?.address}</p>
-                    </div>
-                </div>
-                <h2 className="text-xl font-bold mb-2 text-center">Missing Data Report</h2>
-                <p className="text-center mb-4">Class: {classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}</p>
+            <PrintableReportLayout
+                school={school}
+                title="Missing Data Report"
+                subtitle={`Class: ${classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}`}
+            >
                 <table className="w-full text-sm">
                     <thead>
                         <tr>
@@ -115,7 +104,7 @@ const MissingDataReportModal: React.FC<MissingDataReportModalProps> = ({ isOpen,
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </PrintableReportLayout>
         );
         showPrintPreview(content, `EduSync - Missing Data Report`);
     };

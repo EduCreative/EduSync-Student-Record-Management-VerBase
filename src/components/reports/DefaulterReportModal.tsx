@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole } from '../../types';
-import { EduSyncLogo } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
+import PrintableReportLayout from './PrintableReportLayout';
 
 interface DefaulterReportModalProps {
     isOpen: boolean;
@@ -145,27 +145,13 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
         const subtotalColspan = 3 + (activeColumns.includes('fatherName') ? 1 : 0);
 
         const content = (
-            <div className="printable-report p-4 font-sans">
-                {/* School Header */}
-                <div className="flex items-center gap-4 pb-4 border-b mb-4">
-                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
-                        )}
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-bold">{school?.name}</h1>
-                        <p className="text-sm">{school?.address}</p>
-                    </div>
-                </div>
-
-                <h2 className="text-xl font-bold mb-2 text-center">Fee Defaulter Report</h2>
-                <p className="text-center mb-4">For Class: {classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}</p>
-
+            <PrintableReportLayout
+                school={school}
+                title="Fee Defaulter Report"
+                subtitle={`For Class: ${classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}`}
+            >
                 {reportData.map((classGroup) => (
-                    <div key={classGroup.classId} className="mb-6" style={{ pageBreakInside: 'avoid' }}>
+                    <div key={classGroup.classId} className="class-group-container mb-6">
                         <h3 className="text-lg font-bold bg-secondary-100 p-2 my-2">{classGroup.className}</h3>
                         <table className="w-full text-sm">
                             <thead>
@@ -218,7 +204,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         </table>
                     </div>
                 )}
-            </div>
+            </PrintableReportLayout>
         );
         showPrintPreview(content, "EduSync - Fee Defaulter Report");
     };

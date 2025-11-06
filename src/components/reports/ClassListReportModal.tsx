@@ -5,8 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 import { UserRole, Student } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { formatDate } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
+import PrintableReportLayout from './PrintableReportLayout';
 
 interface ClassListReportModalProps {
     isOpen: boolean;
@@ -79,22 +80,11 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
         const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
         
         const content = (
-            <div className="printable-report p-4 font-sans">
-                <div className="flex items-center gap-4 pb-4 border-b mb-4">
-                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
-                        )}
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-bold">{school?.name}</h1>
-                        <p className="text-sm">{school?.address}</p>
-                    </div>
-                </div>
-                <h2 className="text-xl font-bold mb-2 text-center">Class List</h2>
-                <p className="text-center mb-4">Class: {classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}</p>
+            <PrintableReportLayout
+                school={school}
+                title="Class List"
+                subtitle={`Class: ${classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}`}
+            >
                 <table className="w-full text-sm">
                     <thead>
                         <tr>
@@ -119,7 +109,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </PrintableReportLayout>
         );
         showPrintPreview(content, `EduSync - Class List - ${schoolClasses.find(c => c.id === classId)?.name || 'All Classes'}`);
     };

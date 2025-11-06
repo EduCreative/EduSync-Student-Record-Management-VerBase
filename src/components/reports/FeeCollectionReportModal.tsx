@@ -6,8 +6,9 @@ import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
 // FIX: Import `Class` type to correctly type `schoolClassesMapForSort`.
 import { UserRole, Class } from '../../types';
-import { formatDate, EduSyncLogo } from '../../constants';
+import { formatDate } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
+import PrintableReportLayout from './PrintableReportLayout';
 
 interface FeeCollectionReportModalProps {
     isOpen: boolean;
@@ -163,26 +164,13 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             (activeColumns.includes('discount') ? 1 : 0);
 
         const content = (
-            <div className="printable-report p-4">
-                <div className="flex items-center gap-4 pb-4 border-b mb-4">
-                    <div className="flex-shrink-0 h-16 w-16 flex items-center justify-center">
-                        {school?.logoUrl ? (
-                            <img src={school.logoUrl} alt="School Logo" className="max-h-16 max-w-16 object-contain" />
-                        ) : (
-                            <EduSyncLogo className="h-12 w-12 text-primary-700" />
-                        )}
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-bold">{school?.name}</h1>
-                        <p className="text-sm">{school?.address}</p>
-                    </div>
-                </div>
-
-                <h1 className="text-xl font-bold mb-1 text-center">Fee Collection Report</h1>
-                <p className="text-center mb-4">From: {formatDate(startDate)} To: {formatDate(endDate)}</p>
-                
+            <PrintableReportLayout
+                school={school}
+                title="Fee Collection Report"
+                subtitle={`From: ${formatDate(startDate)} To: ${formatDate(endDate)}`}
+            >
                 {reportData.map(classGroup => (
-                    <div key={classGroup.classId} className="mb-6" style={{ pageBreakInside: 'avoid' }}>
+                    <div key={classGroup.classId} className="class-group-container mb-6">
                         <h3 className="text-lg font-bold bg-secondary-100 p-2 my-2">{classGroup.className}</h3>
                         <table className="w-full text-sm">
                             <thead>
@@ -237,7 +225,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                         </table>
                     </div>
                 )}
-            </div>
+            </PrintableReportLayout>
         );
         showPrintPreview(content, "EduSync - Fee Collection Report");
     };
