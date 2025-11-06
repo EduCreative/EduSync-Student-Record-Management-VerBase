@@ -3,7 +3,7 @@ import { School } from '../../types';
 import { EduSyncLogo, formatDate } from '../../constants';
 
 interface PrintableReportLayoutProps {
-    school: School | null;
+    school: School | null | undefined;
     title: string;
     subtitle?: string;
     children: React.ReactNode;
