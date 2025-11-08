@@ -14,7 +14,7 @@ import { deleteDatabase } from '../../lib/db';
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData, syncMode, setSyncMode } = useTheme();
     const { user, effectiveRole, activeSchoolId } = useAuth();
-    const { schools, backupData, restoreData, updateSchool, feeHeads, addFeeHead, updateFeeHead, fetchData } = useData();
+    const { schools, backupData, restoreData, updateSchool, feeHeads, addFeeHead, updateFeeHead } = useData();
     const { showToast } = useToast();
     const { installPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
