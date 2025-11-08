@@ -130,7 +130,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
+                // FIX: Use classA.name and classB.name, as 'a' and 'b' are ClassDefaulterGroup objects without a 'name' property.
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
@@ -164,7 +165,6 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             <PrintableReportLayout
                 school={school}
                 title="Fee Defaulter Report"
-                // FIX: Replaced schoolClasses.find() with classMap.get() to resolve a type inference issue where the parameter 'c' was being incorrectly typed, causing an error when accessing the 'name' property.
                 subtitle={`For Class: ${classId === 'all' ? 'All Classes' : classMap.get(classId) || ''}`}
             >
                 {reportData.map((classGroup) => (
@@ -246,22 +246,29 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 csvRows.push(row.map(escapeCsvCell).join(','));
             });
             const subtotalRow = Array(headers.length).fill('');
-            subtotalRow[headers.indexOf('Student Name')] = 'Sub Total';
+            const studentNameIndex = headers.indexOf('Student Name');
+            if(studentNameIndex !== -1) {
+                subtotalRow[studentNameIndex] = 'Sub Total';
+            }
+    
             if (headers.includes('Amount Due')) subtotalRow[headers.indexOf('Amount Due')] = classGroup.subtotals.amountDue;
             if (headers.includes('Paid')) subtotalRow[headers.indexOf('Paid')] = classGroup.subtotals.paid;
-            subtotalRow[headers.indexOf('Balance')] = classGroup.subtotals.balance;
-            csvRows.push(subtotalRow.join(','));
+            if (headers.includes('Balance')) subtotalRow[headers.indexOf('Balance')] = classGroup.subtotals.balance;
+            csvRows.push(subtotalRow.map(escapeCsvCell).join(','));
             csvRows.push('');
         });
     
         if (reportData.length > 0) {
             csvRows.push('');
             const grandTotalRow = Array(headers.length).fill('');
-            grandTotalRow[headers.indexOf('Student Name')] = 'Grand Total';
+            const studentNameIndex = headers.indexOf('Student Name');
+            if(studentNameIndex !== -1) {
+                grandTotalRow[studentNameIndex] = 'Grand Total';
+            }
             if (headers.includes('Amount Due')) grandTotalRow[headers.indexOf('Amount Due')] = grandTotal.amountDue;
             if (headers.includes('Paid')) grandTotalRow[headers.indexOf('Paid')] = grandTotal.paid;
-            grandTotalRow[headers.indexOf('Balance')] = grandTotal.balance;
-            csvRows.push(grandTotalRow.join(','));
+            if (headers.includes('Balance')) grandTotalRow[headers.indexOf('Balance')] = grandTotal.balance;
+            csvRows.push(grandTotalRow.map(escapeCsvCell).join(','));
         }
     
         downloadCsvString(csvRows.join('\n'), 'defaulter_report');
