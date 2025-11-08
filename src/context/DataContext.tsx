@@ -3,9 +3,44 @@ import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result,
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
-import { db } from '../lib/db';
+import { db, deleteDatabase } from '../lib/db';
 import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 import type { Table } from 'dexie';
+import { useTheme } from './ThemeContext';
+
+// --- COMPONENTS ---
+const AlertTriangleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+
+const UnrecoverableErrorScreen: React.FC<{
+    error: string;
+    onRetry: () => void;
+    onHardReset: () => void;
+}> = ({ error, onRetry, onHardReset }) => (
+    <div className="fixed inset-0 bg-secondary-100 dark:bg-secondary-900 z-[9999] flex items-center justify-center p-4">
+        <div className="w-full max-w-lg bg-white dark:bg-secondary-800 rounded-lg shadow-2xl p-8 text-center">
+            <AlertTriangleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">Data Synchronization Failed</h1>
+            <p className="text-secondary-600 dark:text-secondary-400 mt-2">
+                The application could not load the necessary data. This might be due to a network issue or corrupted local data.
+            </p>
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 rounded-md text-left text-xs text-red-700 dark:text-red-300">
+                <p><strong>Error Details:</strong> {error}</p>
+            </div>
+            <div className="mt-6 space-y-3 sm:space-y-0 sm:flex sm:gap-3 sm:justify-center">
+                <button onClick={onRetry} className="w-full sm:w-auto btn-secondary">
+                    Retry Connection
+                </button>
+                <button onClick={onHardReset} className="w-full sm:w-auto btn-danger">
+                    Hard Reset & Re-sync
+                </button>
+            </div>
+            <p className="text-xs text-secondary-500 mt-4">
+                A hard reset will clear all local data and re-download it from the server. This is the recommended fix for persistent sync issues.
+            </p>
+        </div>
+    </div>
+);
+
 
 // --- CONTEXT ---
 interface DataContextType {
@@ -25,6 +60,7 @@ interface DataContextType {
     loading: boolean;
     isInitialLoad: boolean;
     lastSyncTime: Date | null;
+    // FIX: Add syncError to the context type to be used in the Header's SyncStatus component.
     syncError: string | null;
 
     // Data functions
@@ -84,11 +120,12 @@ export const useData = (): DataContextType => {
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { user, activeSchoolId } = useAuth();
     const { showToast } = useToast();
+    const { syncMode } = useTheme();
     
     const [loading, setLoading] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-    const [syncError, setSyncError] = useState<string | null>(null);
+    const [unrecoverableError, setUnrecoverableError] = useState<string | null>(null);
     const [schools, setSchools] = useState<School[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
@@ -114,35 +151,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
 
-        // Phase 1: Try to load from cache for instant UI
-        if (isInitialLoad) {
-            const cachedStudentCount = await db.students.count();
-            if (cachedStudentCount > 0) {
-                setLoading(true);
-                console.log("Loading data from offline cache...");
-                setSchools(await db.schools.toArray());
-                setUsers(await db.users.toArray());
-                setClasses(await db.classes.toArray());
-                setSubjects(await db.subjects.toArray());
-                setExams(await db.exams.toArray());
-                setStudents(await db.students.toArray());
-                setAttendanceState(await db.attendance.toArray());
-                setFees(await db.fees.toArray());
-                setResults(await db.results.toArray());
-                setLogs(await db.logs.toArray());
-                setFeeHeads(await db.feeHeads.toArray());
-                setEvents(await db.events.toArray());
-                setLoading(false); // UI is now populated and responsive
-            }
-        }
-        
         setLoading(true);
+        setUnrecoverableError(null);
 
         try {
-            setSyncError(null); // Clear previous errors on new sync attempt
             const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
+            const CHUNK_SIZE = 500;
 
-            // Pure fetcher function without side effects
             const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
                 let query = supabase.from(tableName).select('*');
                 
@@ -156,11 +171,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                             query = query.eq('school_id', effectiveSchoolId);
                         }
                     } else if (user.role === UserRole.Owner) {
-                        // No filter for Owner in global view, fetches all data for this table.
+                        // No filter for Owner in global view.
                     } else if (user.schoolId) {
                         query = query.eq('school_id', user.schoolId);
                     } else {
-                        return []; // No context, return empty.
+                        return [];
                     }
                 }
                 
@@ -168,16 +183,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (options.limit) query = query.limit(options.limit);
                 
                 const { data, error } = await query;
-                if (error) {
-                    console.error(`Error fetching ${tableName}:`, error);
-                    showToast('Data Sync Error', `Could not load latest data for ${tableName}.`, 'error');
-                    // Throw the error to be caught by the main try/catch block
-                    throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
-                }
+                if (error) throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
                 return toCamelCase(data || []);
             };
+            
+            const fetchDependentInChunks = async (tableName: string, studentIds: string[]) => {
+                if (studentIds.length === 0) return [];
+                let allData: any[] = [];
+                for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
+                    const chunk = studentIds.slice(i, i + CHUNK_SIZE);
+                    const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
+                    if (error) throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
+                    if (data) allData = allData.concat(data);
+                }
+                return toCamelCase(allData);
+            };
 
-            // --- PHASE 1: FETCH ALL DATA ---
+            // --- FETCH ALL DATA FROM SUPABASE ---
             const [
                 schoolsData, usersData, classesData, subjectsData, examsData, feeHeadsData, eventsData, logsData, studentsData
             ] = await Promise.all([
@@ -193,98 +215,109 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             ]);
 
             const studentIds = (studentsData || []).map((s: Student) => s.id);
-            let feesData: FeeChallan[] | null = null;
-            let attendanceData: Attendance[] | null = null;
-            let resultsData: Result[] | null = null;
+            const [feesData, attendanceData, resultsData] = await Promise.all([
+                fetchDependentInChunks('fee_challans', studentIds),
+                fetchDependentInChunks('attendance', studentIds),
+                fetchDependentInChunks('results', studentIds),
+            ]);
 
-            if (studentIds.length > 0) {
-                const CHUNK_SIZE = 500;
-                const fetchDependentInChunks = async (tableName: string) => {
-                    let allData: any[] = [];
-                    for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
-                        const chunk = studentIds.slice(i, i + CHUNK_SIZE);
-                        const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
-                        if (error) {
-                            console.error(`Error fetching chunk for ${tableName}:`, error);
-                            throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
-                        } else if (data) {
-                            allData = allData.concat(data);
-                        }
+            // --- HANDLE DATA BASED ON SYNC MODE ---
+            if (syncMode === 'online') {
+                // Set React state directly, bypass Dexie
+                console.log("Running in Online-Only mode. Bypassing local DB.");
+                setSchools(schoolsData);
+                setUsers(usersData);
+                setClasses(classesData);
+                setSubjects(subjectsData);
+                setExams(examsData);
+                setFeeHeads(feeHeadsData);
+                setEvents(eventsData);
+                setLogs(logsData);
+                setStudents(studentsData);
+                setFees(feesData);
+                setAttendanceState(attendanceData);
+                setResults(resultsData);
+            } else { // 'offline' mode
+                // Attempt to load from cache for instant UI if it's the first load
+                if (isInitialLoad) {
+                    const cachedStudentCount = await db.students.count();
+                    if (cachedStudentCount > 0) {
+                        setSchools(await db.schools.toArray());
+                        setUsers(await db.users.toArray());
+                        setClasses(await db.classes.toArray());
+                        setSubjects(await db.subjects.toArray());
+                        setExams(await db.exams.toArray());
+                        setStudents(await db.students.toArray());
+                        setAttendanceState(await db.attendance.toArray());
+                        setFees(await db.fees.toArray());
+                        setResults(await db.results.toArray());
+                        setLogs(await db.logs.toArray());
+                        setFeeHeads(await db.feeHeads.toArray());
+                        setEvents(await db.events.toArray());
                     }
-                    return toCamelCase(allData);
-                };
-
-                [feesData, attendanceData, resultsData] = await Promise.all([
-                    fetchDependentInChunks('fee_challans'),
-                    fetchDependentInChunks('attendance'),
-                    fetchDependentInChunks('results'),
-                ]);
-            }
-            
-            // --- PHASE 2: ATOMIC DATABASE WRITE ---
-            await db.transaction('rw', db.tables, async () => {
-                const promises = [
-                    schoolsData && db.schools.bulkPut(schoolsData),
-                    usersData && db.users.bulkPut(usersData),
-                    classesData && db.classes.bulkPut(classesData),
-                    subjectsData && db.subjects.bulkPut(subjectsData),
-                    examsData && db.exams.bulkPut(examsData),
-                    feeHeadsData && db.feeHeads.bulkPut(feeHeadsData),
-                    eventsData && db.events.bulkPut(eventsData),
-                    logsData && db.logs.bulkPut(logsData),
-                    studentsData && db.students.bulkPut(studentsData),
-                    feesData && db.fees.bulkPut(feesData),
-                    attendanceData && db.attendance.bulkPut(attendanceData),
-                    resultsData && db.results.bulkPut(resultsData),
-                ].filter(Boolean);
-                await Promise.all(promises);
-                
-                // If the student fetch returned an empty list for the context, clear dependent data.
-                if (studentsData && studentsData.length === 0 && effectiveSchoolId) {
-                     const localStudentsInContext = await db.students.where({ schoolId: effectiveSchoolId }).toArray();
-                     const localStudentIds = localStudentsInContext.map(s => s.id);
-                     if (localStudentIds.length > 0) {
-                         await Promise.all([
-                            db.fees.where('studentId').anyOf(localStudentIds).delete(),
-                            db.attendance.where('studentId').anyOf(localStudentIds).delete(),
-                            db.results.where('studentId').anyOf(localStudentIds).delete(),
-                        ]);
-                     }
                 }
-            });
 
-            // --- PHASE 3: UPDATE REACT STATE ---
-            if (schoolsData) setSchools(schoolsData);
-            if (usersData) setUsers(usersData);
-            if (classesData) setClasses(classesData);
-            if (subjectsData) setSubjects(subjectsData);
-            if (examsData) setExams(examsData);
-            if (feeHeadsData) setFeeHeads(feeHeadsData);
-            if (eventsData) setEvents(eventsData);
-            if (logsData) setLogs(logsData);
-            if (studentsData) setStudents(studentsData);
-            
-            setFees(feesData || []);
-            setAttendanceState(attendanceData || []);
-            setResults(resultsData || []);
-            
+                // --- ATOMIC DATABASE WRITE ---
+                await db.transaction('rw', db.tables, async () => {
+                    const allPuts = [
+                        db.schools.bulkPut(schoolsData),
+                        db.users.bulkPut(usersData),
+                        db.classes.bulkPut(classesData),
+                        db.subjects.bulkPut(subjectsData),
+                        db.exams.bulkPut(examsData),
+                        db.feeHeads.bulkPut(feeHeadsData),
+                        db.events.bulkPut(eventsData),
+                        db.logs.bulkPut(logsData),
+                        db.students.bulkPut(studentsData),
+                        db.fees.bulkPut(feesData),
+                        db.attendance.bulkPut(attendanceData),
+                        db.results.bulkPut(resultsData),
+                    ];
+                    await Promise.all(allPuts);
+                });
+                
+                // --- UPDATE REACT STATE FROM DEXIE (Single Source of Truth) ---
+                setSchools(await db.schools.toArray());
+                setUsers(await db.users.toArray());
+                setClasses(await db.classes.toArray());
+                setSubjects(await db.subjects.toArray());
+                setExams(await db.exams.toArray());
+                setStudents(await db.students.toArray());
+                setAttendanceState(await db.attendance.toArray());
+                setFees(await db.fees.toArray());
+                setResults(await db.results.toArray());
+                setLogs(await db.logs.toArray());
+                setFeeHeads(await db.feeHeads.toArray());
+                setEvents(await db.events.toArray());
+            }
+
             setLastSyncTime(new Date());
-            
         } catch (error: any) {
-            const errorMessage = error.message || 'An unknown error occurred during sync.';
             console.error("A critical error occurred during data fetching:", error);
-            setSyncError(errorMessage);
-            showToast('Sync Failed', 'Could not load latest data. Displaying cached information.', 'error');
+            setUnrecoverableError(error.message || 'An unknown error occurred during sync.');
         } finally {
             setLoading(false);
-            if(isInitialLoad) setIsInitialLoad(false);
+            if (isInitialLoad) setIsInitialLoad(false);
         }
-    }, [user, activeSchoolId, showToast, isInitialLoad]);
+    }, [user, activeSchoolId, isInitialLoad, syncMode]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
+    const handleHardReset = async () => {
+        showToast('Resetting...', 'Clearing local data and preparing to re-sync.', 'info');
+        try {
+            await deleteDatabase();
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (error) {
+            console.error('Failed to delete database:', error);
+            showToast('Reset Failed', 'Could not clear local data. Please try clearing your browser cache manually.', 'error');
+        }
+    };
+    
+    // FIX: Removed the early return for `unrecoverableError`. The error screen is now conditionally rendered inside the provider,
+    // allowing the rest of the app to receive context updates (like the error itself) and display non-critical error states.
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
 
@@ -320,10 +353,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
         if (data) {
-            const updatedUserFromDB = toCamelCase(data) as User;
-            setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUserFromDB : u));
-            addLog('User Updated', `User profile updated for ${updatedUserFromDB.name}.`);
-            showToast('Success', `${updatedUserFromDB.name}'s profile has been updated.`);
+            await fetchData();
+            addLog('User Updated', `User profile updated for ${updatedUser.name}.`);
+            showToast('Success', `${updatedUser.name}'s profile has been updated.`);
         }
     };
 
@@ -1093,7 +1125,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const value: DataContextType = {
-        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, syncError, fetchData,
+        schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, syncError: unrecoverableError, fetchData,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, addSubject, updateSubject, deleteSubject,
         addExam, updateExam, deleteExam, setAttendance, recordFeePayment, cancelChallan, generateChallansForMonth,
@@ -1105,7 +1137,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     return (
         <DataContext.Provider value={value}>
-            {children}
+            {unrecoverableError && schools.length === 0 ? (
+                <UnrecoverableErrorScreen
+                    error={unrecoverableError}
+                    onRetry={() => {
+                        setUnrecoverableError(null);
+                        fetchData();
+                    }}
+                    onHardReset={handleHardReset}
+                />
+            ) : (
+                children
+            )}
         </DataContext.Provider>
     );
 };

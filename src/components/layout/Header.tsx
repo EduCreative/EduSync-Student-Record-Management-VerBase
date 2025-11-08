@@ -33,6 +33,7 @@ const timeAgo = (date: Date | null): string => {
 };
 
 const SyncStatus: React.FC = () => {
+    // FIX: Destructure `syncError` from useData to display non-critical sync failures in the UI.
     const { loading, isInitialLoad, lastSyncTime, schools, syncError } = useData();
     const { isOnline } = useSync();
 

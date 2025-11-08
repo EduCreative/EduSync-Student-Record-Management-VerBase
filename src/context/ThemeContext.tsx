@@ -4,6 +4,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 
 type Theme = 'light' | 'dark';
 type FontSize = 'sm' | 'base' | 'lg';
+type SyncMode = 'offline' | 'online';
 const FONT_SIZES: FontSize[] = ['sm', 'base', 'lg'];
 
 interface ThemeContextType {
@@ -15,6 +16,8 @@ interface ThemeContextType {
     resetFontSize: () => void;
     highlightMissingData: boolean;
     toggleHighlightMissingData: () => void;
+    syncMode: SyncMode;
+    setSyncMode: (mode: SyncMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -23,6 +26,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [theme, setTheme] = useState<Theme>('light');
     const [fontSize, setFontSizeState] = useState<FontSize>('base');
     const [highlightMissingData, setHighlightMissingData] = useState<boolean>(true);
+    const [syncMode, setSyncModeState] = useState<SyncMode>('offline');
 
     useEffect(() => {
         // Theme initialization
@@ -43,6 +47,10 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Highlight missing data initialization
         const storedHighlight = localStorage.getItem('highlightMissingData');
         setHighlightMissingData(storedHighlight === null ? true : storedHighlight === 'true');
+
+        // Sync mode initialization
+        const storedSyncMode = localStorage.getItem('syncMode') as SyncMode | null;
+        setSyncModeState(storedSyncMode || 'offline');
     }, []);
 
     // Effect to apply theme class to <html> element
@@ -100,9 +108,14 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return newValue;
         });
     };
+    
+    const setSyncMode = (mode: SyncMode) => {
+        localStorage.setItem('syncMode', mode);
+        setSyncModeState(mode);
+    };
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, fontSize, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData }}>
+        <ThemeContext.Provider value={{ theme, toggleTheme, fontSize, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData, syncMode, setSyncMode }}>
             {children}
         </ThemeContext.Provider>
     );

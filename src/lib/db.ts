@@ -64,6 +64,9 @@ export class EduSyncDB extends Dexie {
         // FIX: Bump version to 8 to unblock current user and add a hard reset feature as a permanent solution.
         this.version(8).stores({});
 
+        // FIX: Final bump to version 9 to unblock user and allow access to new Sync Mode feature.
+        this.version(9).stores({});
+
         this.on('blocked', () => {
             console.warn(
               `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`

@@ -12,11 +12,11 @@ import IncreaseTuitionFeeModal from './IncreaseTuitionFeeModal';
 import { deleteDatabase } from '../../lib/db';
 
 const SettingsPage: React.FC = () => {
-    const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData } = useTheme();
+    const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData, syncMode, setSyncMode } = useTheme();
     const { user, effectiveRole, activeSchoolId } = useAuth();
-    const { schools, backupData, restoreData, updateSchool, feeHeads, addFeeHead, updateFeeHead } = useData();
+    const { schools, backupData, restoreData, updateSchool, feeHeads, addFeeHead, updateFeeHead, fetchData } = useData();
     const { showToast } = useToast();
-    const { installPrompt, clearInstallPrompt } = usePWAInstall();
+    const { installPrompt } = usePWAInstall();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
 
@@ -105,8 +105,6 @@ const SettingsPage: React.FC = () => {
             }
         } catch (e) {
             showToast('Error', 'App installation failed.', 'error');
-        } finally {
-            clearInstallPrompt();
         }
     };
 
@@ -125,6 +123,23 @@ const SettingsPage: React.FC = () => {
             showToast('Reset Failed', 'Could not clear local data. Please try clearing your browser cache manually.', 'error');
             setIsResetting(false);
         }
+    };
+
+    const handleSyncModeChange = async (mode: 'offline' | 'online') => {
+        if (syncMode === mode) return;
+        
+        showToast('Changing Sync Mode', `Switching to ${mode} mode. The app will now reload.`, 'info');
+        
+        if (mode === 'online') {
+            // Clear local DB when switching to online-only to ensure a clean state
+            await deleteDatabase();
+        }
+        
+        setSyncMode(mode);
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
     };
     
     return (
@@ -149,6 +164,23 @@ const SettingsPage: React.FC = () => {
             </Modal>
             <div className="max-w-4xl mx-auto space-y-8">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Settings</h1>
+
+                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
+                    <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">Data Synchronization</h2>
+                     <div className="space-y-4">
+                        <p className="text-sm text-secondary-600 dark:text-secondary-400">Choose how the application handles data. Changing this setting will reload the application.</p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className={`flex-1 p-4 border-2 rounded-lg cursor-pointer ${syncMode === 'offline' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'dark:border-secondary-700'}`} onClick={() => handleSyncModeChange('offline')}>
+                                <h3 className="font-semibold">Offline-First (Default)</h3>
+                                <p className="text-sm text-secondary-500">Fastest performance. Caches all data locally for offline access. Recommended, but may occasionally require a hard reset if sync fails.</p>
+                            </div>
+                            <div className={`flex-1 p-4 border-2 rounded-lg cursor-pointer ${syncMode === 'online' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'dark:border-secondary-700'}`} onClick={() => handleSyncModeChange('online')}>
+                                <h3 className="font-semibold">Online-Only</h3>
+                                <p className="text-sm text-secondary-500">Most reliable. Fetches fresh data from the server on every use. Requires a constant internet connection.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                     <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">Appearance</h2>
@@ -247,7 +279,7 @@ const SettingsPage: React.FC = () => {
                 )}
 
 
-                {effectiveRole === UserRole.Admin && (
+                {effectiveRole === UserRole.Admin && syncMode === 'offline' && (
                     <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                         <h2 className="text-xl font-semibold border-b pb-3 dark:border-secondary-700 mb-6">Data Management</h2>
                         <div className="space-y-4">
@@ -274,24 +306,26 @@ const SettingsPage: React.FC = () => {
                 )}
                 
                 {/* Danger Zone */}
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-semibold text-red-800 dark:text-red-200">Danger Zone</h2>
-                    <div className="mt-4 flex items-start justify-between">
-                        <div>
-                            <h3 className="font-medium text-red-900 dark:text-red-100">Clear Local Data & Re-sync</h3>
-                            <p className="text-sm text-red-700 dark:text-red-300 mt-1 max-w-xl">
-                                If the application is stuck or not syncing correctly, you can perform a hard reset. This will delete all offline data from your browser and force a fresh download from the server.
-                            </p>
+                {syncMode === 'offline' && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold text-red-800 dark:text-red-200">Danger Zone</h2>
+                        <div className="mt-4 flex items-start justify-between">
+                            <div>
+                                <h3 className="font-medium text-red-900 dark:text-red-100">Clear Local Data & Re-sync</h3>
+                                <p className="text-sm text-red-700 dark:text-red-300 mt-1 max-w-xl">
+                                    If the application is stuck or not syncing correctly, you can perform a hard reset. This will delete all offline data from your browser and force a fresh download from the server.
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => setIsResetModalOpen(true)}
+                                className="btn-danger flex-shrink-0"
+                                disabled={isResetting}
+                            >
+                                {isResetting ? 'Resetting...' : 'Hard Reset'}
+                            </button>
                         </div>
-                        <button 
-                            onClick={() => setIsResetModalOpen(true)}
-                            className="btn-danger flex-shrink-0"
-                            disabled={isResetting}
-                        >
-                            {isResetting ? 'Resetting...' : 'Hard Reset'}
-                        </button>
                     </div>
-                </div>
+                )}
             </div>
         </>
     );
