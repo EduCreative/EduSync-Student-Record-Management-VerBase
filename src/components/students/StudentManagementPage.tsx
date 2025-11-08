@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Student, UserRole, FeeChallan } from '../../types';
+import { Student, UserRole } from '../../types';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
 import Badge from '../common/Badge';

@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-import { UserRole, Class } from '../../types';
+import { UserRole } from '../../types';
 import { getClassLevel } from '../../utils/sorting';
 import PrintableReportLayout from './PrintableReportLayout';
 
@@ -130,7 +130,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
@@ -164,7 +164,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             <PrintableReportLayout
                 school={school}
                 title="Fee Defaulter Report"
-                subtitle={`For Class: ${classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}`}
+                // FIX: Replaced schoolClasses.find() with classMap.get() to resolve a type inference issue where the parameter 'c' was being incorrectly typed, causing an error when accessing the 'name' property.
+                subtitle={`For Class: ${classId === 'all' ? 'All Classes' : classMap.get(classId) || ''}`}
             >
                 {reportData.map((classGroup) => (
                     <div key={classGroup.classId} className="class-group-container mb-6">
