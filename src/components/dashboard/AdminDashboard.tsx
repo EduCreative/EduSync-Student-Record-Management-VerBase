@@ -137,17 +137,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const schoolUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.id !== user.id), [users, effectiveSchoolId, user.id]);
 
     const stats = useMemo(() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        const currentMonthName = now.toLocaleString('default', { month: 'long' });
 
-        const feesCollectedToday = fees
-            .filter(f => f.paidDate === todayStr && students.find(s => s.id === f.studentId)?.schoolId === effectiveSchoolId)
+        const schoolFees = fees.filter(fee => {
+            const student = students.find(s => s.id === fee.studentId);
+            return student?.schoolId === effectiveSchoolId;
+        });
+
+        const feesCollectedToday = schoolFees
+            .filter(f => f.paidDate === todayStr)
             .reduce((sum, f) => sum + f.paidAmount, 0);
+
+        const collectedThisMonth = schoolFees
+            .filter(f => f.paidDate && new Date(f.paidDate).getMonth() === currentMonth && new Date(f.paidDate).getFullYear() === currentYear)
+            .reduce((sum, f) => sum + f.paidAmount, 0);
+
+        const duesThisMonth = schoolFees
+            .filter(f => f.month === currentMonthName && f.year === currentYear)
+            .reduce((sum, f) => sum + (f.totalAmount - f.discount), 0);
             
         const pendingApprovals = schoolUsers.filter(u => u.status === 'Pending Approval').length;
+        const totalPaidChallans = schoolFees.filter(f => f.status === 'Paid').length;
+        const totalUnpaidChallans = schoolFees.filter(f => f.status === 'Unpaid' || f.status === 'Partial').length;
         
         return {
             feesCollectedToday: `Rs. ${feesCollectedToday.toLocaleString()}`,
             pendingApprovals: pendingApprovals.toString(),
+            collectedThisMonth: `Rs. ${collectedThisMonth.toLocaleString()}`,
+            totalPaidChallans: totalPaidChallans.toLocaleString(),
+            duesThisMonth: `Rs. ${duesThisMonth.toLocaleString()}`,
+            totalUnpaidChallans: totalUnpaidChallans.toLocaleString(),
         };
     }, [fees, students, schoolUsers, effectiveSchoolId]);
 
@@ -223,7 +246,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             return weekDays.map(date => {
                 const dateStr = date.toISOString().split('T')[0];
                 return {
-                    label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                    label: `${date.toLocaleDateString('en-US', { weekday: 'short' })} (${date.getDate()}/${date.getMonth() + 1})`,
                     value: collectionsByDay[dateStr] || 0
                 };
             });
@@ -344,7 +367,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 </div>
                
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+                    {[...Array(8)].map((_, i) => <StatCardSkeleton key={i} />)}
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -387,10 +410,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 </div>
             
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} />
-                    <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} />
-                    <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<DollarSignIcon />} />
-                    <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserCheckIcon />} />
+                    <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} />
+                    <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300" icon={<BriefcaseIcon />} />
+                    <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" icon={<UserCheckIcon />} />
+                    <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<DollarSignIcon />} />
+                    
+                    <StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} />
+                    <StatCard title="Total Paid Challans" value={stats.totalPaidChallans} color="bg-lime-100 dark:bg-lime-900/50 text-lime-600 dark:text-lime-300" icon={<FileCheckIcon />} />
+                    <StatCard title="Dues This Month" value={stats.duesThisMonth} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
+                    <StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertTriangleIcon />} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -469,5 +497,8 @@ const UserPlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} x
 const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
 const SchoolIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></svg>;
+const FileTextIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>;
+const FileCheckIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="m9 15 2 2 4-4" /></svg>;
+const AlertTriangleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 
 export default AdminDashboard;

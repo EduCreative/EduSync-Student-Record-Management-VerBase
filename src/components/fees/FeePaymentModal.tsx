@@ -8,6 +8,8 @@ interface FeePaymentModalProps {
     onClose: () => void;
     challan: FeeChallan;
     student: Student;
+    editMode?: boolean;
+    defaultDate?: string;
 }
 
 const getTodayString = () => {
@@ -18,58 +20,76 @@ const getTodayString = () => {
     return `${year}-${month}-${day}`;
 };
 
-const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, challan, student }) => {
-    const { recordFeePayment } = useData();
-    const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
-
-    const [amount, setAmount] = useState(balanceDue);
-    const [discount, setDiscount] = useState(challan.discount);
+const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, challan, student, editMode = false, defaultDate }) => {
+    const { recordFeePayment, updateFeePayment } = useData();
+    
+    const [amount, setAmount] = useState(0);
+    const [discount, setDiscount] = useState(0);
     const [paidDate, setPaidDate] = useState(getTodayString());
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            const balance = challan.totalAmount - challan.discount - challan.paidAmount;
-            setAmount(balance);
-            setDiscount(challan.discount);
-            setPaidDate(getTodayString());
+            if (editMode) {
+                setAmount(challan.paidAmount);
+                setDiscount(challan.discount);
+                setPaidDate(challan.paidDate || getTodayString());
+            } else {
+                const balance = challan.totalAmount - challan.discount - challan.paidAmount;
+                setAmount(balance);
+                setDiscount(challan.discount);
+                setPaidDate(defaultDate || getTodayString());
+            }
         }
-    }, [isOpen, challan]);
+    }, [isOpen, challan, editMode, defaultDate]);
 
-    const remainingBalance = challan.totalAmount - (challan.paidAmount + amount + discount);
+    const remainingBalance = editMode
+        ? challan.totalAmount - (amount + discount)
+        : challan.totalAmount - (challan.paidAmount + amount + discount);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await recordFeePayment(challan.id, amount, discount, paidDate);
+            if (editMode) {
+                await updateFeePayment(challan.id, amount, discount, paidDate);
+            } else {
+                await recordFeePayment(challan.id, amount, discount, paidDate);
+            }
             onClose();
         } catch (error) {
-            console.error("Failed to record payment:", error);
+            console.error("Failed to process payment:", error);
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Record Payment for ${student.name}`}>
+        <Modal isOpen={isOpen} onClose={onClose} title={editMode ? `Edit Payment for ${student.name}`: `Record Payment for ${student.name}`}>
             <div className="text-sm space-y-2 mb-4 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
                 <p><strong>Challan:</strong> {challan.month} {challan.year}</p>
                 <p><strong>Total Amount:</strong> Rs. {challan.totalAmount.toLocaleString()}</p>
-                <p><strong>Already Paid:</strong> Rs. {challan.paidAmount.toLocaleString()}</p>
-                <p className="font-bold"><strong>Current Balance Due:</strong> Rs. {balanceDue.toLocaleString()}</p>
+                {editMode ? (
+                     <p className="font-bold"><strong>Currently Paid:</strong> Rs. {challan.paidAmount.toLocaleString()}</p>
+                ) : (
+                    <>
+                        <p><strong>Already Paid:</strong> Rs. {challan.paidAmount.toLocaleString()}</p>
+                        <p className="font-bold"><strong>Current Balance Due:</strong> Rs. {balanceDue.toLocaleString()}</p>
+                    </>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label htmlFor="amount" className="input-label">Amount Paying Now</label>
+                    <label htmlFor="amount" className="input-label">{editMode ? 'Paid Amount' : 'Amount Paying Now'}</label>
                     <input
                         type="number"
                         id="amount"
                         value={amount}
                         onChange={e => setAmount(Number(e.target.value))}
                         className="input-field"
-                        max={balanceDue}
                         required
                     />
                 </div>
@@ -105,7 +125,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                 <div className="flex justify-end space-x-3 pt-2">
                     <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
                     <button type="submit" disabled={isSubmitting} className="btn-primary">
-                        {isSubmitting ? 'Saving...' : 'Confirm Payment'}
+                        {isSubmitting ? 'Saving...' : (editMode ? 'Update Payment' : 'Confirm Payment')}
                     </button>
                 </div>
             </form>

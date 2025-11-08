@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-import { UserRole } from '../../types';
+import { UserRole, Class } from '../../types';
 import { getClassLevel } from '../../utils/sorting';
 import PrintableReportLayout from './PrintableReportLayout';
 
@@ -26,6 +26,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const { showPrintPreview } = usePrint();
 
     const [classId, setClassId] = useState('all');
+    const [sortBy, setSortBy] = useState('studentName'); // 'studentName', 'stdId', 'balance'
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         fatherName: true,
         amountDue: true,
@@ -121,14 +122,29 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             return acc;
         }, {} as Record<string, ClassDefaulterGroup>);
 
+        const schoolClassesMapForSort = new Map(schoolClasses.map(c => [c.id, c]));
+
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            .sort((a, b) => a.className.localeCompare(b.className))
+            .sort((a, b) => {
+                const classA = schoolClassesMapForSort.get(a.classId);
+                const classB = schoolClassesMapForSort.get(b.classId);
+                if (!classA || !classB) return a.className.localeCompare(b.className);
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
+            })
             .map(classGroup => {
-                classGroup.students.sort((a, b) => a.studentName.localeCompare(b.studentName));
+                classGroup.students.sort((a, b) => {
+                    if (sortBy === 'stdId') {
+                        return a.stdId.localeCompare(b.stdId, undefined, { numeric: true });
+                    }
+                    if (sortBy === 'balance') {
+                        return b.balance - a.balance; // Descending for balance
+                    }
+                    return a.studentName.localeCompare(b.studentName); // Default
+                });
                 return classGroup;
             });
-    }, [fees, students, classes, classMap, studentMap, effectiveSchoolId, classId]);
+    }, [fees, students, classMap, studentMap, effectiveSchoolId, classId, schoolClasses, sortBy]);
     
     const grandTotal = useMemo(() => {
         return reportData.reduce((acc, classGroup) => {
@@ -253,12 +269,22 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Generate Fee Defaulter Report">
             <div className="space-y-4">
-                <div>
-                    <label htmlFor="class-filter" className="input-label">Filter by Class</label>
-                    <select id="class-filter" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
-                        <option value="all">All Classes</option>
-                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
-                    </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="class-filter" className="input-label">Filter by Class</label>
+                        <select id="class-filter" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
+                            <option value="all">All Classes</option>
+                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="sort-by-defaulter" className="input-label">Sort By</label>
+                        <select id="sort-by-defaulter" value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-field">
+                            <option value="studentName">Student Name</option>
+                            <option value="stdId">Roll Number</option>
+                            <option value="balance">Balance Amount</option>
+                        </select>
+                    </div>
                 </div>
                  <div>
                     <label className="input-label">Include Columns</label>

@@ -3,13 +3,18 @@ import { useData } from '../../context/DataContext';
 import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 import { FeeChallan } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { Permission } from '../../permissions';
 
 interface StudentFeeHistoryProps {
     studentId: string;
+    onEditChallan: (challan: FeeChallan) => void;
 }
 
-const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
+const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId, onEditChallan }) => {
     const { fees } = useData();
+    const { hasPermission } = useAuth();
+    const canEdit = hasPermission(Permission.CAN_MANAGE_FEES);
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     const studentChallans = useMemo(() => {
@@ -25,7 +30,8 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
     const getStatusColor = (status: FeeChallan['status']) => {
         if (status === 'Paid') return 'green';
         if (status === 'Unpaid') return 'red';
-        return 'yellow';
+        if (status === 'Cancelled') return 'secondary';
+        return 'yellow'; // Partial
     }
 
     return (
@@ -43,6 +49,7 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
                             <th className="px-4 py-2 text-center">Status</th>
                             <th className="px-4 py-2">Due Date</th>
                             <th className="px-4 py-2">Paid Date</th>
+                            {canEdit && <th className="px-4 py-2">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y dark:divide-secondary-700">
@@ -59,6 +66,18 @@ const StudentFeeHistory: React.FC<StudentFeeHistoryProps> = ({ studentId }) => {
                                     <td className="px-4 py-3 text-center"><Badge color={getStatusColor(challan.status)}>{challan.status}</Badge></td>
                                     <td className="px-4 py-3">{formatDate(challan.dueDate)}</td>
                                     <td className="px-4 py-3">{challan.paidDate ? formatDate(challan.paidDate) : 'N/A'}</td>
+                                    {canEdit && (
+                                        <td className="px-4 py-3">
+                                            {(challan.status === 'Paid' || challan.status === 'Partial') && (
+                                                <button
+                                                    onClick={() => onEditChallan(challan)}
+                                                    className="font-medium text-primary-600 dark:text-primary-500 hover:underline"
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+                                        </td>
+                                    )}
                                 </tr>
                             )
                         })}

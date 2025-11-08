@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Student, UserRole } from '../../types';
+import { Student, UserRole, FeeChallan } from '../../types';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
 import Badge from '../common/Badge';
@@ -48,7 +48,7 @@ const parseCurrency = (value: any): number | null => {
 
 const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActiveView }) => {
     const { user, activeSchoolId, hasPermission } = useAuth();
-    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads } = useData();
+    const { students, classes, addStudent, updateStudent, deleteStudent, loading, bulkAddStudents, feeHeads, fees } = useData();
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
@@ -67,6 +67,23 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
     const classMap = useMemo(() => new Map(schoolClasses.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [schoolClasses]);
+
+    const studentBalanceMap = useMemo(() => {
+        const balanceMap = new Map<string, number>();
+        students.forEach(s => {
+            balanceMap.set(s.id, s.openingBalance || 0);
+        });
+
+        fees.forEach(fee => {
+            if (fee.status !== 'Cancelled' && balanceMap.has(fee.studentId)) {
+                const currentBalance = balanceMap.get(fee.studentId)!;
+                const feeBalance = fee.totalAmount - fee.discount - fee.paidAmount;
+                balanceMap.set(fee.studentId, currentBalance + feeBalance);
+            }
+        });
+
+        return balanceMap;
+    }, [students, fees]);
 
     const filteredStudents = useMemo(() => {
         return students.filter(student => {
@@ -264,10 +281,13 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
     const handleExport = () => {
         const dataToExport = filteredStudents.map(s => ({
-            name: s.name,
             rollNumber: s.rollNumber,
-            classId: s.classId,
+            name: s.name,
             fatherName: s.fatherName,
+            className_for_reference: classMap.get(s.classId) || 'N/A',
+            status: s.status,
+            balance: studentBalanceMap.get(s.id) || 0,
+            classId: s.classId,
             fatherCnic: s.fatherCnic,
             dateOfBirth: s.dateOfBirth,
             dateOfAdmission: s.dateOfAdmission,
@@ -282,14 +302,13 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
             lastSchoolAttended: s.lastSchoolAttended,
             openingBalance: s.openingBalance,
             userId: s.userId,
-            className_for_reference: classMap.get(s.classId) || 'N/A',
-            status: s.status,
         }));
         exportToCsv(dataToExport, 'students_export');
     };
     
     const showingFrom = filteredStudents.length > 0 ? (currentPage - 1) * STUDENTS_PER_PAGE + 1 : 0;
     const showingTo = Math.min(currentPage * STUDENTS_PER_PAGE, filteredStudents.length);
+    const skeletonColumns = [ { width: '10%' }, { width: '30%' }, { width: '20%' }, { width: '10%' }, { width: '15%' }, { width: '15%' }];
 
     return (
         <>
@@ -303,14 +322,14 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 fileName="Students"
                 requiredHeaders={requiredHeaders}
             />
-            <Modal isOpen={!!studentToDelete} onClose={() => setStudentToDelete(null)} title="Confirm Student Archival">
+            <Modal isOpen={!!studentToDelete} onClose={() => setStudentToDelete(null)} title="Confirm Student Deletion">
                 <div>
                     <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                        Are you sure you want to archive <strong className="text-secondary-800 dark:text-secondary-200">{studentToDelete?.name}</strong>? Their record will be hidden from active lists but not permanently deleted.
+                        Are you sure you want to delete <strong className="text-secondary-800 dark:text-secondary-200">{studentToDelete?.name}</strong>? Their record will be hidden from active lists but not permanently deleted.
                     </p>
                     <div className="mt-6 flex justify-end space-x-3">
                         <button type="button" onClick={() => setStudentToDelete(null)} className="btn-secondary">Cancel</button>
-                        <button type="button" onClick={handleDeleteStudent} className="btn-danger">Archive Student</button>
+                        <button type="button" onClick={handleDeleteStudent} className="btn-danger">Delete Student</button>
                     </div>
                 </div>
             </Modal>
@@ -343,57 +362,63 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                             <option value="Left">Left</option>
-                            <option value="Archived">Archived</option>
+                            <option value="Deleted">Deleted</option>
                         </select>
                     </div>
                 </div>
 
                 <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     {loading ? (
-                        <TableSkeleton columns={[
-                            { width: '35%' }, { width: '15%' }, { width: '20%' }, { width: '15%' }, { width: '15%' }
-                        ]} rows={STUDENTS_PER_PAGE} />
+                        <TableSkeleton columns={skeletonColumns} rows={STUDENTS_PER_PAGE} />
                     ) : (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
                                     <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                         <tr>
-                                            <th className="px-6 py-3">Student</th>
                                             <th className="px-6 py-3">Roll No.</th>
+                                            <th className="px-6 py-3">Name &amp; Father Name</th>
                                             <th className="px-6 py-3">Class</th>
                                             <th className="px-6 py-3">Status</th>
+                                            <th className="px-6 py-3 text-right">Balance</th>
                                             <th className="px-6 py-3">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {paginatedStudents.map(student => (
-                                            <tr key={student.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center space-x-3">
-                                                        <Avatar student={student} className="h-10 w-10" />
-                                                        <div>
-                                                            <div className="font-semibold text-secondary-900 dark:text-white">{student.name}</div>
-                                                            <div className="text-xs text-secondary-500">{student.fatherName}</div>
+                                        {paginatedStudents.map(student => {
+                                            const balance = studentBalanceMap.get(student.id) || 0;
+                                            return (
+                                                <tr key={student.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                                    <td className="px-6 py-4">{student.rollNumber}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center space-x-3">
+                                                            <Avatar student={student} className="h-10 w-10" />
+                                                            <div>
+                                                                <button onClick={() => setActiveView({ view: 'studentProfile', payload: { studentId: student.id } })} className="font-semibold text-secondary-900 dark:text-white hover:underline text-left">
+                                                                    {student.name}
+                                                                </button>
+                                                                <div className="text-xs text-secondary-500">{student.fatherName}</div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">{student.rollNumber}</td>
-                                                <td className="px-6 py-4">{classMap.get(student.classId) || 'N/A'}</td>
-                                                <td className="px-6 py-4"><Badge color={student.status === 'Active' ? 'green' : 'secondary'}>{student.status}</Badge></td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center space-x-4">
-                                                        <button onClick={() => setActiveView({ view: 'studentProfile', payload: { studentId: student.id }})} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">View</button>
-                                                        {canEdit && (
-                                                            <button onClick={() => handleOpenModal(student)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
-                                                        )}
-                                                        {canDelete && (
-                                                            <button onClick={() => setStudentToDelete(student)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Archive</button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-6 py-4">{classMap.get(student.classId) || 'N/A'}</td>
+                                                    <td className="px-6 py-4"><Badge color={student.status === 'Active' ? 'green' : 'secondary'}>{student.status}</Badge></td>
+                                                    <td className={`px-6 py-4 text-right font-semibold ${balance > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                                                        Rs. {balance.toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center space-x-4">
+                                                            {canEdit && (
+                                                                <button onClick={() => handleOpenModal(student)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>
+                                                            )}
+                                                            {canDelete && (
+                                                                <button onClick={() => setStudentToDelete(student)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

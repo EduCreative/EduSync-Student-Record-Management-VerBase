@@ -162,35 +162,26 @@
     display: none !important;
   }
 
-  /* Layout for repeating headers/footers */
-  .printable-container {
-    position: relative;
+  /* Layout for repeating headers/footers using table properties */
+  .printable-layout-table > thead > tr > td,
+  .printable-layout-table > tbody > tr > td,
+  .printable-layout-table > tfoot > tr > td {
+      padding: 0;
+      border: none;
   }
-  .page-header, .page-footer {
-    position: fixed;
-    left: 0.75in;
-    right: 0.75in;
+  .page-header-content {
+      padding-bottom: 20px;
   }
-  .page-header {
-    top: 0;
-    padding-bottom: 10px;
+  .page-footer-content {
+      padding-top: 10px;
   }
-  .page-footer {
-    bottom: 0;
-    padding-top: 5px;
-  }
-  .page-header-space, .page-footer-space {
-    height: 120px; /* Adjust based on header/footer height */
-  }
-  .page-footer-space {
-    height: 40px;
-  }
-  .page-footer .page-number::after {
+  .page-footer-content .page-number::after {
     content: counter(page);
   }
   .page-content {
     counter-increment: page;
   }
+
   .printable-report {
     padding: 0 !important;
   }
@@ -227,7 +218,7 @@
   .printable-result-card, .challan-wrapper, .id-card {
     page-break-inside: avoid !important;
   }
-  .printable-result-card, .challan-wrapper {
+  .printable-result-card {
     page-break-after: always;
   }
 

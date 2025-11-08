@@ -83,6 +83,7 @@ interface DataContextType {
     deleteExam: (examId: string) => Promise<void>;
     setAttendance: (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => Promise<void>;
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
+    updateFeePayment: (challanId: string, paidAmount: number, discount: number, paidDate: string) => Promise<void>;
     cancelChallan: (challanId: string) => Promise<void>;
     generateChallansForMonth: (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
     addFeeHead: (feeHeadData: Omit<FeeHead, 'id'>) => Promise<void>;
@@ -502,15 +503,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const studentToDelete = students.find(s => s.id === studentId);
         if (!studentToDelete) return;
 
-        const { error } = await supabase.from('students').update({ status: 'Archived' }).eq('id', studentId);
+        const { error } = await supabase.from('students').update({ status: 'Deleted' }).eq('id', studentId);
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
         
         await fetchData();
-        addLog('Student Archived', `Student profile archived for ${studentToDelete.name}.`);
-        showToast('Success', `${studentToDelete.name}'s profile has been archived.`);
+        addLog('Student Deleted', `Student profile deleted for ${studentToDelete.name}.`);
+        showToast('Success', `${studentToDelete.name}'s profile has been deleted.`);
     };
 
     const addClass = async (classData: Omit<Class, 'id'>) => {
@@ -669,6 +670,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await fetchData();
         addLog('Fee Payment', `Payment of Rs. ${amount} recorded for challan ${challan.challanNumber}.`);
         showToast('Success', 'Payment recorded successfully.');
+    };
+
+    const updateFeePayment = async (challanId: string, paidAmount: number, discount: number, paidDate: string) => {
+        const challan = fees.find(f => f.id === challanId);
+        if (!challan) throw new Error('Challan not found for update.');
+
+        const totalAmountDue = challan.totalAmount;
+        let newStatus: FeeChallan['status'] = 'Unpaid';
+        if (paidAmount >= totalAmountDue - discount) {
+            newStatus = 'Paid';
+        } else if (paidAmount > 0) {
+            newStatus = 'Partial';
+        }
+
+        const { error } = await supabase.from('fee_challans')
+            .update({
+                paid_amount: paidAmount,
+                discount: discount,
+                paid_date: paidDate,
+                status: newStatus,
+            })
+            .eq('id', challanId);
+
+        if (error) {
+            showToast('Error', `Failed to update payment: ${error.message}`, 'error');
+            throw error;
+        }
+
+        await fetchData();
+        const student = students.find(s => s.id === challan.studentId);
+        addLog('Payment Edited', `Payment edited for challan #${challan.challanNumber} for student ${student?.name}.`);
+        showToast('Success', 'Payment updated successfully.');
     };
     
     const cancelChallan = async (challanId: string) => {
@@ -1163,7 +1196,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, syncError: unrecoverableError, fetchData,
         getSchoolById, updateUser, deleteUser, addStudent, updateStudent, deleteStudent,
         addClass, updateClass, deleteClass, addSubject, updateSubject, deleteSubject,
-        addExam, updateExam, deleteExam, setAttendance, recordFeePayment, cancelChallan, generateChallansForMonth,
+        addExam, updateExam, deleteExam, setAttendance, recordFeePayment, updateFeePayment, cancelChallan, generateChallansForMonth,
         addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, addSchool,
         updateSchool, deleteSchool, addEvent, updateEvent, deleteEvent, bulkAddStudents, bulkAddUsers,
         bulkAddClasses, backupData, restoreData, addUserByAdmin, promoteAllStudents, increaseTuitionFees,

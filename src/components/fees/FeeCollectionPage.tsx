@@ -10,6 +10,14 @@ import Modal from '../common/Modal';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const FeeCollectionPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
     const { students, fees, classes, cancelChallan } = useData();
@@ -17,6 +25,7 @@ const FeeCollectionPage: React.FC = () => {
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [challanToPay, setChallanToPay] = useState<FeeChallan | null>(null);
     const [challanToCancel, setChallanToCancel] = useState<FeeChallan | null>(null);
+    const [sessionDate, setSessionDate] = useState(getTodayString());
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     
@@ -64,6 +73,7 @@ const FeeCollectionPage: React.FC = () => {
                     onClose={() => setChallanToPay(null)}
                     challan={challanToPay}
                     student={selectedStudent}
+                    defaultDate={sessionDate}
                 />
             )}
             {challanToCancel && (
@@ -80,38 +90,52 @@ const FeeCollectionPage: React.FC = () => {
                 </Modal>
             )}
             <div className="p-4 sm:p-6 space-y-4">
-                <div className="relative">
-                    <label htmlFor="student-search" className="input-label">Search Student by Name or Roll Number</label>
-                    <input
-                        id="student-search"
-                        type="text"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="input-field"
-                        placeholder="e.g., Ali Ahmed or 101"
-                    />
-                    {searchTerm && (
-                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-secondary-800 border dark:border-secondary-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                            {filteredStudents.length > 0 ? (
-                                filteredStudents.map(student => (
-                                    <button
-                                        key={student.id}
-                                        onClick={() => handleSelectStudent(student)}
-                                        className="w-full text-left px-4 py-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 flex items-center space-x-3"
-                                    >
-                                        <Avatar student={student} className="w-8 h-8"/>
-                                        <div>
-                                            <p className="font-medium">{student.name}</p>
-                                            <p className="text-xs text-secondary-500">Roll: {student.rollNumber} - Class: {classMap.get(student.classId)}</p>
-                                        </div>
-                                    </button>
-                                ))
-                            ) : (
-                                <p className="p-4 text-sm text-secondary-500">No students found.</p>
-                            )}
-                        </div>
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="md:col-span-2 relative">
+                        <label htmlFor="student-search" className="input-label">Search Student by Name or Roll Number</label>
+                        <input
+                            id="student-search"
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="input-field"
+                            placeholder="e.g., Ali Ahmed or 101"
+                        />
+                        {searchTerm && (
+                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-secondary-800 border dark:border-secondary-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                {filteredStudents.length > 0 ? (
+                                    filteredStudents.map(student => (
+                                        <button
+                                            key={student.id}
+                                            onClick={() => handleSelectStudent(student)}
+                                            className="w-full text-left px-4 py-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 flex items-center space-x-3"
+                                        >
+                                            <Avatar student={student} className="w-8 h-8"/>
+                                            <div>
+                                                <p className="font-medium">{student.name}</p>
+                                                <p className="text-xs text-secondary-500">Roll: {student.rollNumber} - Class: {classMap.get(student.classId)}</p>
+                                            </div>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <p className="p-4 text-sm text-secondary-500">No students found.</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    <div>
+                        <label htmlFor="session-date" className="input-label">Default Payment Date</label>
+                        <input
+                            id="session-date"
+                            type="date"
+                            value={sessionDate}
+                            onChange={e => setSessionDate(e.target.value)}
+                            className="input-field"
+                        />
+                        <p className="text-xs text-secondary-500 mt-1">Sets the default date for new payments in this session.</p>
+                    </div>
                 </div>
+
 
                 {selectedStudent && (
                     <div className="border-t dark:border-secondary-700 pt-4">
