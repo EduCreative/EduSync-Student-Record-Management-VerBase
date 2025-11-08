@@ -56,6 +56,9 @@ export class EduSyncDB extends Dexie {
         // FIX: Bump version again to force another upgrade to resolve hanging state.
         this.version(6).stores({});
 
+        // FIX: Bump version again to force another upgrade to resolve hanging state.
+        this.version(7).stores({});
+
         this.on('blocked', () => {
             console.warn(
               `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`
