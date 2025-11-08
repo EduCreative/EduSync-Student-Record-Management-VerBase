@@ -156,7 +156,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
-            const CHUNK_SIZE = 500;
 
             const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
                 let query = supabase.from(tableName).select('*');
@@ -189,27 +188,49 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             const fetchDependentInChunks = async (tableName: string, studentIds: string[]) => {
                 if (studentIds.length === 0) return [];
-                
+
+                const CHUNK_SIZE = 100; // Smaller, safer chunk size
+                const MAX_CONCURRENT_REQUESTS = 4; // Keep concurrency low
+                const MAX_RETRIES = 3; // Retry failed chunks
+
+                // Create a mutable copy of chunks to be used as a queue
                 const chunks: string[][] = [];
                 for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
                     chunks.push(studentIds.slice(i, i + CHUNK_SIZE));
                 }
-
-                const promises = chunks.map(chunk =>
-                    supabase.from(tableName).select('*').in('student_id', chunk)
-                );
-
-                const results = await Promise.all(promises);
+                const chunkQueue = [...chunks];
 
                 let allData: any[] = [];
-                for (const result of results) {
-                    if (result.error) {
-                        throw new Error(`Failed to fetch ${tableName}: ${result.error.message}`);
+
+                const fetchChunkWithRetry = async (chunk: string[]) => {
+                    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                        try {
+                            const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
+                            if (error) throw error;
+                            return data || [];
+                        } catch (error) {
+                            if (attempt === MAX_RETRIES) {
+                                throw new Error(`Failed to fetch a chunk from ${tableName} after ${MAX_RETRIES} attempts: ${(error as Error).message}`);
+                            }
+                            await new Promise(res => setTimeout(res, 1000 * attempt));
+                        }
                     }
-                    if (result.data) {
-                        allData = allData.concat(result.data);
+                    return []; // Should be unreachable
+                };
+                
+                const worker = async () => {
+                    while (chunkQueue.length > 0) {
+                        const chunk = chunkQueue.shift();
+                        if (!chunk) continue;
+
+                        const data = await fetchChunkWithRetry(chunk);
+                        allData.push(...data);
                     }
-                }
+                };
+                
+                const workers = Array(MAX_CONCURRENT_REQUESTS).fill(null).map(() => worker());
+                await Promise.all(workers);
+                
                 return toCamelCase(allData);
             };
 
