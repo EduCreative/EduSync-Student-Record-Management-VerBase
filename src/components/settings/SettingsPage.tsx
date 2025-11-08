@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import ImageUpload from '../common/ImageUpload';
 import { usePWAInstall } from '../../context/PWAInstallContext';
 import IncreaseTuitionFeeModal from './IncreaseTuitionFeeModal';
+import { deleteDatabase } from '../../lib/db';
 
 const SettingsPage: React.FC = () => {
     const { theme, toggleTheme, increaseFontSize, decreaseFontSize, resetFontSize, highlightMissingData, toggleHighlightMissingData } = useTheme();
@@ -29,6 +30,8 @@ const SettingsPage: React.FC = () => {
 
     // State for Class Promotion
     const [isTuitionFeeModalOpen, setIsTuitionFeeModalOpen] = useState(false);
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
 
     // Initialize forms and preferences from user data
@@ -106,6 +109,23 @@ const SettingsPage: React.FC = () => {
             clearInstallPrompt();
         }
     };
+
+    const handleHardReset = async () => {
+        setIsResetting(true);
+        setIsResetModalOpen(false);
+        showToast('Resetting...', 'Clearing local data and preparing to re-sync.', 'info');
+        try {
+            await deleteDatabase();
+            // Give a moment for the toast to be seen before the reload
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (error) {
+            console.error('Failed to delete database:', error);
+            showToast('Reset Failed', 'Could not clear local data. Please try clearing your browser cache manually.', 'error');
+            setIsResetting(false);
+        }
+    };
     
     return (
         <>
@@ -120,6 +140,13 @@ const SettingsPage: React.FC = () => {
                 isOpen={isTuitionFeeModalOpen}
                 onClose={() => setIsTuitionFeeModalOpen(false)}
             />
+            <Modal isOpen={isResetModalOpen} onClose={() => setIsResetModalOpen(false)} title="Confirm Hard Reset">
+                <p>Are you sure you want to clear all local data? This will log you out and re-download all information from the server upon your next login. This action is useful for fixing sync issues but requires an internet connection.</p>
+                <div className="flex justify-end space-x-2 pt-4">
+                    <button type="button" onClick={() => setIsResetModalOpen(false)} className="btn-secondary">Cancel</button>
+                    <button type="button" onClick={handleHardReset} className="btn-danger">Clear Data & Reload</button>
+                </div>
+            </Modal>
             <div className="max-w-4xl mx-auto space-y-8">
                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Settings</h1>
 
@@ -245,6 +272,26 @@ const SettingsPage: React.FC = () => {
                         </div>
                     </div>
                 )}
+                
+                {/* Danger Zone */}
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg shadow-md p-6">
+                    <h2 className="text-xl font-semibold text-red-800 dark:text-red-200">Danger Zone</h2>
+                    <div className="mt-4 flex items-start justify-between">
+                        <div>
+                            <h3 className="font-medium text-red-900 dark:text-red-100">Clear Local Data & Re-sync</h3>
+                            <p className="text-sm text-red-700 dark:text-red-300 mt-1 max-w-xl">
+                                If the application is stuck or not syncing correctly, you can perform a hard reset. This will delete all offline data from your browser and force a fresh download from the server.
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => setIsResetModalOpen(true)}
+                            className="btn-danger flex-shrink-0"
+                            disabled={isResetting}
+                        >
+                            {isResetting ? 'Resetting...' : 'Hard Reset'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </>
     );

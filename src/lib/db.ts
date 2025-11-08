@@ -6,6 +6,8 @@ import { School, User, Class, Student, Attendance, FeeChallan, Result, ActivityL
 // FIX: Use namespace import and extract default to ensure correct class constructor for extension.
 const Dexie = (DexieModule as any).default;
 
+export const DBNAME = 'EduSyncDB';
+
 export class EduSyncDB extends Dexie {
     schools!: Table<School, string>;
     users!: Table<User, string>;
@@ -22,7 +24,7 @@ export class EduSyncDB extends Dexie {
     exams!: Table<Exam, string>;
 
     constructor() {
-        super('EduSyncDB');
+        super(DBNAME);
         this.version(1).stores({
             schools: 'id, name',
             users: 'id, schoolId, role, email',
@@ -59,6 +61,9 @@ export class EduSyncDB extends Dexie {
         // FIX: Bump version again to force another upgrade to resolve hanging state.
         this.version(7).stores({});
 
+        // FIX: Bump version to 8 to unblock current user and add a hard reset feature as a permanent solution.
+        this.version(8).stores({});
+
         this.on('blocked', () => {
             console.warn(
               `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`
@@ -68,3 +73,9 @@ export class EduSyncDB extends Dexie {
 }
 
 export const db = new EduSyncDB();
+
+export async function deleteDatabase() {
+    await db.close();
+    await Dexie.delete(DBNAME);
+    console.log(`${DBNAME} has been deleted.`);
+}
