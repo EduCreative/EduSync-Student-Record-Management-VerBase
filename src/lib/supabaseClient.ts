@@ -29,7 +29,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         const timeoutId = setTimeout(() => {
             console.warn(`Supabase request timed out: ${url}`);
             controller.abort();
-        }, 20000); // 20s timeout
+        }, 30000); // 30s timeout
 
         try {
           const response = await fetch(url, {

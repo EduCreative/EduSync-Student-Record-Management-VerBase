@@ -189,12 +189,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             const fetchDependentInChunks = async (tableName: string, studentIds: string[]) => {
                 if (studentIds.length === 0) return [];
-                let allData: any[] = [];
+                
+                const chunks: string[][] = [];
                 for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
-                    const chunk = studentIds.slice(i, i + CHUNK_SIZE);
-                    const { data, error } = await supabase.from(tableName).select('*').in('student_id', chunk);
-                    if (error) throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
-                    if (data) allData = allData.concat(data);
+                    chunks.push(studentIds.slice(i, i + CHUNK_SIZE));
+                }
+
+                const promises = chunks.map(chunk =>
+                    supabase.from(tableName).select('*').in('student_id', chunk)
+                );
+
+                const results = await Promise.all(promises);
+
+                let allData: any[] = [];
+                for (const result of results) {
+                    if (result.error) {
+                        throw new Error(`Failed to fetch ${tableName}: ${result.error.message}`);
+                    }
+                    if (result.data) {
+                        allData = allData.concat(result.data);
+                    }
                 }
                 return toCamelCase(allData);
             };
