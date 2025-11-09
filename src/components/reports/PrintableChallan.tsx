@@ -8,6 +8,7 @@ interface PrintableChallanProps {
     student: Student;
     school: School;
     studentClass?: string;
+    copies?: 2 | 3;
 }
 
 const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> = ({ label, value, bold }) => (
@@ -17,9 +18,9 @@ const ChallanRow: FC<{ label: string; value: string | number; bold?: boolean }> 
     </div>
 );
 
-const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school, studentClass }) => {
+const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school, studentClass, copies = 3 }) => {
     
-    const ChallanBody: FC<{ copyName: string }> = ({ copyName }) => (
+    const ChallanBody: FC<{ copyName: string, showManualPaymentFields?: boolean }> = ({ copyName, showManualPaymentFields = false }) => (
         <>
             <div className="flex items-center justify-between p-1 border-b border-gray-300">
                 <div className="flex items-center gap-1 overflow-hidden">
@@ -78,31 +79,41 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                 <ChallanRow label="Discount" value={challan.discount || 0} />
                 <ChallanRow label="Total Amount Due" value={challan.totalAmount - (challan.discount || 0)} bold />
                 
-                <div className="flex justify-between items-baseline py-0.5 px-2 border-b border-gray-200 text-xs">
-                    <span>Payment Date:</span>
-                    <span>{challan.paidDate ? formatDate(challan.paidDate) : '___-___-____'}</span>
-                </div>
-                 <div className="flex justify-between items-baseline py-0.5 px-2 border-b border-gray-200 text-xs">
-                    <span>Paid Amount:</span>
-                    <span>Rs. {(challan.paidAmount || 0).toLocaleString()}</span>
-                </div>
+                <ChallanRow label="Payment Date" value={challan.paidDate ? formatDate(challan.paidDate) : '___-___-____'} />
+                <ChallanRow label="Paid Amount" value={challan.paidAmount || 0} />
 
                 <ChallanRow label="Balance" value={challan.totalAmount - (challan.discount || 0) - (challan.paidAmount || 0)} bold />
-                <p className="text-[8px] font-bold text-center p-0.5">{copyName}</p>
+
+                {showManualPaymentFields && (
+                    <div className="px-2 pt-1 mt-1 border-t border-gray-200">
+                        <div className="flex justify-between items-baseline py-0.5 text-xs">
+                            <span>Amount Received:</span>
+                            <span className="border-b border-black w-24"></span>
+                        </div>
+                        <div className="flex justify-between items-baseline py-0.5 text-xs">
+                            <span>Date:</span>
+                            <span className="border-b border-black w-24"></span>
+                        </div>
+                    </div>
+                )}
+                
+                <p className="text-[8px] font-bold text-center p-0.5 mt-1">{copyName}</p>
             </div>
         </>
     );
 
     return (
         <>
-            <div className="bank-copy flex flex-col p-1 border-b md:border-b-0 md:border-r border-gray-400 w-full md:w-1/3">
-                <ChallanBody copyName="Bank Copy" />
+            {copies === 3 && (
+                <div className="bank-copy flex flex-col p-1 border-b md:border-b-0 md:border-r border-gray-400 w-full md:w-1/3">
+                    <ChallanBody copyName="Bank Copy" />
+                </div>
+            )}
+            <div className={`school-copy flex flex-col p-1 border-b md:border-b-0 md:border-r border-gray-400 w-full ${copies === 3 ? 'md:w-1/3' : 'md:w-1/2'}`}>
+                <ChallanBody copyName="School Copy" showManualPaymentFields={copies === 2} />
             </div>
-            <div className="school-copy flex flex-col p-1 border-b md:border-b-0 md:border-r border-gray-400 w-full md:w-1/3">
-                <ChallanBody copyName="School Copy" />
-            </div>
-            <div className="parent-copy flex flex-col p-1 w-full md:w-1/3">
-                <ChallanBody copyName="Parent/Student Copy" />
+            <div className={`parent-copy flex flex-col p-1 w-full ${copies === 3 ? 'md:w-1/3' : 'md:w-1/2'}`}>
+                <ChallanBody copyName="Parent/Student Copy" showManualPaymentFields={copies === 2} />
             </div>
         </>
     );

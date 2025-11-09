@@ -24,6 +24,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
     const [classId, setClassId] = useState('');
     const [month, setMonth] = useState(months[new Date().getMonth()]);
     const [year, setYear] = useState(currentYear);
+    const [copies, setCopies] = useState<2 | 3>(3);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
@@ -57,6 +58,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                                 student={student}
                                 school={school}
                                 studentClass={classMap.get(student.classId)}
+                                copies={copies}
                             />
                         </div>
                     );
@@ -89,6 +91,19 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                         <select id="year-select" value={year} onChange={e => setYear(Number(e.target.value))} className="input-field">
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
+                    </div>
+                </div>
+                <div>
+                    <label className="input-label">Copies per Challan</label>
+                    <div className="flex items-center space-x-4 mt-1">
+                        <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="copies" value={3} checked={copies === 3} onChange={() => setCopies(3)} className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300" />
+                            <span className="ml-2 text-sm">3 Copies (Bank, School, Parent)</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer">
+                            <input type="radio" name="copies" value={2} checked={copies === 2} onChange={() => setCopies(2)} className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300" />
+                            <span className="ml-2 text-sm">2 Copies (School, Parent)</span>
+                        </label>
                     </div>
                 </div>
                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-md text-center">

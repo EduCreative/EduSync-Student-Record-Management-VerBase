@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
@@ -129,6 +127,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
             // FIX: Explicitly typed 'a' and 'b' in the sort callback to resolve type inference issues where they were being inferred as 'unknown'.
+            // FIX: Explicitly typed 'a' and 'b' to ClassDefaulterGroup to resolve 'unknown' type, and corrected property access from 'b' to 'classB'.
             .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);

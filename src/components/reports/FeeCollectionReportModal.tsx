@@ -154,8 +154,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             (activeColumns.includes('rollNumber') ? 1 : 0) + 
             (activeColumns.includes('fatherName') ? 1 : 0) + 
             (activeColumns.includes('className') ? 1 : 0) + 
-            (activeColumns.includes('amountDue') ? 1 : 0) +
-            (activeColumns.includes('discount') ? 1 : 0);
+            (activeColumns.includes('amountDue') ? 1 : 0);
 
         const content = (
             <PrintableReportLayout
@@ -175,8 +174,8 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                     {activeColumns.includes('fatherName') && <th className="py-0 px-1 text-left">Father Name</th>}
                                     {activeColumns.includes('className') && <th className="py-0 px-1 text-left">Class</th>}
                                     {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">Amount Due</th>}
-                                    {activeColumns.includes('discount') && <th className="py-0 px-1 text-right">Discount</th>}
                                     <th className="py-0 px-1 text-right">Paid</th>
+                                    {activeColumns.includes('discount') && <th className="py-0 px-1 text-right">Discount</th>}
                                     {activeColumns.includes('balance') && <th className="py-0 px-1 text-right">Balance</th>}
                                 </tr>
                             </thead>
@@ -189,8 +188,8 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                         {activeColumns.includes('fatherName') && <td className="py-0 px-1">{t.fatherName}</td>}
                                         {activeColumns.includes('className') && <td className="py-0 px-1">{t.className}</td>}
                                         {activeColumns.includes('amountDue') && <td className="py-0 px-1 text-right">{t.amountDue.toLocaleString()}</td>}
-                                        {activeColumns.includes('discount') && <td className="py-0 px-1 text-right">{t.discount.toLocaleString()}</td>}
                                         <td className="py-0 px-1 text-right">{t.paid.toLocaleString()}</td>
+                                        {activeColumns.includes('discount') && <td className="py-0 px-1 text-right">{t.discount.toLocaleString()}</td>}
                                         {activeColumns.includes('balance') && <td className="py-0 px-1 text-right">{t.balance.toLocaleString()}</td>}
                                     </tr>
                                 ))}
@@ -199,6 +198,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                 <tr className="font-bold bg-secondary-100">
                                     <td colSpan={subtotalColspan} className="py-1 px-1 text-right">Daily Total:</td>
                                     <td className="py-1 px-1 text-right">{dateGroup.subtotals.paid.toLocaleString()}</td>
+                                    {activeColumns.includes('discount') && <td className="py-1 px-1"></td>}
                                     {activeColumns.includes('balance') && <td className="py-1 px-1"></td>}
                                 </tr>
                             </tfoot>
@@ -213,6 +213,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                 <tr className="font-bold text-lg bg-secondary-200">
                                     <td colSpan={subtotalColspan} className="py-1 px-2 text-right">Grand Total Paid:</td>
                                     <td className="py-1 px-2 text-right">Rs. {grandTotalPaid.toLocaleString()}</td>
+                                    {activeColumns.includes('discount') && <td className="py-1 px-2"></td>}
                                     {activeColumns.includes('balance') && <td className="py-1 px-2"></td>}
                                 </tr>
                             </tbody>
@@ -231,8 +232,8 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         if (selectedColumns.fatherName) activeHeaders.push("Father's Name");
         if (selectedColumns.className) activeHeaders.push("Class");
         if (selectedColumns.amountDue) activeHeaders.push("Amount Due");
-        if (selectedColumns.discount) activeHeaders.push("Discount");
         activeHeaders.push("Paid");
+        if (selectedColumns.discount) activeHeaders.push("Discount");
         if (selectedColumns.balance) activeHeaders.push("Balance");
 
         const csvRows = [activeHeaders.join(',')];
@@ -246,8 +247,8 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                 if (selectedColumns.fatherName) row.push(t.fatherName);
                 if (selectedColumns.className) row.push(t.className);
                 if (selectedColumns.amountDue) row.push(t.amountDue);
-                if (selectedColumns.discount) row.push(t.discount);
                 row.push(t.paid);
+                if (selectedColumns.discount) row.push(t.discount);
                 if (selectedColumns.balance) row.push(t.balance);
                 csvRows.push(row.map(escapeCsvCell).join(','));
             });

@@ -190,18 +190,18 @@
   .printable-report table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 10pt;
+    font-size: 9pt;
   }
   .printable-report th, .printable-report td {
     border: none;
-    padding: 4px 6px;
+    padding: 2px 4px;
   }
   .printable-report th {
     background-color: #f1f5f9 !important; /* secondary-100 */
     border-bottom: 2px solid #94a3b8; /* secondary-400 */
   }
   .printable-report td {
-    border-bottom: 1px solid #e2e8f0; /* secondary-200 */
+    border-bottom: 1px solid #cbd5e1; /* secondary-300 */
   }
   /* Remove border from last row of a data section and all footer rows */
   .printable-report tbody tr:last-of-type td,

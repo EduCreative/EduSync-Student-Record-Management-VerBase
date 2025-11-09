@@ -7,6 +7,7 @@ import FeePaymentModal from './FeePaymentModal';
 import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 import Modal from '../common/Modal';
+import { Permission } from '../../permissions';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -19,14 +20,16 @@ const getTodayString = () => {
 };
 
 const FeeCollectionPage: React.FC = () => {
-    const { user, activeSchoolId } = useAuth();
+    const { user, activeSchoolId, hasPermission } = useAuth();
     const { students, fees, classes, cancelChallan } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-    const [challanToPay, setChallanToPay] = useState<FeeChallan | null>(null);
+    const [challanToManage, setChallanToManage] = useState<{ challan: FeeChallan, mode: 'pay' | 'edit' } | null>(null);
     const [challanToCancel, setChallanToCancel] = useState<FeeChallan | null>(null);
     const [sessionDate, setSessionDate] = useState(getTodayString());
+    const [statusFilter, setStatusFilter] = useState<'outstanding' | 'all' | FeeChallan['status']>('outstanding');
 
+    const canManage = hasPermission(Permission.CAN_MANAGE_FEES);
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     
     const filteredStudents = useMemo(() => {
@@ -40,9 +43,19 @@ const FeeCollectionPage: React.FC = () => {
     const studentChallans = useMemo(() => {
         if (!selectedStudent) return [];
         return fees
-            .filter((f: FeeChallan) => f.studentId === selectedStudent.id && (f.status === 'Unpaid' || f.status === 'Partial'))
-            .sort((a, b) => new Date(a.year, months.indexOf(a.month)).getTime() - new Date(b.year, months.indexOf(b.month)).getTime());
-    }, [fees, selectedStudent]);
+            .filter((f: FeeChallan) => {
+                if (f.studentId !== selectedStudent.id) return false;
+            
+                if (statusFilter === 'outstanding') {
+                    return f.status === 'Unpaid' || f.status === 'Partial';
+                }
+                if (statusFilter === 'all') {
+                    return true;
+                }
+                return f.status === statusFilter;
+            })
+            .sort((a, b) => new Date(b.year, months.indexOf(b.month)).getTime() - new Date(a.year, months.indexOf(a.month)).getTime());
+    }, [fees, selectedStudent, statusFilter]);
     
     const classMap = useMemo(() => new Map(classes.map((c: Class) => [c.id, c.name])), [classes]);
 
@@ -64,15 +77,25 @@ const FeeCollectionPage: React.FC = () => {
             setChallanToCancel(null);
         }
     };
+    
+    const headingText = {
+        'outstanding': 'Outstanding Challans for',
+        'all': 'All Challans for',
+        'Paid': 'Paid Challans for',
+        'Unpaid': 'Unpaid Challans for',
+        'Partial': 'Partially Paid Challans for',
+        'Cancelled': 'Cancelled Challans for'
+    }[statusFilter];
 
     return (
         <>
-            {challanToPay && selectedStudent && (
+            {challanToManage && selectedStudent && (
                 <FeePaymentModal
-                    isOpen={!!challanToPay}
-                    onClose={() => setChallanToPay(null)}
-                    challan={challanToPay}
+                    isOpen={!!challanToManage}
+                    onClose={() => setChallanToManage(null)}
+                    challan={challanToManage.challan}
                     student={selectedStudent}
+                    editMode={challanToManage.mode === 'edit'}
                     defaultDate={sessionDate}
                 />
             )}
@@ -90,7 +113,7 @@ const FeeCollectionPage: React.FC = () => {
                 </Modal>
             )}
             <div className="p-4 sm:p-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div className="md:col-span-2 relative">
                         <label htmlFor="student-search" className="input-label">Search Student by Name or Student ID</label>
                         <input
@@ -124,6 +147,22 @@ const FeeCollectionPage: React.FC = () => {
                         )}
                     </div>
                     <div>
+                        <label htmlFor="status-filter" className="input-label">Challan Status</label>
+                        <select
+                            id="status-filter"
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value as any)}
+                            className="input-field"
+                        >
+                            <option value="outstanding">Outstanding</option>
+                            <option value="all">All</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Unpaid">Unpaid</option>
+                            <option value="Partial">Partial</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
                         <label htmlFor="session-date" className="input-label">Default Payment Date</label>
                         <input
                             id="session-date"
@@ -141,7 +180,7 @@ const FeeCollectionPage: React.FC = () => {
                     <div className="border-t dark:border-secondary-700 pt-4">
                         <div className="flex justify-between items-center mb-4">
                              <h2 className="text-xl font-semibold">
-                                Outstanding Challans for {selectedStudent.name} <span className="text-sm font-normal text-secondary-500">(ID: {selectedStudent.rollNumber})</span>
+                                {headingText} {selectedStudent.name} <span className="text-sm font-normal text-secondary-500">(ID: {selectedStudent.rollNumber})</span>
                             </h2>
                              <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">Clear Selection</button>
                         </div>
@@ -158,18 +197,30 @@ const FeeCollectionPage: React.FC = () => {
                                             <p className="text-sm text-secondary-500">Due: {formatDate(challan.dueDate)} | Total: Rs. {(challan.totalAmount - challan.discount).toLocaleString()}</p>
                                         </div>
                                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                                            <button onClick={() => setChallanToPay(challan)} className="btn-primary flex-grow">
-                                                Record Payment
-                                            </button>
-                                            <button onClick={() => setChallanToCancel(challan)} className="btn-secondary flex-grow">
-                                                Cancel Challan
-                                            </button>
+                                            {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') && (
+                                                <button onClick={() => setChallanToManage({ challan, mode: 'pay' })} className="btn-primary flex-grow">
+                                                    Record Payment
+                                                </button>
+                                            )}
+                                            {canManage && (challan.status === 'Paid' || challan.status === 'Partial') && (
+                                                <button onClick={() => setChallanToManage({ challan, mode: 'edit' })} className="btn-secondary flex-grow">
+                                                    Edit Payment
+                                                </button>
+                                            )}
+                                            {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') && (
+                                                <button onClick={() => setChallanToCancel(challan)} className="btn-danger flex-grow">
+                                                    Cancel
+                                                </button>
+                                            )}
+                                            {challan.status === 'Cancelled' && (
+                                                <span className="text-sm text-secondary-500 italic">No actions available</span>
+                                            )}
                                         </div>
                                     </div>
                                 ))
                             ) : (
                                 <div className="p-4 text-center bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
-                                    <p>No outstanding fee challans found for this student.</p>
+                                    <p>No {statusFilter !== 'all' && statusFilter !== 'outstanding' ? statusFilter.toLowerCase() : ''} fee challans found for this student.</p>
                                 </div>
                             )}
                         </div>

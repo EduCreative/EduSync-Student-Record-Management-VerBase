@@ -241,9 +241,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     
         if (feePeriod === 'week') {
             const now = new Date();
-            const first = now.getDate() - now.getDay(); // First day is Sunday
             const weekDays = [...Array(7)].map((_, i) => {
-                const d = new Date(now.getFullYear(), now.getMonth(), first + i);
+                const d = new Date(now);
+                d.setDate(now.getDate() - now.getDay() + i);
                 return d;
             });
             
