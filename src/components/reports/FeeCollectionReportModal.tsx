@@ -28,7 +28,7 @@ const getFirstDayOfMonthString = () => {
 }
 
 const availableColumns = {
-    stdId: "Std. ID",
+    rollNumber: "Student ID",
     fatherName: "Father's Name",
     className: "Class",
     amountDue: "Amount Due",
@@ -44,10 +44,10 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
     const [startDate, setStartDate] = useState(getFirstDayOfMonthString());
     const [endDate, setEndDate] = useState(getTodayString());
-    const [sortBy, setSortBy] = useState('stdId'); // 'stdId', 'studentName'
+    const [sortBy, setSortBy] = useState('rollNumber'); // 'rollNumber', 'className'
 
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
-        stdId: true,
+        rollNumber: true,
         fatherName: true,
         className: true,
         amountDue: true,
@@ -66,7 +66,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
     interface Transaction {
         sr: number;
-        stdId: string;
+        rollNumber: string;
         studentName: string;
         fatherName: string;
         className: string;
@@ -108,7 +108,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             
             acc[date].transactions.push({
                 sr: 0, 
-                stdId: student.rollNumber,
+                rollNumber: student.rollNumber,
                 studentName: student.name,
                 fatherName: student.fatherName,
                 className: classMap.get(student.classId) || 'Unassigned',
@@ -129,11 +129,14 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             .map(dateGroup => {
                 let srCounter = 1;
                 dateGroup.transactions.sort((a, b) => {
-                    if (sortBy === 'studentName') {
-                        return a.studentName.localeCompare(b.studentName);
+                    if (sortBy === 'className') {
+                        const classCompare = a.className.localeCompare(b.className);
+                        if (classCompare !== 0) return classCompare;
+                        // Secondary sort by roll number within the same class
+                        return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
                     }
-                    // Default to stdId (roll number)
-                    return a.stdId.localeCompare(b.stdId, undefined, { numeric: true });
+                    // Default to rollNumber
+                    return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
                 });
                 dateGroup.transactions.forEach((t) => { t.sr = srCounter++; });
                 return dateGroup;
@@ -148,7 +151,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
         const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
         
         const subtotalColspan = 2 + 
-            (activeColumns.includes('stdId') ? 1 : 0) + 
+            (activeColumns.includes('rollNumber') ? 1 : 0) + 
             (activeColumns.includes('fatherName') ? 1 : 0) + 
             (activeColumns.includes('className') ? 1 : 0) + 
             (activeColumns.includes('amountDue') ? 1 : 0) +
@@ -167,7 +170,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                             <thead>
                                 <tr>
                                     <th className="py-0 px-1 text-left">Sr.</th>
-                                    {activeColumns.includes('stdId') && <th className="py-0 px-1 text-left">StdID</th>}
+                                    {activeColumns.includes('rollNumber') && <th className="py-0 px-1 text-left">Student ID</th>}
                                     <th className="py-0 px-1 text-left">Student Name</th>
                                     {activeColumns.includes('fatherName') && <th className="py-0 px-1 text-left">Father Name</th>}
                                     {activeColumns.includes('className') && <th className="py-0 px-1 text-left">Class</th>}
@@ -181,7 +184,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                                 {dateGroup.transactions.map(t => (
                                     <tr key={t.sr}>
                                         <td className="py-0 px-1">{t.sr}</td>
-                                        {activeColumns.includes('stdId') && <td className="py-0 px-1">{t.stdId}</td>}
+                                        {activeColumns.includes('rollNumber') && <td className="py-0 px-1">{t.rollNumber}</td>}
                                         <td className="py-0 px-1">{t.studentName}</td>
                                         {activeColumns.includes('fatherName') && <td className="py-0 px-1">{t.fatherName}</td>}
                                         {activeColumns.includes('className') && <td className="py-0 px-1">{t.className}</td>}
@@ -223,7 +226,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
 
     const handleExport = () => {
         const activeHeaders: string[] = ["Sr."];
-        if (selectedColumns.stdId) activeHeaders.push("StdID");
+        if (selectedColumns.rollNumber) activeHeaders.push("Student ID");
         activeHeaders.push("Student Name");
         if (selectedColumns.fatherName) activeHeaders.push("Father's Name");
         if (selectedColumns.className) activeHeaders.push("Class");
@@ -238,7 +241,7 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
             csvRows.push(escapeCsvCell(`Date: ${formatDate(dateGroup.date)}`));
             dateGroup.transactions.forEach(t => {
                 const row: (string | number)[] = [t.sr];
-                if (selectedColumns.stdId) row.push(t.stdId);
+                if (selectedColumns.rollNumber) row.push(t.rollNumber);
                 row.push(t.studentName);
                 if (selectedColumns.fatherName) row.push(t.fatherName);
                 if (selectedColumns.className) row.push(t.className);
@@ -288,8 +291,8 @@ const FeeCollectionReportModal: React.FC<FeeCollectionReportModalProps> = ({ isO
                     <div>
                         <label htmlFor="sort-by" className="input-label">Sort By (within each day)</label>
                         <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-field">
-                            <option value="stdId">Roll Number</option>
-                            <option value="studentName">Student Name</option>
+                            <option value="rollNumber">Student ID</option>
+                            <option value="className">Class</option>
                         </select>
                     </div>
                 </div>

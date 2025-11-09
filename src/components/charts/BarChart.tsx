@@ -15,11 +15,12 @@ interface BarChartProps {
     color?: string;
     onClick?: (item: BarChartData) => void;
     multiColor?: boolean;
+    showValuesOnTop?: boolean;
 }
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#64748b'];
 
-const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, multiColor = false }) => {
+const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, multiColor = false, showValuesOnTop = false }) => {
     const [isAnimated, setIsAnimated] = useState(false);
     const [tooltip, setTooltip] = useState<{ visible: boolean; content: string; x: number; y: number } | null>(null);
 
@@ -95,9 +96,21 @@ const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, 
                     {data.map((item, index) => (
                         <div 
                             key={index} 
-                            className="flex flex-col items-center flex-1 group h-full justify-end" 
+                            className="flex flex-col items-center flex-1 group h-full justify-end relative" 
                             onClick={() => onClick && onClick(item)}
                         >
+                            {showValuesOnTop && item.value > 0 && (
+                                <span 
+                                    className="absolute text-xs font-bold text-secondary-700 dark:text-secondary-300 transition-all duration-300"
+                                    style={{
+                                        bottom: `calc(${(item.value / maxValue) * 100}% + 4px)`,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)'
+                                    }}
+                                >
+                                    {item.value}
+                                </span>
+                            )}
                             <div 
                                 className={`w-full rounded-t-md bar-item flex flex-col-reverse ${onClick ? 'cursor-pointer' : ''}`}
                                 style={{ 

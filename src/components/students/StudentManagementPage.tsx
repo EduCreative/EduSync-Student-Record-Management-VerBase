@@ -12,6 +12,7 @@ import { DownloadIcon, UploadIcon } from '../../constants';
 import { exportToCsv } from '../../utils/csvHelper';
 import ImportModal from '../common/ImportModal';
 import { Permission } from '../../permissions';
+import { getClassLevel } from '../../utils/sorting';
 
 interface StudentManagementPageProps {
     setActiveView: (view: ActiveView) => void;
@@ -65,7 +66,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const canEdit = hasPermission(Permission.CAN_EDIT_STUDENTS);
     const canDelete = hasPermission(Permission.CAN_DELETE_STUDENTS);
 
-    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId)
+        .sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), 
+        [classes, effectiveSchoolId]);
     const classMap = useMemo(() => new Map(schoolClasses.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [schoolClasses]);
 
     const studentBalanceMap = useMemo(() => {
@@ -308,7 +311,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     
     const showingFrom = filteredStudents.length > 0 ? (currentPage - 1) * STUDENTS_PER_PAGE + 1 : 0;
     const showingTo = Math.min(currentPage * STUDENTS_PER_PAGE, filteredStudents.length);
-    const skeletonColumns = [ { width: '10%' }, { width: '30%' }, { width: '20%' }, { width: '10%' }, { width: '15%' }, { width: '15%' }];
+    const skeletonColumns = [ { width: '35%' }, { width: '20%' }, { width: '10%' }, { width: '15%' }, { width: '20%' }];
 
     return (
         <>
@@ -352,7 +355,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <input type="text" placeholder="Search by name or roll no..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-field" />
+                        <input type="text" placeholder="Search by name or roll number..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-field" />
                         <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="input-field">
                             <option value="all">All Classes</option>
                             {schoolClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
@@ -376,8 +379,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                 <table className="w-full text-sm text-left text-secondary-500 dark:text-secondary-400">
                                     <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                         <tr>
-                                            <th className="px-6 py-3">Roll No.</th>
-                                            <th className="px-6 py-3">Name &amp; Father Name</th>
+                                            <th className="px-6 py-3">Student</th>
                                             <th className="px-6 py-3">Class</th>
                                             <th className="px-6 py-3">Status</th>
                                             <th className="px-6 py-3 text-right">Balance</th>
@@ -389,7 +391,6 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                             const balance = studentBalanceMap.get(student.id) || 0;
                                             return (
                                                 <tr key={student.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
-                                                    <td className="px-6 py-4">{student.rollNumber}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center space-x-3">
                                                             <Avatar student={student} className="h-10 w-10" />
@@ -397,7 +398,9 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                                                 <button onClick={() => setActiveView({ view: 'studentProfile', payload: { studentId: student.id } })} className="font-semibold text-secondary-900 dark:text-white hover:underline text-left">
                                                                     {student.name}
                                                                 </button>
-                                                                <div className="text-xs text-secondary-500">{student.fatherName}</div>
+                                                                <div className="text-xs text-secondary-500">
+                                                                    <span className="font-semibold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</span> | {student.fatherName}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>

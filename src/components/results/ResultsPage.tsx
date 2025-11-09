@@ -8,6 +8,9 @@ import ResultsViewer from './ResultsViewer';
 import Modal from '../common/Modal';
 import SubjectFormModal from '../subjects/SubjectFormModal';
 import ExamFormModal from '../exams/ExamFormModal';
+import ReportCardModal from '../reports/ReportCardModal';
+import { PrinterIcon } from '../../constants';
+import { getClassLevel } from '../../utils/sorting';
 
 const CogIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -35,16 +38,19 @@ const ResultsEntry: React.FC = () => {
     const [examToEdit, setExamToEdit] = useState<Exam | null>(null);
     const [examToDelete, setExamToDelete] = useState<Exam | null>(null);
 
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
     const userClasses = useMemo(() => {
         if (!user) return [];
+        let filteredClasses: Class[];
         if (effectiveRole === UserRole.Teacher) {
-            // FIX: Explicitly type 'c' to ensure correct type inference.
-            return classes.filter((c: Class) => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
+            filteredClasses = classes.filter((c: Class) => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
+        } else {
+            filteredClasses = classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
         }
-        // FIX: Explicitly type 'c' to ensure correct type inference.
-        return classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
+        return filteredClasses.sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
     }, [classes, user, effectiveRole, effectiveSchoolId]);
 
     const studentsInClass = useMemo(() => {
@@ -175,8 +181,15 @@ const ResultsEntry: React.FC = () => {
 
     return (
         <>
+            <ReportCardModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
             <div className="space-y-6">
-                <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Enter Results</h1>
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Enter Results</h1>
+                    <button onClick={() => setIsReportModalOpen(true)} className="btn-secondary">
+                        <PrinterIcon className="w-4 h-4" />
+                        Print Report
+                    </button>
+                </div>
                 
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -184,7 +197,7 @@ const ResultsEntry: React.FC = () => {
                             <label htmlFor="class-select" className="input-label">Select Class</label>
                             <select id="class-select" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
                                 <option value="">Select Class</option>
-                                {userClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {userClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                             </select>
                         </div>
                         <div className="relative">
@@ -224,9 +237,14 @@ const ResultsEntry: React.FC = () => {
                                 <tbody>
                                     {studentsInClass.map(student => (
                                         <tr key={student.id} className="border-b dark:border-secondary-700">
-                                            <td className="px-6 py-3 flex items-center space-x-3">
-                                                <Avatar student={student} className="w-8 h-8"/>
-                                                <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center space-x-3">
+                                                    <Avatar student={student} className="w-8 h-8"/>
+                                                    <div>
+                                                        <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
+                                                        <p className="text-xs text-secondary-500">ID: {student.rollNumber}</p>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-3">
                                                 <input type="number" value={marks.get(student.id)?.marks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'marks')} className="input-field w-24" />

@@ -119,7 +119,7 @@ const IncreaseTuitionFeeModal: React.FC<IncreaseTuitionFeeModalProps> = ({ isOpe
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                                 className="input-field"
-                                placeholder="Search student by name or roll no..."
+                                placeholder="Search student by name or roll number..."
                             />
                             <div className="flex items-center gap-2">
                                 <button onClick={handleSelectAll} className="btn-secondary text-xs w-full">Select All</button>
@@ -139,7 +139,7 @@ const IncreaseTuitionFeeModal: React.FC<IncreaseTuitionFeeModalProps> = ({ isOpe
                                     <Avatar student={student} className="w-8 h-8" />
                                     <div>
                                         <p className="text-sm font-medium">{student.name}</p>
-                                        <p className="text-xs text-secondary-500">Roll: {student.rollNumber}</p>
+                                        <p className="text-xs text-secondary-500">Roll No: {student.rollNumber}</p>
                                     </div>
                                 </label>
                             ))}

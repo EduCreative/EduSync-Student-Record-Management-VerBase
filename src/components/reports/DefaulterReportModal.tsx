@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
@@ -20,13 +22,37 @@ const availableColumns = {
 };
 type ColumnKey = keyof typeof availableColumns;
 
+// FIX: Define interfaces for student and class group summaries to ensure type safety in reduce and map operations.
+interface StudentDefaulterSummary {
+    studentId: string;
+    rollNumber: string;
+    studentName: string;
+    fatherName: string;
+    classId: string;
+    className: string;
+    amountDue: number;
+    paid: number;
+    balance: number;
+}
+
+interface ClassDefaulterGroup {
+    classId: string;
+    className: string;
+    students: StudentDefaulterSummary[];
+    subtotals: {
+        amountDue: number;
+        paid: number;
+        balance: number;
+    };
+}
+
 const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onClose }) => {
     const { user, activeSchoolId } = useAuth();
     const { fees, students, classes, getSchoolById } = useData();
     const { showPrintPreview } = usePrint();
 
     const [classId, setClassId] = useState('all');
-    const [sortBy, setSortBy] = useState('studentName'); // 'studentName', 'stdId', 'balance'
+    const [sortBy, setSortBy] = useState('studentName'); // 'studentName', 'rollNumber', 'balance'
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         fatherName: true,
         amountDue: true,
@@ -46,30 +72,6 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const reportData = useMemo(() => {
-        // FIX: Define interfaces for student and class group summaries to ensure type safety in reduce and map operations.
-        interface StudentDefaulterSummary {
-            studentId: string;
-            stdId: string;
-            studentName: string;
-            fatherName: string;
-            classId: string;
-            className: string;
-            amountDue: number;
-            paid: number;
-            balance: number;
-        }
-
-        interface ClassDefaulterGroup {
-            classId: string;
-            className: string;
-            students: StudentDefaulterSummary[];
-            subtotals: {
-                amountDue: number;
-                paid: number;
-                balance: number;
-            };
-        }
-
         // 1. Filter challans for defaulters in the relevant school/class
         const defaulterChallans = fees.filter(fee => {
             if (fee.status === 'Paid') return false;
@@ -87,7 +89,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 if (!student) return acc;
                 acc[studentId] = {
                     studentId: student.id,
-                    stdId: student.rollNumber,
+                    rollNumber: student.rollNumber,
                     studentName: student.name,
                     fatherName: student.fatherName,
                     classId: student.classId,
@@ -126,17 +128,18 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            .sort((a, b) => {
+            // FIX: Explicitly typed 'a' and 'b' in the sort callback to resolve type inference issues where they were being inferred as 'unknown'.
+            .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                // FIX: Use classA.name and classB.name, as 'a' and 'b' are ClassDefaulterGroup objects without a 'name' property.
+                // FIX: Corrected typo in sort callback. Used `classB` which is the `Class` object, instead of `b` which is `ClassDefaulterGroup` and doesn't have `sortOrder` or `name` properties.
                 return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
-                    if (sortBy === 'stdId') {
-                        return a.stdId.localeCompare(b.stdId, undefined, { numeric: true });
+                    if (sortBy === 'rollNumber') {
+                        return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
                     }
                     if (sortBy === 'balance') {
                         return b.balance - a.balance; // Descending for balance
@@ -174,7 +177,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                             <thead>
                                 <tr>
                                     <th className="py-0 px-1 text-left">Sr.</th>
-                                    <th className="py-0 px-1 text-left">StdID</th>
+                                    <th className="py-0 px-1 text-left">Student ID</th>
                                     <th className="py-0 px-1 text-left">Student Name</th>
                                     {activeColumns.includes('fatherName') && <th className="py-0 px-1 text-left">Father Name</th>}
                                     {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">Amount Due</th>}
@@ -186,7 +189,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                                 {classGroup.students.map((student, index) => (
                                     <tr key={student.studentId}>
                                         <td className="py-0 px-1">{index + 1}</td>
-                                        <td className="py-0 px-1">{student.stdId}</td>
+                                        <td className="py-0 px-1">{student.rollNumber}</td>
                                         <td className="py-0 px-1">{student.studentName}</td>
                                         {activeColumns.includes('fatherName') && <td className="py-0 px-1">{student.fatherName}</td>}
                                         {activeColumns.includes('amountDue') && <td className="py-0 px-1 text-right">{student.amountDue.toLocaleString()}</td>}
@@ -227,7 +230,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     };
 
     const handleExport = () => {
-        const headers: string[] = ['Sr.', 'StdID', 'Student Name'];
+        const headers: string[] = ['Sr.', 'Student ID', 'Student Name'];
         if (selectedColumns.fatherName) headers.push("Father's Name");
         if (selectedColumns.amountDue) headers.push('Amount Due');
         if (selectedColumns.paid) headers.push('Paid');
@@ -238,7 +241,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
         reportData.forEach(classGroup => {
             csvRows.push(escapeCsvCell(`Class: ${classGroup.className}`));
             classGroup.students.forEach((student, index) => {
-                const row: (string | number)[] = [index + 1, student.stdId, student.studentName];
+                const row: (string | number)[] = [index + 1, student.rollNumber, student.studentName];
                 if (selectedColumns.fatherName) row.push(student.fatherName);
                 if (selectedColumns.amountDue) row.push(student.amountDue);
                 if (selectedColumns.paid) row.push(student.paid);
@@ -289,7 +292,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                         <label htmlFor="sort-by-defaulter" className="input-label">Sort By</label>
                         <select id="sort-by-defaulter" value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-field">
                             <option value="studentName">Student Name</option>
-                            <option value="stdId">Roll Number</option>
+                            <option value="rollNumber">Student ID</option>
                             <option value="balance">Balance Amount</option>
                         </select>
                     </div>

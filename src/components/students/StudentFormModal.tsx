@@ -5,6 +5,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import ImageUpload from '../common/ImageUpload';
+import { getClassLevel } from '../../utils/sorting';
 
 interface StudentFormModalProps {
     isOpen: boolean;
@@ -70,7 +71,9 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSaving, setIsSaving] = useState(false);
     
-    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
+    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId)
+        .sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), 
+        [classes, effectiveSchoolId]);
     const parentUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Parent), [users, effectiveSchoolId]);
 
     useEffect(() => {

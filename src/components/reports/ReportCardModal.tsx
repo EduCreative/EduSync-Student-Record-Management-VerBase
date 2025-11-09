@@ -47,7 +47,7 @@ const ReportCardModal: React.FC<ReportCardModalProps> = ({ isOpen, onClose }) =>
         if (!school) return;
         
         const content = (
-            <div>
+            <div className="printable-report">
                 {reportData.map(({ student, results: studentResults }) => (
                     <PrintableReportCard 
                         key={student.id}

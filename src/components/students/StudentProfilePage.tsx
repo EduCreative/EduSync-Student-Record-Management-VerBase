@@ -79,9 +79,10 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                                 <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{student.name}</h1>
                                 <Badge color={student.status === 'Active' ? 'green' : 'secondary'}>{student.status}</Badge>
                             </div>
-                            <p className="text-secondary-500 dark:text-secondary-400 mt-1">
-                                {studentClass?.fullName || 'N/A'} | Roll No: {student.rollNumber}
-                            </p>
+                            <div className="flex items-center flex-wrap gap-x-4 gap-y-2 mt-2">
+                                <p className="text-secondary-500 dark:text-secondary-400">{studentClass?.fullName || 'N/A'}</p>
+                                <Badge color="blue">Student ID: {student.rollNumber}</Badge>
+                            </div>
                             <div className="mt-4 flex flex-wrap gap-4">
                                 <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>
                                 <button className="btn-secondary" onClick={() => setActiveTab('feeHistory')}>View Fee History</button>

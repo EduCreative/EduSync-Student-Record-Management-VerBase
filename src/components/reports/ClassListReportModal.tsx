@@ -15,7 +15,7 @@ interface ClassListReportModalProps {
 }
 
 const availableColumns = {
-    rollNumber: "Std. ID",
+    rollNumber: "Student ID",
     fatherName: "Father's Name",
     fatherCnic: "Father's CNIC",
     gender: "Gender",
@@ -168,7 +168,7 @@ const ClassListReportModal: React.FC<ClassListReportModalProps> = ({ isOpen, onC
                         <label htmlFor="sort-by" className="input-label">Sort By</label>
                         <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-field">
                             <option value="name">Student Name</option>
-                            <option value="rollNumber">Roll Number</option>
+                            <option value="rollNumber">Student ID</option>
                         </select>
                     </div>
                 </div>

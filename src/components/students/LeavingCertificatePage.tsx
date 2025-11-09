@@ -54,7 +54,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                 </div>
                 
                 <div className="w-full text-lg mt-8 space-y-4 px-8 text-left">
-                    <p>This is to certify that <strong className="border-b border-dotted border-black px-2">{student.name}</strong> son/daughter of <strong className="border-b border-dotted border-black px-2">{student.fatherName}</strong>, a student of class <strong className="border-b border-dotted border-black px-2">{studentClass?.name || 'N/A'}</strong> has been on the rolls of this school from <strong className="border-b border-dotted border-black px-2">{formatDate(student.dateOfAdmission)}</strong> to <strong className="border-b border-dotted border-black px-2">{formatDate(details.dateOfLeaving)}</strong>.</p>
+                    <p>This is to certify that <strong className="border-b border-dotted border-black px-2">{student.name}</strong> (Student ID: <strong>{student.rollNumber}</strong>), son/daughter of <strong className="border-b border-dotted border-black px-2">{student.fatherName}</strong>, a student of class <strong className="border-b border-dotted border-black px-2">{studentClass?.name || 'N/A'}</strong> has been on the rolls of this school from <strong className="border-b border-dotted border-black px-2">{formatDate(student.dateOfAdmission)}</strong> to <strong className="border-b border-dotted border-black px-2">{formatDate(details.dateOfLeaving)}</strong>.</p>
                     <p>According to the school records, their date of birth is <strong className="border-b border-dotted border-black px-2">{formatDate(student.dateOfBirth)}</strong>.</p>
                     <p>They are leaving this institution for the following reason: <strong className="border-b border-dotted border-black px-2">{details.reasonForLeaving}</strong>.</p>
                     <p>Their conduct during their stay at the school was <strong className="border-b border-dotted border-black px-2">{details.conduct}</strong>.</p>
@@ -82,7 +82,9 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
             </button>
 
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
-                <h1 className="text-2xl font-bold mb-4">Issue Leaving Certificate for {student.name}</h1>
+                <h1 className="text-2xl font-bold mb-4">
+                    Issue Leaving Certificate for {student.name} <span className="text-lg font-normal text-secondary-500">(ID: {student.rollNumber})</span>
+                </h1>
                 <div className="space-y-4">
                      <div>
                         <label htmlFor="dateOfLeaving" className="input-label">Date of Leaving</label>

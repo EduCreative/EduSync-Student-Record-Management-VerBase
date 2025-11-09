@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { FeeHead, UserRole } from '../../types';
@@ -16,6 +16,11 @@ const FeeHeadsManagement: React.FC = () => {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [feeHeadToEdit, setFeeHeadToEdit] = useState<FeeHead | null>(null);
     const [feeHeadToDelete, setFeeHeadToDelete] = useState<FeeHead | null>(null);
+
+    const schoolFeeHeads = useMemo(() => {
+        if (!effectiveSchoolId) return [];
+        return feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
+    }, [feeHeads, effectiveSchoolId]);
 
     const handleOpenModal = (feeHead: FeeHead | null = null) => {
         setFeeHeadToEdit(feeHead);
@@ -80,7 +85,7 @@ const FeeHeadsManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {feeHeads.map(fh => (
+                            {schoolFeeHeads.map(fh => (
                                 <tr key={fh.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
                                     <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{fh.name}</td>
                                     <td className="px-6 py-4">Rs. {fh.defaultAmount.toLocaleString()}</td>

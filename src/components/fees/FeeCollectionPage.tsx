@@ -92,7 +92,7 @@ const FeeCollectionPage: React.FC = () => {
             <div className="p-4 sm:p-6 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div className="md:col-span-2 relative">
-                        <label htmlFor="student-search" className="input-label">Search Student by Name or Roll Number</label>
+                        <label htmlFor="student-search" className="input-label">Search Student by Name or Student ID</label>
                         <input
                             id="student-search"
                             type="text"
@@ -113,7 +113,7 @@ const FeeCollectionPage: React.FC = () => {
                                             <Avatar student={student} className="w-8 h-8"/>
                                             <div>
                                                 <p className="font-medium">{student.name}</p>
-                                                <p className="text-xs text-secondary-500">Roll: {student.rollNumber} - Class: {classMap.get(student.classId)}</p>
+                                                <p className="text-xs text-secondary-500">Student ID: {student.rollNumber} - Class: {classMap.get(student.classId)}</p>
                                             </div>
                                         </button>
                                     ))
@@ -140,7 +140,9 @@ const FeeCollectionPage: React.FC = () => {
                 {selectedStudent && (
                     <div className="border-t dark:border-secondary-700 pt-4">
                         <div className="flex justify-between items-center mb-4">
-                             <h2 className="text-xl font-semibold">Outstanding Challans for {selectedStudent.name}</h2>
+                             <h2 className="text-xl font-semibold">
+                                Outstanding Challans for {selectedStudent.name} <span className="text-sm font-normal text-secondary-500">(ID: {selectedStudent.rollNumber})</span>
+                            </h2>
                              <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">Clear Selection</button>
                         </div>
                         

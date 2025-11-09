@@ -103,7 +103,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ setActiveView }) => {
                                     <Avatar student={student} className="w-10 h-10" />
                                     <div>
                                         <p className="font-medium text-secondary-800 dark:text-secondary-100">{student.name}</p>
-                                        <p className="text-sm text-secondary-500">Roll No: {student.rollNumber}</p>
+                                        <p className="text-sm text-secondary-500">Student ID: {student.rollNumber}</p>
                                     </div>
                                 </li>
                             ))

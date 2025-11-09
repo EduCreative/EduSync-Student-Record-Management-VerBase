@@ -8,6 +8,7 @@ import AttendanceViewer from './AttendanceViewer';
 import { useToast } from '../../context/ToastContext';
 import AttendanceReportModal from '../reports/AttendanceReportModal';
 import { PrinterIcon } from '../../constants';
+import { getClassLevel } from '../../utils/sorting';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Leave';
 
@@ -34,12 +35,13 @@ const AttendanceMarker: React.FC = () => {
 
     const userClasses = useMemo(() => {
         if (!user) return [];
+        let filteredClasses: Class[];
         if (effectiveRole === UserRole.Teacher) {
-            // FIX: Explicitly type 'c' to ensure correct type inference.
-            return classes.filter((c: Class) => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
+            filteredClasses = classes.filter((c: Class) => c.schoolId === effectiveSchoolId && c.teacherId === user.id);
+        } else {
+            filteredClasses = classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
         }
-        // FIX: Explicitly type 'c' to ensure correct type inference.
-        return classes.filter((c: Class) => c.schoolId === effectiveSchoolId);
+        return filteredClasses.sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name));
     }, [classes, user, effectiveRole, effectiveSchoolId]);
 
     const studentsInClass = useMemo(() => {
@@ -142,7 +144,7 @@ const AttendanceMarker: React.FC = () => {
                             <label htmlFor="class-select" className="input-label">Select Class</label>
                             <select id="class-select" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
                                 <option value="">-- Choose a class --</option>
-                                {userClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {userClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                             </select>
                         </div>
                          <div>
@@ -169,7 +171,7 @@ const AttendanceMarker: React.FC = () => {
                                 <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                     <tr>
                                         <th className="px-6 py-3 text-left">Student</th>
-                                        <th className="px-6 py-3 text-left">Roll No</th>
+                                        <th className="px-6 py-3 text-left">Student ID</th>
                                         <th className="px-6 py-3 text-center">Status</th>
                                     </tr>
                                 </thead>
@@ -213,7 +215,7 @@ const AttendanceMarker: React.FC = () => {
                                             <Avatar student={student} className="w-10 h-10 flex-shrink-0"/>
                                             <div className="overflow-hidden">
                                                 <p className="font-medium text-secondary-900 dark:text-white truncate">{student.name}</p>
-                                                <p className="text-xs text-secondary-500">Roll: {student.rollNumber}</p>
+                                                <p className="text-xs text-secondary-500">Student ID: {student.rollNumber}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">

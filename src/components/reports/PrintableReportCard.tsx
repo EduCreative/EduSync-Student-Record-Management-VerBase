@@ -52,7 +52,7 @@ const PrintableReportCard: FC<PrintableReportCardProps> = ({ student, studentCla
                 <div><strong>Student:</strong> {student.name}</div>
                 <div><strong>Class:</strong> {studentClass}</div>
                 <div><strong>Father's Name:</strong> {student.fatherName}</div>
-                <div><strong>Roll No:</strong> {student.rollNumber}</div>
+                <div><strong>Student ID:</strong> {student.rollNumber}</div>
             </div>
 
             {/* Results Table */}

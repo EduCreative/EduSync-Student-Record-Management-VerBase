@@ -67,7 +67,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
     const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editMode ? `Edit Payment for ${student.name}`: `Record Payment for ${student.name}`}>
+        <Modal isOpen={isOpen} onClose={onClose} title={editMode ? `Edit Payment for ${student.name} (ID: ${student.rollNumber})`: `Record Payment for ${student.name} (ID: ${student.rollNumber})`}>
             <div className="text-sm space-y-2 mb-4 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
                 <p><strong>Challan:</strong> {challan.month} {challan.year}</p>
                 <p><strong>Total Amount:</strong> Rs. {challan.totalAmount.toLocaleString()}</p>

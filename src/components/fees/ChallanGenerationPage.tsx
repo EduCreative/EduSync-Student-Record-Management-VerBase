@@ -34,13 +34,18 @@ const ChallanGenerationPage: React.FC = () => {
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
+    const schoolFeeHeads = useMemo(() => {
+        if (!effectiveSchoolId) return [];
+        return feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
+    }, [feeHeads, effectiveSchoolId]);
+
     useEffect(() => {
         const newMap = new Map<string, { selected: boolean; amount: number }>();
-        feeHeads.forEach((fh: FeeHead) => {
+        schoolFeeHeads.forEach((fh: FeeHead) => {
             newMap.set(fh.id, { selected: true, amount: fh.defaultAmount });
         });
         setSelectedFeeHeads(newMap);
-    }, [feeHeads]);
+    }, [schoolFeeHeads]);
 
     const handleFeeHeadToggle = (id: string) => {
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
@@ -74,7 +79,7 @@ const ChallanGenerationPage: React.FC = () => {
             .map(([feeHeadId, { amount }]) => ({
                 feeHeadId,
                 defaultAmount: amount,
-                name: feeHeads.find(fh => fh.id === feeHeadId)?.name || 'Unknown'
+                name: schoolFeeHeads.find(fh => fh.id === feeHeadId)?.name || 'Unknown'
             }));
 
         if (feeHeadsToGenerate.length === 0) {
@@ -169,7 +174,7 @@ const ChallanGenerationPage: React.FC = () => {
                 <div>
                     <h3 className="text-lg font-medium mb-2">Include Fee Heads</h3>
                     <div className="space-y-2 p-2 border dark:border-secondary-700 rounded-lg max-h-60 overflow-y-auto">
-                        {feeHeads.map(fh => {
+                        {schoolFeeHeads.map(fh => {
                             const isTuitionFee = fh.name.toLowerCase() === 'tuition fee';
                             const rowClass = isTuitionFee
                                 ? "flex items-center justify-between gap-4 p-2 rounded-md bg-blue-50 dark:bg-blue-900/20"

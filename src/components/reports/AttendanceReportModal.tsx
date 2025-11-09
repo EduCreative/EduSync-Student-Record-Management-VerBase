@@ -39,7 +39,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
-    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const datesInRange = useMemo(() => {
         const dates = [];
@@ -90,7 +90,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
             <PrintableReportLayout
                 school={school}
                 title="Attendance Report"
-                subtitle={`Class: ${selectedClass?.name || 'All Classes'} | From: ${formatDate(startDate)} To: ${formatDate(endDate)}`}
+                subtitle={`Class: ${selectedClass ? `${selectedClass.name}${selectedClass.section ? ` - ${selectedClass.section}` : ''}` : 'All Classes'} | From: ${formatDate(startDate)} To: ${formatDate(endDate)}`}
             >
                 <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
                     <thead>
@@ -141,7 +141,7 @@ const AttendanceReportModal: React.FC<AttendanceReportModalProps> = ({ isOpen, o
                         <label htmlFor="class-select-attendance" className="input-label">Class</label>
                         <select id="class-select-attendance" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                             <option value="all">All Classes</option>
-                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {sortedClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                         </select>
                     </div>
                     <div>

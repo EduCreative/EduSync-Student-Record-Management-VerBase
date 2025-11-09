@@ -30,7 +30,7 @@ const PrintableIdCard: FC<PrintableIdCardProps> = ({ student, school, studentCla
                     <h2 className="id-card-student-name">{student.name}</h2>
                     <p><strong>Father's Name:</strong> {student.fatherName}</p>
                     <p><strong>Class:</strong> {studentClass || 'N/A'}</p>
-                    <p><strong>Roll No:</strong> {student.rollNumber}</p>
+                    <p><strong>Student ID:</strong> {student.rollNumber}</p>
                     <p><strong>Contact:</strong> {student.contactNumber}</p>
                 </div>
             </div>

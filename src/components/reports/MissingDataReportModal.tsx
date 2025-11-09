@@ -55,8 +55,8 @@ const MissingDataReportModal: React.FC<MissingDataReportModalProps> = ({ isOpen,
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
-    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
-    const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
+    const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
+    const classMap = useMemo(() => new Map(classes.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [classes]);
 
     const reportData = useMemo(() => {
         const studentsInScope = students.filter(s =>
@@ -80,14 +80,14 @@ const MissingDataReportModal: React.FC<MissingDataReportModalProps> = ({ isOpen,
             <PrintableReportLayout
                 school={school}
                 title="Missing Data Report"
-                subtitle={`Class: ${classId === 'all' ? 'All Classes' : schoolClasses.find(c => c.id === classId)?.name}`}
+                subtitle={`Class: ${classId === 'all' ? 'All Classes' : classMap.get(classId) || ''}`}
             >
                 <table className="w-full text-sm">
                     <thead>
                         <tr>
                             <th className="p-1 text-left">Sr.</th>
                             <th className="p-1 text-left">Student Name</th>
-                            <th className="p-1 text-left">Roll #</th>
+                            <th className="p-1 text-left">Student ID</th>
                             <th className="p-1 text-left">Class</th>
                             <th className="p-1 text-left">Missing Fields</th>
                         </tr>
@@ -110,7 +110,7 @@ const MissingDataReportModal: React.FC<MissingDataReportModalProps> = ({ isOpen,
     };
 
     const handleExport = () => {
-        const headers = ["Sr.", "Student Name", "Roll #", "Class", "Missing Fields"];
+        const headers = ["Sr.", "Student Name", "Student ID", "Class", "Missing Fields"];
         const csvRows = [headers.join(',')];
         
         reportData.forEach(({ student, missingFields }, index) => {
@@ -134,7 +134,7 @@ const MissingDataReportModal: React.FC<MissingDataReportModalProps> = ({ isOpen,
                     <label htmlFor="class-filter-missing-data" className="input-label">Select Class</label>
                     <select id="class-filter-missing-data" value={classId} onChange={e => setClassId(e.target.value)} className="input-field">
                         <option value="all">All Classes</option>
-                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {sortedClasses.map(c => <option key={c.id} value={c.id}>{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</option>)}
                     </select>
                 </div>
 

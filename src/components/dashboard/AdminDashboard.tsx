@@ -85,18 +85,19 @@ const FeeChartHeader: React.FC<{
     title: string;
     chartType: 'line' | 'bar';
     onChartTypeChange: (type: 'line' | 'bar') => void;
-    period: 'week' | 'month' | '30days';
-    onPeriodChange: (period: 'week' | 'month' | '30days') => void;
+    period: 'week' | '15days' | 'month' | '30days';
+    onPeriodChange: (period: 'week' | '15days' | 'month' | '30days') => void;
 }> = ({ title, chartType, onChartTypeChange, period, onPeriodChange }) => (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="flex items-center gap-2">
             <select
                 value={period}
-                onChange={(e) => onPeriodChange(e.target.value as 'week' | 'month' | '30days')}
-                className="input-field py-1 text-sm w-32"
+                onChange={(e) => onPeriodChange(e.target.value as 'week' | '15days' | 'month' | '30days')}
+                className="input-field py-1 text-sm w-36"
             >
                 <option value="week">This Week</option>
+                <option value="15days">Last 15 Days</option>
                 <option value="month">This Month</option>
                 <option value="30days">Last 30 Days</option>
             </select>
@@ -125,7 +126,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     
     const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
     const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
-    const [feePeriod, setFeePeriod] = useState<'week' | 'month' | '30days'>('week');
+    const [feePeriod, setFeePeriod] = useState<'week' | '15days' | 'month' | '30days'>('week');
 
     if (!user) return null;
     
@@ -233,20 +234,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 collectionsByDay[fee.paidDate] = (collectionsByDay[fee.paidDate] || 0) + fee.paidAmount;
             }
         });
+
+        const toYMD = (date: Date) => {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        };
     
         if (feePeriod === 'week') {
             const now = new Date();
             const first = now.getDate() - now.getDay(); // First day is Sunday
             const weekDays = [...Array(7)].map((_, i) => {
-                const d = new Date(now.getTime());
-                d.setDate(first + i);
+                const d = new Date(now.getFullYear(), now.getMonth(), first + i);
                 return d;
             });
             
             return weekDays.map(date => {
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = toYMD(date);
                 return {
                     label: `${date.toLocaleDateString('en-US', { weekday: 'short' })} (${date.getDate()}/${date.getMonth() + 1})`,
+                    value: collectionsByDay[dateStr] || 0
+                };
+            });
+        }
+        
+        if (feePeriod === '15days') {
+            const last15Days = [...Array(15)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                return d;
+            }).reverse();
+    
+            return last15Days.map(date => {
+                const dateStr = toYMD(date);
+                return {
+                    label: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
                     value: collectionsByDay[dateStr] || 0
                 };
             });
@@ -260,7 +280,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             const monthDays = [...Array(daysInMonth)].map((_, i) => new Date(year, month, i + 1));
     
             return monthDays.map(date => {
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = toYMD(date);
                 return {
                     label: String(date.getDate()),
                     value: collectionsByDay[dateStr] || 0
@@ -276,7 +296,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
         }).reverse();
     
         return last30Days.map(date => {
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = toYMD(date);
             return {
                 label: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
                 value: collectionsByDay[dateStr] || 0
@@ -348,7 +368,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             id: s.id,
             avatar: <Avatar student={s} className="w-9 h-9" />,
             primary: s.name,
-            secondary: `Roll No: ${s.rollNumber}`,
+            secondary: `Student ID: ${s.rollNumber}`,
         }));
 
         setModalDetails({ title: `Students: ${status}`, items });
@@ -442,6 +462,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                         data={classStrengthData}
                         onClick={handleClassStrengthClick}
                         multiColor={true}
+                        showValuesOnTop
                     />
                 </div>
                 

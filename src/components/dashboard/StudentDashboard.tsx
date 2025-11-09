@@ -68,7 +68,7 @@ const StudentDashboard: React.FC = () => {
                  <div>
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Welcome, {user.name}!</h1>
                     <p className="text-secondary-500 dark:text-secondary-400">
-                        {studentClass?.name} | Roll No: {studentProfile.rollNumber}
+                        {studentClass?.name} | Student ID: {studentProfile.rollNumber}
                     </p>
                  </div>
             </div>
