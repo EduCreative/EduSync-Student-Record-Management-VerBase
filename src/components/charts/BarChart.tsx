@@ -16,11 +16,12 @@ interface BarChartProps {
     onClick?: (item: BarChartData) => void;
     multiColor?: boolean;
     showValuesOnTop?: boolean;
+    showValuesOnBottom?: boolean;
 }
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#64748b'];
 
-const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, multiColor = false, showValuesOnTop = false }) => {
+const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, multiColor = false, showValuesOnTop = false, showValuesOnBottom = false }) => {
     const [isAnimated, setIsAnimated] = useState(false);
     const [tooltip, setTooltip] = useState<{ visible: boolean; content: string; x: number; y: number } | null>(null);
 
@@ -137,7 +138,12 @@ const BarChart: FC<BarChartProps> = ({ title, data, color = '#3b82f6', onClick, 
                                     ></div>
                                 ))}
                             </div>
-                            <span className="text-xs text-secondary-500 mt-2 truncate">{item.label}</span>
+                            {showValuesOnBottom && item.value > 0 && (
+                                <span className="text-xs font-semibold text-secondary-600 dark:text-secondary-400 mt-1">
+                                    {item.value}
+                                </span>
+                            )}
+                            <span className="text-xs text-secondary-500 mt-1 truncate">{item.label}</span>
                         </div>
                     ))}
                 </div>

@@ -241,16 +241,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     
         if (feePeriod === 'week') {
             const now = new Date();
+            const currentDay = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+            const firstDayOfWeek = new Date(now);
+            firstDayOfWeek.setDate(now.getDate() - currentDay);
+            firstDayOfWeek.setHours(0, 0, 0, 0); // Normalize to start of the day
+    
             const weekDays = [...Array(7)].map((_, i) => {
-                const d = new Date(now);
-                d.setDate(now.getDate() - now.getDay() + i);
+                const d = new Date(firstDayOfWeek);
+                d.setDate(firstDayOfWeek.getDate() + i);
                 return d;
             });
             
             return weekDays.map(date => {
                 const dateStr = toYMD(date);
                 return {
-                    label: `${date.toLocaleDateString('en-US', { weekday: 'short' })} (${date.getDate()}/${date.getMonth() + 1})`,
+                    label: `${date.getDate()}/${date.getMonth() + 1}`,
                     value: collectionsByDay[dateStr] || 0
                 };
             });
@@ -462,7 +467,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                         data={classStrengthData}
                         onClick={handleClassStrengthClick}
                         multiColor={true}
-                        showValuesOnTop
+                        showValuesOnBottom
                     />
                 </div>
                 

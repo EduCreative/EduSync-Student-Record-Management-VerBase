@@ -49,7 +49,7 @@
 
   /* Challan Print Styles */
   .printable-challan-container {
-    @apply space-y-2;
+    /* Spacing handled by challan-wrapper margin in print styles */
   }
 
   .challan-wrapper {
@@ -243,7 +243,19 @@
   /* Specific tweaks for better print appearance */
   .challan-wrapper {
     height: 85mm; /* Squeezed to fit 3 per A4 page */
-    overflow: hidden !important; /* Changed from 'visible' to prevent overlapping */
+    overflow: hidden !important;
+    margin-bottom: 10mm; /* Add space between challans */
+    position: relative; /* For the pseudo-element */
     @apply flex-row;
+  }
+  
+  /* Add a dotted line after each challan, except the last one */
+  .challan-wrapper:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 5%; /* Don't go all the way to the edge */
+    right: 5%;
+    bottom: -5mm; /* Position it in the middle of the margin */
+    border-top: 2px dashed #9ca3af; /* gray-400 */
   }
 }
