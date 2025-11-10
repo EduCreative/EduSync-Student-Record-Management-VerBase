@@ -11,7 +11,12 @@ import ChartSkeleton from '../common/skeletons/ChartSkeleton';
 import LineChart from '../charts/LineChart';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
-import { getClassLevel } from '../../utils/sorting';
+
+const DollarSignIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
+const UserPlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>;
+const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+const SchoolIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 8-4 8 4" /><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2" /><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4" /><path d="M18 5v17" /><path d="M6 5v17" /><circle cx="12" cy="9" r="2" /></svg>;
+const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
 
 const QuickAction: React.FC<{ title: string; icon: React.ReactElement; onClick?: () => void; }> = ({ title, icon, onClick }) => (
      <button 
@@ -120,10 +125,9 @@ const FeeChartHeader: React.FC<{
 );
 
 
-// FIX: Export as a named component to align with import in Dashboard.tsx
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
-    const { users, students, getSchoolById, fees, attendance, loading, logs, classes } = useData();
+    const { users, students, getSchoolById, fees, attendance, loading, logs } = useData();
     
     const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
     const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
@@ -136,7 +140,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView })
     
     const schoolStudents = useMemo(() => students.filter(s => s.schoolId === effectiveSchoolId && s.status === 'Active'), [students, effectiveSchoolId]);
     const schoolTeachers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.role === UserRole.Teacher), [users, effectiveSchoolId]);
-    const schoolUsers = useMemo(() => users.filter(u => u.schoolId === effectiveSchoolId && u.id !== user.id), [users, effectiveSchoolId, user.id]);
 
     const stats = useMemo(() => {
         const now = new Date();
@@ -304,113 +307,93 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView })
                         <div className="skeleton-bg h-24 rounded-lg"></div>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <ChartSkeleton />
                     <ChartSkeleton />
                 </div>
             </div>
         );
     }
-    
+
     return (
         <>
             <Modal isOpen={!!modalDetails} onClose={() => setModalDetails(null)} title={modalDetails?.title || 'Details'}>
                 <div className="max-h-[60vh] overflow-y-auto">
                     <ul className="divide-y dark:divide-secondary-700">
-                        {modalDetails?.items.length ? modalDetails.items.map(item => (
-                             <li key={item.id} className="py-3 flex items-center space-x-4">
-                                {item.avatar}
-                                <div>
-                                    <p className="font-medium text-secondary-800 dark:text-secondary-100">{item.primary}</p>
-                                    <p className="text-sm text-secondary-500">{item.secondary}</p>
-                                </div>
-                            </li>
-                        )) : <p className="text-secondary-500 text-center py-4">No records found.</p>}
+                        {modalDetails && modalDetails.items.length > 0 ? (
+                            modalDetails.items.map(item => (
+                                <li key={item.id} className="py-3 flex items-center space-x-4">
+                                    {item.avatar}
+                                    <div>
+                                        <p className="font-medium text-secondary-800 dark:text-secondary-100">{item.primary}</p>
+                                        <p className="text-sm text-secondary-500">{item.secondary}</p>
+                                    </div>
+                                </li>
+                            ))
+                        ) : (
+                            <p className="text-secondary-500 text-center py-4">No items to display.</p>
+                        )}
                     </ul>
                 </div>
             </Modal>
+
             <div className="space-y-8">
                 <div>
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Admin Dashboard</h1>
-                    <p className="text-secondary-500 dark:text-secondary-400">Welcome back, {user.name}. Here's what's happening at {school?.name}.</p>
+                    <p className="text-secondary-500 dark:text-secondary-400">Welcome, {user.name}. Here's an overview of {school?.name}.</p>
                 </div>
-    
-                {/* Stat Cards */}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard title="Total Students" value={stats.totalStudents.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<UsersIcon />} />
-                    <StatCard title="Total Teachers" value={stats.totalTeachers.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<BriefcaseIcon />} />
-                    <StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<DollarSignIcon />} />
-                    <StatCard title="Pending Users" value={stats.pendingUsers.toString()} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon />} />
+                    <div className="fade-in-up" style={{ animationDelay: '100ms' }}><StatCard title="Total Students" value={stats.totalStudents.toString()} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UserPlusIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '200ms' }}><StatCard title="Total Teachers" value={stats.totalTeachers.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UserPlusIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '300ms' }}><StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '400ms' }}><StatCard title="Pending Users" value={stats.pendingUsers.toString()} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<UserPlusIcon />} /></div>
                 </div>
-    
-                {/* Quick Actions */}
-                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+
+                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg fade-in-up" style={{ animationDelay: '500ms' }}>
                     <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })}/>
-                        <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'attendance' })}/>
-                        <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'fees' })}/>
-                        <QuickAction title="Enter Results" icon={<BarChartIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'results' })}/>
-                        <QuickAction title="Generate Reports" icon={<FileTextIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'reports' })}/>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
+                        <QuickAction title="Mark Attendance" icon={<CheckCircleIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'attendance' })} />
+                        <QuickAction title="Collect Fees" icon={<DollarSignIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'fees' })} />
+                        <QuickAction title="Manage Classes" icon={<SchoolIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'classes' })} />
+                        <QuickAction title="View Reports" icon={<BellIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'reports' })} />
                     </div>
                 </div>
 
-                {/* Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                     <DoughnutChart title="Fee Status Overview" data={feeStatusData} onClick={handleFeeStatusClick}/>
-                     <BarChart title="Today's Attendance Snapshot" data={todayAttendanceData} multiColor={true} showValuesOnBottom={true} onClick={handleAttendanceClick} />
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div className="xl:col-span-2 fade-in-up" style={{ animationDelay: '600ms' }}>
+                        {feeChartType === 'line' ? (
+                             <LineChart title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod}/>} data={feeCollectionData} color="#10b981" />
+                        ) : (
+                             <BarChart title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod}/>} data={feeCollectionData} color="#10b981" showValuesOnTop />
+                        )}
+                    </div>
+                     <div className="fade-in-up" style={{ animationDelay: '700ms' }}><DoughnutChart title="Overall Fee Status" data={feeStatusData} onClick={handleFeeStatusClick} /></div>
                 </div>
-    
-                {/* Fee Collection Chart */}
-                 <div>
-                    {feeChartType === 'line' ? (
-                        <LineChart
-                            title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod} />}
-                            data={feeCollectionData}
-                            color="#3b82f6"
-                        />
-                    ) : (
-                        <BarChart
-                            title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod} />}
-                            data={feeCollectionData}
-                            color="#3b82f6"
-                            showValuesOnTop={true}
-                        />
-                    )}
-                </div>
-    
-                {/* Recent Activity */}
-                <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
-                    <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-                     <ul className="divide-y dark:divide-secondary-700">
-                        {logs.slice(0, 5).map(log => (
-                            <li key={log.id} className="py-3 flex items-center space-x-4">
-                                <span className={`flex items-center justify-center h-8 w-8 rounded-full ${getIconBgColor(log.action)}`}>
-                                    {getActivityIcon(log.action)}
-                                </span>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-secondary-800 dark:text-secondary-100">
-                                        <span className="font-bold">{log.userName}</span> {log.action}
-                                    </p>
-                                    <p className="text-xs text-secondary-500">{log.details}</p>
-                                </div>
-                                <span className="text-xs text-secondary-400">{timeAgo(log.timestamp)}</span>
-                            </li>
-                        ))}
-                    </ul>
+
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                     <div className="xl:col-span-2 fade-in-up" style={{ animationDelay: '800ms' }}><BarChart title="Today's Attendance Snapshot" data={todayAttendanceData} multiColor onClick={handleAttendanceClick} showValuesOnBottom /></div>
+                     <div className="fade-in-up" style={{ animationDelay: '900ms' }}>
+                        <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg h-full">
+                            <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+                            <ul className="space-y-3">
+                                {logs.slice(0, 5).map(log => (
+                                    <li key={log.id} className="flex items-start space-x-3">
+                                        <div className={`p-1.5 rounded-full ${getIconBgColor(log.action)}`}>
+                                            {getActivityIcon(log.action)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium">{log.userName} <span className="text-secondary-500 font-normal">{log.action.toLowerCase()}</span></p>
+                                            <p className="text-xs text-secondary-500">{timeAgo(log.timestamp)}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </>
     );
 };
-
-// Icons
-const UsersIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
-const BriefcaseIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
-const DollarSignIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
-const UserPlusIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>;
-const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
-const BarChartIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="20" y2="10" /><line x1="18" x2="18" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="16" /></svg>;
-const FileTextIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></svg>;
-const SchoolIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/></svg>;
-const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
