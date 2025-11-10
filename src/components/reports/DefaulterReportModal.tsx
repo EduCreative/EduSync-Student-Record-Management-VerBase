@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-import { UserRole } from '../../types';
+import { UserRole, Class } from '../../types';
 import { getClassLevel } from '../../utils/sorting';
 import PrintableReportLayout from './PrintableReportLayout';
 
@@ -122,16 +122,16 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             return acc;
         }, {} as Record<string, ClassDefaulterGroup>);
 
-        const schoolClassesMapForSort = new Map(schoolClasses.map(c => [c.id, c]));
+        // FIX: Explicitly typing the Map constructor ensures that .get() returns a `Class` object, not `unknown`.
+        const schoolClassesMapForSort = new Map<string, Class>(schoolClasses.map(c => [c.id, c]));
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            // FIX: Explicitly typed 'a' and 'b' to ClassDefaulterGroup and corrected typos to use classA/classB for sorting, fixing type errors.
             .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
