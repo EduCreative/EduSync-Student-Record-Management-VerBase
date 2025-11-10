@@ -16,7 +16,7 @@ import CalendarPage from '../calendar/CalendarPage';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import LeavingCertificatePage from '../students/LeavingCertificatePage';
-import ReportsPage from '../reports/ReportsPage';
+// import ReportsPage from '../reports/ReportsPage';
 import ToastContainer from '../common/ToastContainer';
 import TeacherManagementPage from '../teachers/TeacherManagementPage';
 import AccountantManagementPage from '../accountants/AccountantManagementPage';
@@ -103,7 +103,8 @@ const Layout: React.FC = () => {
                 return <Dashboard setActiveView={setActiveView} />;
             case 'reports':
                 if ([UserRole.Admin, UserRole.Accountant].includes(effectiveRole as UserRole)) {
-                    return <ReportsPage />;
+                    // return <ReportsPage />;
+                    return <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 text-yellow-700 dark:text-yellow-200">The reports module is temporarily unavailable due to a technical issue. Please check back later.</div>;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
             case 'results':
