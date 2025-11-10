@@ -65,7 +65,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister, onForgotPassw
     };
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 via-primary-800 to-primary-950 text-white lg:grid lg:grid-cols-2 relative [background-size:200%] animate-background-pan">
+        <div className="min-h-screen w-full bg-gradient-to-br from-primary-700 via-primary-800 to-primary-950 text-white lg:grid lg:grid-cols-2 relative [background-size:200%_200%] animate-background-pan">
             <div className="absolute inset-0 opacity-10">
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M40 0V80M0 40H80" stroke="white" strokeWidth="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
             </div>

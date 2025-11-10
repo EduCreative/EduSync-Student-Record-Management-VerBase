@@ -4,7 +4,8 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-import { UserRole } from '../../types';
+// FIX: Import `Class` type to resolve type errors on class properties.
+import { UserRole, Class } from '../../types';
 import { getClassLevel } from '../../utils/sorting';
 import PrintableReportLayout from './PrintableReportLayout';
 
@@ -126,12 +127,11 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            // FIX: Explicitly typed 'a' and 'b' in the sort callback to resolve 'unknown' type errors.
             .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
