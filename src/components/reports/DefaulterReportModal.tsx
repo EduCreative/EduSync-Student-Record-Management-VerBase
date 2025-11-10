@@ -126,12 +126,12 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            // FIX: Explicitly typed 'a' and 'b' in the sort callback to resolve 'unknown' type errors.
-            .sort((a, b) => {
+            // FIX: Explicitly typed 'a' and 'b' to ClassDefaulterGroup and corrected a typo from 'b.name' to 'classB.name' to fix sorting logic and type errors.
+            .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
