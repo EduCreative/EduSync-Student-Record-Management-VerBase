@@ -435,19 +435,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 </div>
             
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} />
-                    <StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300" icon={<BriefcaseIcon />} />
-                    <StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" icon={<UserCheckIcon />} />
-                    <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<DollarSignIcon />} />
+                    <div className="fade-in-up" style={{ animationDelay: '100ms' }}><StatCard title="Total Students" value={schoolStudents.length.toString()} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '150ms' }}><StatCard title="Total Teachers" value={schoolTeachers.length.toString()} color="bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300" icon={<BriefcaseIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '200ms' }}><StatCard title="Pending Approvals" value={stats.pendingApprovals} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" icon={<UserCheckIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '250ms' }}><StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<DollarSignIcon />} /></div>
                     
-                    <StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} />
-                    <StatCard title="Total Paid Challans" value={stats.totalPaidChallans} color="bg-lime-100 dark:bg-lime-900/50 text-lime-600 dark:text-lime-300" icon={<FileCheckIcon />} />
-                    <StatCard title="Dues This Month" value={stats.duesThisMonth} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
-                    <StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertTriangleIcon />} />
+                    <div className="fade-in-up" style={{ animationDelay: '300ms' }}><StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '350ms' }}><StatCard title="Total Paid Challans" value={stats.totalPaidChallans} color="bg-lime-100 dark:bg-lime-900/50 text-lime-600 dark:text-lime-300" icon={<FileCheckIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '400ms' }}><StatCard title="Dues This Month" value={stats.duesThisMonth} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '450ms' }}><StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertTriangleIcon />} /></div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div>
+                    <div className="fade-in-up" style={{ animationDelay: '500ms' }}>
                         {feeChartType === 'line' ? (
                             <LineChart
                                 title={<FeeChartHeader title="Fee Collection" chartType={feeChartType} onChartTypeChange={setFeeChartType} period={feePeriod} onPeriodChange={setFeePeriod} />}
@@ -462,22 +462,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                             />
                         )}
                     </div>
-                    <BarChart
-                        title="Class Strength"
-                        data={classStrengthData}
-                        onClick={handleClassStrengthClick}
-                        multiColor={true}
-                        showValuesOnBottom
-                    />
+                    <div className="fade-in-up" style={{ animationDelay: '550ms' }}>
+                        <BarChart
+                            title="Class Strength"
+                            data={classStrengthData}
+                            onClick={handleClassStrengthClick}
+                            multiColor={true}
+                            showValuesOnBottom
+                        />
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} />
-                    <BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} multiColor={true} />
+                    <div className="fade-in-up" style={{ animationDelay: '600ms' }}><DoughnutChart title="Fee Collection Status" data={feeStatusData} onClick={handleFeeStatusClick} /></div>
+                    <div className="fade-in-up" style={{ animationDelay: '650ms' }}><BarChart title="Today's Attendance Snapshot" data={attendanceData} onClick={handleAttendanceClick} multiColor={true} /></div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="lg:col-span-1 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg fade-in-up" style={{ animationDelay: '700ms' }}>
                         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                         <div className="grid grid-cols-2 gap-4">
                             <QuickAction title="Add Student" icon={<UserPlusIcon className="w-8 h-8"/>} onClick={() => setActiveView({ view: 'students' })} />
@@ -487,12 +489,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+                    <div className="lg:col-span-2 bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg fade-in-up" style={{ animationDelay: '750ms' }}>
                         <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
                         {recentLogs.length > 0 ? (
                             <ul className="space-y-4">
-                                {recentLogs.map(log => (
-                                    <li key={log.id} className="flex items-start space-x-3">
+                                {recentLogs.map((log, index) => (
+                                    <li key={log.id} className="flex items-start space-x-3 fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
                                         <div className={`${getIconBgColor(log.action)} p-2 rounded-full`}>
                                             {getActivityIcon(log.action)}
                                         </div>

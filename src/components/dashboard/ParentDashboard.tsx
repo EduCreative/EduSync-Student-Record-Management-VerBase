@@ -60,8 +60,10 @@ const ParentDashboard: React.FC = () => {
         <div className="space-y-8">
             <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Parent's Dashboard</h1>
             <div className="space-y-6">
-                {myChildren.map(child => (
-                    <ChildCard key={child.id} student={child} results={results} />
+                {myChildren.map((child, index) => (
+                    <div key={child.id} className="fade-in-up" style={{ animationDelay: `${index * 150}ms` }}>
+                        <ChildCard student={child} results={results} />
+                    </div>
                 ))}
             </div>
         </div>

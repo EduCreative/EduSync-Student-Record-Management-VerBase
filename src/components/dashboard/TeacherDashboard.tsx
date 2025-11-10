@@ -113,29 +113,29 @@ const TeacherDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Assigned Classes" value={assignedClasses.length.toString()} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<BookOpenIcon />} />
-                <StatCard title="Total Students" value={studentsInMyClasses.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} />
-                <StatCard title="Average Attendance" value={stats.averageAttendance} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<CheckCircleIcon />} />
-                <StatCard title="Subjects Taught" value={stats.subjectsTaught} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<ClipboardListIcon />} />
+                <div className="fade-in-up" style={{ animationDelay: '100ms' }}><StatCard title="Assigned Classes" value={assignedClasses.length.toString()} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<BookOpenIcon />} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '200ms' }}><StatCard title="Total Students" value={studentsInMyClasses.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '300ms' }}><StatCard title="Average Attendance" value={stats.averageAttendance} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<CheckCircleIcon />} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '400ms' }}><StatCard title="Subjects Taught" value={stats.subjectsTaught} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<ClipboardListIcon />} /></div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DoughnutChart title="Overall Attendance Summary" data={attendanceSummary} />
-                <BarChart title="Latest Exam Performance (Avg %)" data={subjectPerformance} multiColor={true} />
+                <div className="fade-in-up" style={{ animationDelay: '500ms' }}><DoughnutChart title="Overall Attendance Summary" data={attendanceSummary} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '600ms' }}><BarChart title="Latest Exam Performance (Avg %)" data={subjectPerformance} multiColor={true} /></div>
             </div>
 
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg fade-in-up" style={{ animationDelay: '700ms' }}>
                 <h2 className="text-xl font-semibold mb-4">My Classes</h2>
                 <div className="space-y-4">
-                    {assignedClasses.map(c => (
-                        <div key={c.id} className="p-4 border dark:border-secondary-700 rounded-lg flex justify-between items-center">
+                    {assignedClasses.map((c, index) => (
+                        <div key={c.id} className="p-4 border dark:border-secondary-700 rounded-lg flex justify-between items-center fade-in-up" style={{ animationDelay: `${index * 100}ms`}}>
                             <div>
                                 <p className="font-semibold text-secondary-800 dark:text-secondary-100">{c.name}</p>
                                 <p className="text-sm text-secondary-500">{students.filter((s: Student) => s.classId === c.id).length} Students</p>
                             </div>
                             <div className="flex space-x-2">
-                                <button className="px-3 py-1 text-sm font-medium text-primary-700 bg-primary-100 dark:bg-primary-900 dark:text-primary-200 rounded-md hover:bg-primary-200">Take Attendance</button>
-                                <button className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 dark:bg-green-900 dark:text-green-200 rounded-md hover:bg-green-200">Enter Results</button>
+                                <button className="btn btn-secondary px-3 py-1 text-sm">Take Attendance</button>
+                                <button className="btn btn-secondary px-3 py-1 text-sm">Enter Results</button>
                             </div>
                         </div>
                     ))}

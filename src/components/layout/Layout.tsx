@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Dashboard from '../dashboard/Dashboard';
-import UserManagementPage from '../users/UserManagementPage';
+// FIX: Changed import to a named import to resolve "no default export" error.
+import { UserManagementPage } from '../users/UserManagementPage';
 import StudentManagementPage from '../students/StudentManagementPage';
 import StudentProfilePage from '../students/StudentProfilePage';
 import SettingsPage from '../settings/SettingsPage';
@@ -132,7 +133,7 @@ const Layout: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200">
+        <div className="flex h-screen bg-secondary-50 dark:bg-secondary-950 text-secondary-800 dark:text-secondary-200">
             <ToastContainer />
             <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
             <Sidebar 
@@ -142,10 +143,12 @@ const Layout: React.FC = () => {
                 setActiveView={setActiveView}
                 effectiveRole={effectiveRole as UserRole}
             />
-            <div className="flex flex-col flex-1 overflow-y-auto">
+            <div className="flex flex-col flex-1">
                 <Header setSidebarOpen={setSidebarOpen} setActiveView={setActiveView} openAboutModal={() => setIsAboutModalOpen(true)} />
-                <main className="p-4 md:p-8">
-                    {renderContent()}
+                <main className="p-4 md:p-8 flex-1 overflow-y-auto">
+                    <div key={activeView.view} className="fade-in-up">
+                        {renderContent()}
+                    </div>
                 </main>
             </div>
         </div>

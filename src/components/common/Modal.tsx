@@ -24,7 +24,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 
     return (
         <div 
-            className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 transition-opacity duration-300"
+            className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 transition-opacity duration-300 backdrop-blur-sm"
             aria-labelledby="modal-title"
             role="dialog"
             aria-modal="true"
@@ -51,10 +51,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
             </div>
             <style>{`
                 @keyframes fade-in-scale {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
+                    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
                 }
-                .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }
+                .animate-fade-in-scale { animation: fade-in-scale 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
             `}</style>
         </div>
     );

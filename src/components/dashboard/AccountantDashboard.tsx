@@ -120,18 +120,18 @@ const AccountantDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} />
-                <StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
-                <StatCard title="Overdue Invoices" value={stats.overdueInvoices} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertCircleIcon />} />
-                <StatCard title="Total Students" value={stats.totalStudentsInSchool} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} />
+                <div className="fade-in-up" style={{ animationDelay: '100ms' }}><StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<DollarSignIcon />} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '200ms' }}><StatCard title="Total Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '300ms' }}><StatCard title="Overdue Invoices" value={stats.overdueInvoices} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertCircleIcon />} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '400ms' }}><StatCard title="Total Students" value={stats.totalStudentsInSchool} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" icon={<UsersIcon />} /></div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} multiColor={true} />
-                <DoughnutChart title="Outstanding Fees" data={outstandingFees} />
+                <div className="fade-in-up" style={{ animationDelay: '500ms' }}><BarChart title="Monthly Fee Collection (Last 6 Months)" data={monthlyCollection} multiColor={true} /></div>
+                <div className="fade-in-up" style={{ animationDelay: '600ms' }}><DoughnutChart title="Outstanding Fees" data={outstandingFees} /></div>
             </div>
 
-            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg">
+            <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg fade-in-up" style={{ animationDelay: '700ms' }}>
                 <h2 className="text-xl font-semibold mb-4">Financial Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <QuickAction title="Generate Challans" icon={<FilePlusIcon className="w-8 h-8"/>} />
