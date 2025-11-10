@@ -127,11 +127,18 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
-                const classA = schoolClassesMapForSort.get(a.classId) as Class | undefined;
-                const classB = schoolClassesMapForSort.get(b.classId) as Class | undefined;
-                if (!classA || !classB) return a.className.localeCompare(b.className);
-                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
+            .sort((groupA: ClassDefaulterGroup, groupB: ClassDefaulterGroup) => {
+                // FIX: Explicitly cast map lookups to 'Class | undefined' to resolve type inference issue where compiler sees 'unknown'.
+                const classA = schoolClassesMapForSort.get(groupA.classId) as Class | undefined;
+                const classB = schoolClassesMapForSort.get(groupB.classId) as Class | undefined;
+                if (!classA || !classB) {
+                    return groupA.className.localeCompare(groupB.className);
+                }
+                const sortOrderDiff = (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity);
+                if (sortOrderDiff !== 0) {
+                    return sortOrderDiff;
+                }
+                return getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {
