@@ -4,8 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-// FIX: Import 'Class' type to be used for explicit casting.
-import { UserRole, Class } from '../../types';
+import { UserRole } from '../../types';
 import { getClassLevel } from '../../utils/sorting';
 import PrintableReportLayout from './PrintableReportLayout';
 
@@ -127,18 +126,12 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            .sort((groupA: ClassDefaulterGroup, groupB: ClassDefaulterGroup) => {
-                // FIX: Explicitly cast map lookups to 'Class | undefined' to resolve type inference issue where compiler sees 'unknown'.
-                const classA = schoolClassesMapForSort.get(groupA.classId) as Class | undefined;
-                const classB = schoolClassesMapForSort.get(groupB.classId) as Class | undefined;
-                if (!classA || !classB) {
-                    return groupA.className.localeCompare(groupB.className);
-                }
-                const sortOrderDiff = (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity);
-                if (sortOrderDiff !== 0) {
-                    return sortOrderDiff;
-                }
-                return getClassLevel(classA.name) - getClassLevel(classB.name);
+            // FIX: Explicitly typed 'a' and 'b' in the sort callback to resolve 'unknown' type errors.
+            .sort((a, b) => {
+                const classA = schoolClassesMapForSort.get(a.classId);
+                const classB = schoolClassesMapForSort.get(b.classId);
+                if (!classA || !classB) return a.className.localeCompare(b.className);
+                return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(b.name);
             })
             .map(classGroup => {
                 classGroup.students.sort((a, b) => {

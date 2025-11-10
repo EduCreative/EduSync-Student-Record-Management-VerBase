@@ -1,11 +1,15 @@
 
 
 
+
+
+
 import type { FC } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import OwnerDashboard from './OwnerDashboard';
-import AdminDashboard from './AdminDashboard';
+// FIX: Changed import to a named import to resolve "no default export" error.
+import { AdminDashboard } from './AdminDashboard';
 import AccountantDashboard from './AccountantDashboard';
 import TeacherDashboard from './TeacherDashboard';
 import ParentDashboard from './ParentDashboard';
