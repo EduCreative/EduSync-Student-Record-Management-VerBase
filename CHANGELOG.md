@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CSV Date Import Error:** Fixed a database error (`invalid input syntax for type date: ""`) that occurred when importing CSV files with empty date fields. The import process now correctly sanitizes empty date strings to `null` before insertion.
 - **Build Error:** Removed an unused `useMemo` import in `PromotionPreviewModal.tsx` that was causing the build to fail.
 
+### Database
+- **Added `permissions_overrides` column:** A new `JSONB` column named `permissions_overrides` was added to the `profiles` table to support the new fine-grained permissions feature.
+- **Renamed `admitted_in_class` column:** The column `admitted_in_class` in the `students` table was renamed to `admitted_class` for consistency with the application's data model.
+
 ## [1.5.0] - 2024-07-21
 
 ### Fixed

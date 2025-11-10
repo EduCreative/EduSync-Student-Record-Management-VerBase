@@ -132,7 +132,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                // FIX: Corrected typo in sort callback. Used `classB` which is the `Class` object, instead of `b` which is `ClassDefaulterGroup` and doesn't have `sortOrder` or `name` properties.
+                // FIX: Corrected typo in sort callback. Used `classB.name` which is the `Class` object's name, instead of `b.name` which does not exist on `ClassDefaulterGroup`.
+                // FIX: Corrected typo in sort callback. Used `classB.name` instead of `b.name`.
                 return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {
