@@ -76,6 +76,9 @@ export class EduSyncDB extends Dexie {
         // FIX: Bumping version to 12 to resolve potential database upgrade issues that could cause data loading to fail after login.
         this.version(12).stores({});
 
+        // FIX: Bumping version to 13 to resolve UI data loading issues by forcing a clean sync from the server.
+        this.version(13).stores({});
+
         this.on('blocked', () => {
             console.warn(
               `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`
