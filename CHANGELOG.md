@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2024-07-23
+
+### Fixed
+- **Critical Session Failure:** Fixed a major regression where the user's session was not being persisted after login. This caused the application to effectively log the user out on every page reload, resulting in empty dashboards, missing data, and a non-functional user experience. The session now correctly persists, restoring full application functionality.
+- **Local Database State:** Bumped the local database version to force a clean data sync for all users. This clears any potentially corrupted or inconsistent local data that may have resulted from the session bug.
+
 ## [2.0.1] - 2024-07-22
 
 ### Fixed
