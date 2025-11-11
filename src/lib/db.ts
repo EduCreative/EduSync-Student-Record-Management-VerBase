@@ -70,6 +70,9 @@ export class EduSyncDB extends Dexie {
         // FIX: Bump version to 10 to ensure a clean state after fixing the critical session persistence bug.
         this.version(10).stores({});
 
+        // FIX: Bumping version to 11 to resolve potential database upgrade issues that could cause data loading to fail after login.
+        this.version(11).stores({});
+
         this.on('blocked', () => {
             console.warn(
               `Database is blocked. This can happen if you have multiple tabs open with different versions of the code, or if a transaction is long-running. Please close other tabs.`

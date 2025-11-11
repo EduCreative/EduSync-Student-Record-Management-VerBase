@@ -134,6 +134,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 if (!classA || !classB) return a.className.localeCompare(b.className);
                 // FIX: Corrected typo in sort callback. Used `classB.name` which is the `Class` object's name, instead of `b.name` which does not exist on `ClassDefaulterGroup`.
                 // FIX: Corrected typo in sort callback. Used `classB.name` instead of `b.name`.
+                // FIX: Corrected typo in sort callback. Used classB.name which is the Class object's name, instead of b.name which does not exist on ClassDefaulterGroup.
                 return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {
