@@ -132,19 +132,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     }
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-purple-800 via-purple-900 to-indigo-950 text-white lg:grid lg:grid-cols-2 relative [background-size:200%] animate-background-pan">
+        <div className="min-h-screen w-full bg-gradient-to-br from-purple-800 to-indigo-950 text-white lg:grid lg:grid-cols-2 relative">
              <div className="absolute inset-0 opacity-10">
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M40 0V80M0 40H80" stroke="white" strokeWidth="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
             </div>
             <div className="hidden lg:flex flex-col items-center justify-center p-12 relative">
                 <div className="text-center space-y-6">
-                     <div style={{ animationDelay: '100ms' }} className="fade-in-up bg-white/20 p-4 rounded-full inline-block backdrop-blur-sm">
+                     <div className="bg-white/20 p-4 rounded-full inline-block backdrop-blur-sm">
                         <EduSyncLogo className="h-20 w-20 text-white" />
                     </div>
-                    <h2 style={{ animationDelay: '200ms' }} className="fade-in-up text-5xl font-bold tracking-tight">
+                    <h2 className="text-5xl font-bold tracking-tight">
                         Join EduSync Today
                     </h2>
-                    <p style={{ animationDelay: '300ms' }} className="fade-in-up mt-4 text-lg text-purple-200 max-w-md mx-auto">
+                    <p className="mt-4 text-lg text-purple-200 max-w-md mx-auto">
                         Streamline your school's management and enhance collaboration.
                     </p>
                 </div>
@@ -153,7 +153,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 </div>
             </div>
              <div className="flex items-center justify-center p-6 sm:p-12 w-full lg:py-0 relative">
-                <div style={{ animationDelay: '400ms' }} className="fade-in-up w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10">
+                <div className="w-full max-w-md bg-black/20 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl p-8 sm:p-10">
                     <div className="mb-8 text-center lg:text-left">
                         <h2 className="text-3xl font-bold tracking-tight text-white">
                             Create Account
