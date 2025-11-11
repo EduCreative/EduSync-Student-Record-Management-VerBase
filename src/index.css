@@ -274,4 +274,35 @@
     bottom: -5mm; /* Position it in the middle of the margin */
     border-top: 2px dashed #9ca3af; /* gray-400 */
   }
+
+  /*
+    FIX: Enforce max width/height on logos for print/PDF output.
+    Some browser print engines ignore Tailwind's max-w/max-h utility classes
+    on images with large intrinsic sizes, causing them to overflow. These
+    rules ensure logos are scaled correctly.
+  */
+  .page-header-content .flex-shrink-0 img,
+  .printable-result-card .flex-shrink-0 img {
+    max-width: 4rem !important;   /* 64px */
+    max-height: 4rem !important;
+    object-fit: contain;
+  }
+
+  .leaving-certificate-page .flex-shrink-0 img {
+    max-width: 5rem !important;   /* 80px */
+    max-height: 5rem !important;
+    object-fit: contain;
+  }
+
+  .challan-wrapper .flex-shrink-0 img {
+    max-width: 2rem !important;   /* 32px */
+    max-height: 2rem !important;
+    object-fit: contain;
+  }
+
+  .id-card .id-card-logo {
+    height: 2.5rem !important;    /* 40px */
+    width: 2.5rem !important;
+    object-fit: contain;
+  }
 }
