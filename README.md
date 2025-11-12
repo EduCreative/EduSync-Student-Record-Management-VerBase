@@ -90,6 +90,8 @@ The application can be configured with demo accounts for each role. For a demons
 
 ## 🚀 Setup and Installation
 
+This project is configured to run with a modern frontend toolchain (Vite) and connect to a Supabase backend.
+
 ### 1. Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 18 or higher)
@@ -142,26 +144,6 @@ The application can be configured with demo accounts for each role. For a demons
     npm run dev
     ```
 2.  Open your browser and navigate to the local address provided by Vite (e.g., `http://localhost:5173`).
-
-### 5. Database Migrations & Updates
-
-If you are upgrading an existing EduSync installation, you may need to apply database schema changes manually. Run the following queries in your Supabase SQL Editor as needed.
-
-#### Upgrading to v2.0.0+
-
-Version 2.0.0 introduced significant features that require schema updates.
-
-1.  **Add Fine-Grained Permissions:** This feature requires a new `permissions_overrides` column in the `profiles` table.
-    ```sql
-    ALTER TABLE public.profiles
-    ADD COLUMN permissions_overrides JSONB;
-    ```
-
-2.  **Fix Student Admission Column:** A column was renamed for consistency. If you have an older version, you may encounter errors related to `admitted_in_class`. Run this query to fix it.
-    ```sql
-    ALTER TABLE public.students
-    RENAME COLUMN admitted_in_class TO admitted_class;
-    ```
 
 ---
 
@@ -282,7 +264,6 @@ CREATE TABLE public.profiles (
   last_login timestamp with time zone,
   child_student_ids ARRAY,
   disabled_nav_links ARRAY,
-  permissions_overrides jsonb,
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
   CONSTRAINT profiles_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)

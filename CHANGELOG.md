@@ -5,12 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] - 2024-07-23
-
-### Fixed
-- **Critical Session Failure:** Fixed a major regression where the user's session was not being persisted after login. This caused the application to effectively log the user out on every page reload, resulting in empty dashboards, missing data, and a non-functional user experience. The session now correctly persists, restoring full application functionality.
-- **Local Database State:** Bumped the local database version to force a clean data sync for all users. This clears any potentially corrupted or inconsistent local data that may have resulted from the session bug.
-
 ## [2.0.1] - 2024-07-22
 
 ### Fixed
@@ -40,10 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Application Hanging on Save:** Resolved a critical bug where action buttons (e.g., "Save", "Update", "Generate") would get stuck in a loading state if the underlying operation encountered an error. All asynchronous actions now correctly use `try...finally` blocks to reset their loading state, ensuring the UI remains responsive and interactive even when errors occur.
 - **CSV Date Import Error:** Fixed a database error (`invalid input syntax for type date: ""`) that occurred when importing CSV files with empty date fields. The import process now correctly sanitizes empty date strings to `null` before insertion.
 - **Build Error:** Removed an unused `useMemo` import in `PromotionPreviewModal.tsx` that was causing the build to fail.
-
-### Database
-- **Added `permissions_overrides` column:** A new `JSONB` column named `permissions_overrides` was added to the `profiles` table to support the new fine-grained permissions feature.
-- **Renamed `admitted_in_class` column:** The column `admitted_in_class` in the `students` table was renamed to `admitted_class` for consistency with the application's data model.
 
 ## [1.5.0] - 2024-07-21
 

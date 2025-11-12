@@ -2,16 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html {
-    @apply scroll-smooth;
-  }
-  body {
-    @apply bg-secondary-50 dark:bg-secondary-950;
-    @apply transition-colors duration-500;
-  }
-}
-
 @layer components {
   .skeleton-bg {
     @apply bg-secondary-200 dark:bg-secondary-700 animate-shimmer;
@@ -35,7 +25,7 @@
 
   /* Centralized Input and Select Styles */
   .input-field {
-    @apply w-full p-2 border rounded-md transition-all duration-300 bg-secondary-50 dark:bg-secondary-800 border-secondary-300 dark:border-secondary-600 text-secondary-900 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:shadow-lg focus:shadow-primary-500/10 disabled:opacity-70 disabled:cursor-not-allowed;
+    @apply w-full p-2 border rounded-md transition-colors duration-200 bg-secondary-50 dark:bg-secondary-700 border-secondary-300 dark:border-secondary-600 text-secondary-900 dark:text-secondary-200 placeholder:text-secondary-400 dark:placeholder:text-secondary-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-70 disabled:cursor-not-allowed;
   }
   
   /* Centralized Label Styles */
@@ -45,22 +35,16 @@
 
   /* Centralized Button Styles */
   .btn {
-    @apply px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-secondary-950 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:scale-95 shadow-md hover:shadow-lg;
+    @apply px-4 py-2 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-secondary-800 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-primary-500/20 hover:shadow-primary-500/30;
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
   }
   .btn-secondary {
-    @apply btn bg-white text-secondary-700 border border-secondary-200 hover:bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-200 dark:border-secondary-600 dark:hover:bg-secondary-600 focus:ring-primary-500 shadow-secondary-500/10 hover:shadow-secondary-500/20;
+    @apply btn bg-secondary-100 text-secondary-700 hover:bg-secondary-200 dark:bg-secondary-700 dark:text-secondary-200 dark:hover:bg-secondary-600 focus:ring-primary-500;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-red-500/20 hover:shadow-red-500/30;
-  }
-
-  /* Animation utilities */
-  .fade-in-up {
-    animation: fadeInUp 0.5s ease-out forwards;
-    opacity: 0;
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
   }
 
   /* Challan Print Styles */
@@ -273,36 +257,5 @@
     right: 5%;
     bottom: -5mm; /* Position it in the middle of the margin */
     border-top: 2px dashed #9ca3af; /* gray-400 */
-  }
-
-  /*
-    FIX: Enforce max width/height on logos for print/PDF output.
-    Some browser print engines ignore Tailwind's max-w/max-h utility classes
-    on images with large intrinsic sizes, causing them to overflow. These
-    rules ensure logos are scaled correctly.
-  */
-  .page-header-content .flex-shrink-0 img,
-  .printable-result-card .flex-shrink-0 img {
-    max-width: 4rem !important;   /* 64px */
-    max-height: 4rem !important;
-    object-fit: contain;
-  }
-
-  .leaving-certificate-page .flex-shrink-0 img {
-    max-width: 5rem !important;   /* 80px */
-    max-height: 5rem !important;
-    object-fit: contain;
-  }
-
-  .challan-wrapper .flex-shrink-0 img {
-    max-width: 2rem !important;   /* 32px */
-    max-height: 2rem !important;
-    object-fit: contain;
-  }
-
-  .id-card .id-card-logo {
-    height: 2.5rem !important;    /* 40px */
-    width: 2.5rem !important;
-    object-fit: contain;
   }
 }

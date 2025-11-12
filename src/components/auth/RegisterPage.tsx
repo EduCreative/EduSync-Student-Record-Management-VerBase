@@ -233,7 +233,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                 </div>
             </div>
             <style>{`.input-auth {
-                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/30 text-white placeholder-purple-200/60 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400 focus:bg-black/40;
+                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-purple-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400;
             }`}</style>
         </div>
     );

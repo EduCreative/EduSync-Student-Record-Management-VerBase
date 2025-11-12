@@ -377,8 +377,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
     const updateUser = async (updatedUser: User) => {
-        // FIX: Destructure and explicitly ignore `permissionsOverrides` to prevent sending it to the DB if the column doesn't exist, which was causing errors.
-        const { password, permissionsOverrides, ...restOfUser } = updatedUser;
+        const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
         if (password) {
             updateData.password = password;

@@ -1,3 +1,5 @@
+
+
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { School, UserRole } from '../../types';
@@ -116,30 +118,26 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ setActiveView }) => {
                 
                 {/* Stat Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div className="fade-in-up" style={{ animationDelay: '100ms' }}><StatCard title="Total Schools" value={schools.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<SchoolIcon />} /></div>
-                    <div className="fade-in-up" style={{ animationDelay: '200ms' }}><StatCard title="Total Users" value={users.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<UserCheckIcon />} /></div>
-                    <div className="fade-in-up" style={{ animationDelay: '300ms' }}><StatCard title="Total Students" value={students.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} /></div>
-                    <div className="fade-in-up" style={{ animationDelay: '400ms' }}><StatCard title="Total Fee Collection" value={`Rs. ${stats.totalCollection.toLocaleString()}`} color="bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300" icon={<CreditCardIcon />} /></div>
-                    <div className="fade-in-up" style={{ animationDelay: '500ms' }}><StatCard title="Pending Approvals" value={stats.pendingApprovals.toString()} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon />} /></div>
+                    <StatCard title="Total Schools" value={schools.length.toString()} color="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-300" icon={<SchoolIcon />} />
+                    <StatCard title="Total Users" value={users.length.toString()} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<UserCheckIcon />} />
+                    <StatCard title="Total Students" value={students.length.toString()} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" icon={<UsersIcon />} />
+                    <StatCard title="Total Fee Collection" value={`Rs. ${stats.totalCollection.toLocaleString()}`} color="bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300" icon={<CreditCardIcon />} />
+                    <StatCard title="Pending Approvals" value={stats.pendingApprovals.toString()} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<UserPlusIcon />} />
                 </div>
 
                 {/* Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="fade-in-up" style={{ animationDelay: '600ms' }}>
-                        <BarChart
-                            title="Student Distribution by School"
-                            data={studentDistributionData}
-                            color="#3b82f6"
-                            onClick={handleBarClick}
-                        />
-                    </div>
-                    <div className="fade-in-up" style={{ animationDelay: '700ms' }}>
-                        <DoughnutChart
-                            title="User Roles Overview"
-                            data={userRoleData}
-                            onClick={handleDoughnutClick}
-                        />
-                    </div>
+                    <BarChart
+                        title="Student Distribution by School"
+                        data={studentDistributionData}
+                        color="#3b82f6"
+                        onClick={handleBarClick}
+                    />
+                    <DoughnutChart
+                        title="User Roles Overview"
+                        data={userRoleData}
+                        onClick={handleDoughnutClick}
+                    />
                 </div>
             </div>
         </>

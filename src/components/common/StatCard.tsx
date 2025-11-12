@@ -10,7 +10,7 @@ interface StatCardProps {
 }
 
 const StatCard: FC<StatCardProps> = ({ title, value, icon, color }) => (
-    <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg flex items-center space-x-4 border border-secondary-200 dark:border-secondary-700 transition-all duration-300 hover:shadow-xl hover:border-primary-500 hover:-translate-y-1 hover:shadow-primary-500/10">
+    <div className="bg-white dark:bg-secondary-800 p-6 rounded-xl shadow-lg flex items-center space-x-4 border border-secondary-200 dark:border-secondary-700 transition-all duration-300 hover:shadow-xl hover:border-primary-300 dark:hover:border-primary-600 hover:-translate-y-1">
         <div className={`p-3 rounded-full ${color}`}>
             {React.cloneElement(icon, { className: "w-6 h-6" })}
         </div>

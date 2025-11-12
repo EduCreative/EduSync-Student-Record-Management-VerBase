@@ -8,6 +8,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+    },
     global: {
       // FIX: Typed the options parameter as RequestInit to fix error on `options.signal`.
       fetch: async (url, options: RequestInit = {}) => {

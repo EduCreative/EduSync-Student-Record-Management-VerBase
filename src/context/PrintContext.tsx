@@ -1,5 +1,4 @@
 
-
 import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
 
 interface PrintContextType {

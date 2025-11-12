@@ -387,10 +387,10 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {paginatedStudents.map((student, index) => {
+                                        {paginatedStudents.map(student => {
                                             const balance = studentBalanceMap.get(student.id) || 0;
                                             return (
-                                                <tr key={student.id} className="fade-in-up bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-100 dark:hover:bg-secondary-700/50 transition-colors" style={{ animationDelay: `${index * 50}ms` }}>
+                                                <tr key={student.id} className="bg-white dark:bg-secondary-800 border-b dark:border-secondary-700 hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center space-x-3">
                                                             <Avatar student={student} className="h-10 w-10" />

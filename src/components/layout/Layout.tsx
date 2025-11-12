@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Dashboard from '../dashboard/Dashboard';
-// FIX: Changed import to a named import to resolve "no default export" error.
-import { UserManagementPage } from '../users/UserManagementPage';
+import UserManagementPage from '../users/UserManagementPage';
 import StudentManagementPage from '../students/StudentManagementPage';
 import StudentProfilePage from '../students/StudentProfilePage';
 import SettingsPage from '../settings/SettingsPage';
@@ -16,7 +15,7 @@ import CalendarPage from '../calendar/CalendarPage';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import LeavingCertificatePage from '../students/LeavingCertificatePage';
-// import ReportsPage from '../reports/ReportsPage';
+import ReportsPage from '../reports/ReportsPage';
 import ToastContainer from '../common/ToastContainer';
 import TeacherManagementPage from '../teachers/TeacherManagementPage';
 import AccountantManagementPage from '../accountants/AccountantManagementPage';
@@ -103,8 +102,7 @@ const Layout: React.FC = () => {
                 return <Dashboard setActiveView={setActiveView} />;
             case 'reports':
                 if ([UserRole.Admin, UserRole.Accountant].includes(effectiveRole as UserRole)) {
-                    // return <ReportsPage />;
-                    return <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 text-yellow-700 dark:text-yellow-200">The reports module is temporarily unavailable due to a technical issue. Please check back later.</div>;
+                    return <ReportsPage />;
                 }
                 return <Dashboard setActiveView={setActiveView} />;
             case 'results':
@@ -134,7 +132,7 @@ const Layout: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-secondary-50 dark:bg-secondary-950 text-secondary-800 dark:text-secondary-200">
+        <div className="flex h-screen bg-secondary-100 dark:bg-secondary-900 text-secondary-800 dark:text-secondary-200">
             <ToastContainer />
             <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
             <Sidebar 
@@ -144,12 +142,10 @@ const Layout: React.FC = () => {
                 setActiveView={setActiveView}
                 effectiveRole={effectiveRole as UserRole}
             />
-            <div className="flex flex-col flex-1">
+            <div className="flex flex-col flex-1 overflow-y-auto">
                 <Header setSidebarOpen={setSidebarOpen} setActiveView={setActiveView} openAboutModal={() => setIsAboutModalOpen(true)} />
-                <main className="p-4 md:p-8 flex-1 overflow-y-auto">
-                    <div key={activeView.view} className="fade-in-up">
-                        {renderContent()}
-                    </div>
+                <main className="p-4 md:p-8">
+                    {renderContent()}
                 </main>
             </div>
         </div>
