@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Class, UserRole, Student, User } from '../../types';
+import { Class, UserRole } from '../../types';
 import Modal from '../common/Modal';
 import ClassFormModal from './ClassFormModal';
 import TableSkeleton from '../common/skeletons/TableSkeleton';
