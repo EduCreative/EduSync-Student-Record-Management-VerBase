@@ -25,7 +25,7 @@ EduSync is packed with features designed to streamline school management:
 - **User Management:** Admins and Owners can manage all user accounts, approve new registrations, and set user statuses.
 
 #### 🎓 **Academic & Year Management**
-- **Class and Subject Management:** Organize classes and assign teachers.
+- **Class and Subject Management:** Organize classes, assign teachers, and view class details including student rosters via a quick-look modal.
 - **Daily Attendance Tracking:** A fast, intuitive interface for marking daily attendance on a per-class basis.
 - **Result Entry System:** Enter marks for various exams (Mid-Term, Final, Quizzes).
 - **Academic Year Rollover:**
@@ -40,7 +40,7 @@ EduSync is packed with features designed to streamline school management:
 - **Fee Reminders:** Send in-app notifications to parents and students for outstanding fee challans.
 
 #### 📊 **Reporting & Analytics**
-- **Interactive Dashboards:** Each role gets a customized dashboard with key statistics. Admin and Owner dashboards feature **interactive charts** with drill-down capabilities to explore data like fee status and attendance.
+- **Interactive Dashboards:** Each role gets a customized dashboard with key statistics. Admin and Owner dashboards feature **interactive charts** with drill-down capabilities, including a visually engaging **Diverging Bar Chart** for a clear comparison of student gender distribution across classes.
 - **Versatile Charting:** Toggle between **Line** and **Bar** chart views for better financial analysis.
 - **Comprehensive Reporting Suite:** A dedicated reports section to generate, view, and print critical documents:
   - **Financial Reports:** Fee Collection and Fee Defaulter reports.
@@ -54,7 +54,7 @@ EduSync is packed with features designed to streamline school management:
 #### 💻 **User Experience & Technology**
 - **Offline-First & PWA:** The application is a fully installable Progressive Web App (PWA) that works seamlessly offline. Data is synced automatically when a connection is available.
 - **Modern & Responsive UI:** Clean, intuitive interface built with Tailwind CSS that works beautifully on desktops, tablets, and mobile devices.
-- **Light & Dark Mode:** Switch between themes for user comfort.
+- **Light & Dark Mode:** Switch between themes for user comfort, with smooth transitions for a polished feel.
 - **Accessibility:** Adjustable font sizes to improve readability.
 - **Real-time Feedback:** Toast notifications for actions like saving data or errors.
 - **Advanced Print Preview:** A custom, robust print previewer ensures all printable documents are perfectly formatted before printing or saving as a PDF.

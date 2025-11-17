@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Class, UserRole } from '../../types';
+import { Class, UserRole, Student, User } from '../../types';
 import Modal from '../common/Modal';
 import ClassFormModal from './ClassFormModal';
 import TableSkeleton from '../common/skeletons/TableSkeleton';
@@ -12,6 +12,7 @@ import { Permission } from '../../permissions';
 import PromotionPreviewModal from './PromotionPreviewModal';
 import { useToast } from '../../context/ToastContext';
 import { getClassLevel } from '../../utils/sorting';
+import Avatar from '../common/Avatar';
 
 const GraduationCapIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
 const DragHandleIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>;
@@ -32,11 +33,11 @@ const ClassManagementPage: React.FC = () => {
     const [classToEdit, setClassToEdit] = useState<Class | null>(null);
     const [classToDelete, setClassToDelete] = useState<Class | null>(null);
     const [draggedItem, setDraggedItem] = useState<Class | null>(null);
+    const [classToViewDetails, setClassToViewDetails] = useState<Class | null>(null);
     
     const canEditClasses = hasPermission(Permission.CAN_EDIT_CLASSES);
     const canDeleteClasses = hasPermission(Permission.CAN_DELETE_CLASSES);
     const canPromote = hasPermission(Permission.CAN_PROMOTE_STUDENTS);
-    const canPerformActions = canEditClasses || canDeleteClasses;
     const canReorder = hasPermission(Permission.CAN_EDIT_CLASSES);
 
     const schoolClasses = useMemo(() => {
@@ -53,10 +54,23 @@ const ClassManagementPage: React.FC = () => {
     const teacherMap = useMemo(() => new Map(teachers.map(t => [t.id, t.name])), [teachers]);
     const studentCountMap = useMemo(() => {
         return schoolClasses.reduce((acc, c) => {
-            acc[c.id] = students.filter(s => s.classId === c.id).length;
+            acc[c.id] = students.filter(s => s.classId === c.id && s.status === 'Active').length;
             return acc;
         }, {} as Record<string, number>);
     }, [students, schoolClasses]);
+
+    const classMap = useMemo(() => new Map(classes.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [classes]);
+
+    const studentsInSelectedClass = useMemo(() => {
+        if (!classToViewDetails) return [];
+        return students.filter(s => s.classId === classToViewDetails.id && s.status === 'Active')
+            .sort((a, b) => a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true }));
+    }, [students, classToViewDetails]);
+
+    const teacherOfSelectedClass = useMemo(() => {
+        if (!classToViewDetails?.teacherId) return null;
+        return users.find(u => u.id === classToViewDetails.teacherId);
+    }, [users, classToViewDetails]);
 
     const handleOpenModal = (classData: Class | null = null) => {
         setClassToEdit(classData);
@@ -234,15 +248,17 @@ const ClassManagementPage: React.FC = () => {
         e.currentTarget.classList.remove('opacity-50');
     };
 
+    const showActionsColumn = canEditClasses || canDeleteClasses || effectiveRole === UserRole.Teacher;
+
     const tableColumns = [
         ...(canReorder ? [{ width: '5%' }] : []),
         { width: '10%' }, // ID
-        { width: canPerformActions ? '25%' : '40%' }, // Name
-        { width: canPerformActions ? '25%' : '30%' }, // Teacher
-        { width: '20%' }, // Students
+        { width: showActionsColumn ? '25%' : '40%' }, // Name
+        { width: showActionsColumn ? '25%' : '30%' }, // Teacher
+        { width: '15%' }, // Students
     ];
-    if (canPerformActions) {
-        tableColumns.push({ width: '15%' }); // Actions
+    if (showActionsColumn) {
+        tableColumns.push({ width: '20%' }); // Actions
     }
 
 
@@ -289,6 +305,40 @@ const ClassManagementPage: React.FC = () => {
                     </div>
                 </div>
             </Modal>
+             <Modal isOpen={!!classToViewDetails} onClose={() => setClassToViewDetails(null)} title={`Details for ${classMap.get(classToViewDetails?.id || '')}`}>
+                {classToViewDetails && (
+                    <div className="space-y-4">
+                        <div className="p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
+                            <h3 className="font-semibold text-lg text-secondary-800 dark:text-secondary-200">Class Information</h3>
+                            <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                                <p><strong>Teacher:</strong> {teacherOfSelectedClass?.name || 'Not Assigned'}</p>
+                                <p><strong>Total Active Students:</strong> {studentsInSelectedClass.length}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-lg text-secondary-800 dark:text-secondary-200">Student List</h3>
+                            <div className="max-h-64 overflow-y-auto border rounded-md mt-2 dark:border-secondary-600">
+                                <ul className="divide-y dark:divide-secondary-600">
+                                    {studentsInSelectedClass.length > 0 ? studentsInSelectedClass.map(student => (
+                                        <li key={student.id} className="p-2 flex items-center space-x-3">
+                                            <Avatar student={student} className="w-8 h-8"/>
+                                            <div>
+                                                <p className="font-medium text-sm">{student.name}</p>
+                                                <p className="text-xs text-secondary-500">Roll No: {student.rollNumber}</p>
+                                            </div>
+                                        </li>
+                                    )) : (
+                                        <p className="p-4 text-center text-sm text-secondary-500">No active students in this class.</p>
+                                    )}
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="flex justify-end mt-4 pt-4 border-t dark:border-secondary-700">
+                            <button onClick={() => setClassToViewDetails(null)} className="btn-secondary">Close</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">{canEditClasses ? 'Class Management' : 'My Classes'}</h1>
@@ -328,7 +378,7 @@ const ClassManagementPage: React.FC = () => {
                                         <th scope="col" className="px-6 py-3">Class Name</th>
                                         <th scope="col" className="px-6 py-3">Teacher</th>
                                         <th scope="col" className="px-6 py-3">No. of Students</th>
-                                        {canPerformActions && <th scope="col" className="px-6 py-3">Actions</th>}
+                                        {showActionsColumn && <th scope="col" className="px-6 py-3">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -352,9 +402,10 @@ const ClassManagementPage: React.FC = () => {
                                             <td className="px-6 py-4 font-medium text-secondary-900 dark:text-white">{`${c.name}${c.section ? ` - ${c.section}` : ''}`}</td>
                                             <td className="px-6 py-4">{c.teacherId ? teacherMap.get(c.teacherId) || 'Not Assigned' : 'Not Assigned'}</td>
                                             <td className="px-6 py-4">{studentCountMap[c.id] || 0}</td>
-                                            {canPerformActions && (
+                                            {showActionsColumn && (
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center space-x-4">
+                                                        <button onClick={() => setClassToViewDetails(c)} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">Details</button>
                                                         {canEditClasses && <button onClick={() => handleOpenModal(c)} className="font-medium text-primary-600 dark:text-primary-500 hover:underline">Edit</button>}
                                                         {canDeleteClasses && <button onClick={() => setClassToDelete(c)} className="font-medium text-red-600 dark:text-red-500 hover:underline">Delete</button>}
                                                     </div>

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2024-07-23
+
+### Added
+- **Class Details Modal:** Added a "Details" button on the Class Management page to quickly view a class's assigned teacher and a scrollable student roster in a modal without leaving the page.
+
+### Changed
+- **Improved 'Class Strength' Chart:** Replaced the standard bar chart on the Admin Dashboard with a more intuitive and visually appealing **Diverging Bar Chart** (Tornado Chart) for a clearer comparison of male and female student distribution across classes.
+
+### Improved
+- **Enhanced Theme Switching:** Added a smooth, subtle transition animation to the background color of the main layout and header when switching between light and dark modes for a more polished user experience.
+
 ## [2.0.1] - 2024-07-22
 
 ### Fixed

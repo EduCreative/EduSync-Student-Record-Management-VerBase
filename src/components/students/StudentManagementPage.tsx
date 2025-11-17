@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Student, UserRole } from '../../types';
+import { Student, UserRole, FeeChallan } from '../../types';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
 import Badge from '../common/Badge';
@@ -73,18 +73,34 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
 
     const studentBalanceMap = useMemo(() => {
         const balanceMap = new Map<string, number>();
-        students.forEach(s => {
-            balanceMap.set(s.id, s.openingBalance || 0);
-        });
 
-        fees.forEach(fee => {
-            if (fee.status !== 'Cancelled' && balanceMap.has(fee.studentId)) {
-                const currentBalance = balanceMap.get(fee.studentId)!;
-                const feeBalance = fee.totalAmount - fee.discount - fee.paidAmount;
-                balanceMap.set(fee.studentId, currentBalance + feeBalance);
+        const feesByStudent = fees.reduce((acc, fee) => {
+            if (fee.status !== 'Cancelled') {
+                if (!acc[fee.studentId]) {
+                    acc[fee.studentId] = [];
+                }
+                acc[fee.studentId].push(fee);
             }
-        });
+            return acc;
+        }, {} as Record<string, FeeChallan[]>);
 
+        students.forEach(student => {
+            const studentFees = feesByStudent[student.id] || [];
+            
+            const totalNewFees = studentFees.reduce((sum, challan) => {
+                const newFee = (challan.totalAmount || 0) - (challan.previousBalance || 0);
+                return sum + newFee;
+            }, 0);
+            
+            const totalPaid = studentFees.reduce((sum, challan) => sum + (challan.paidAmount || 0), 0);
+            const totalDiscount = studentFees.reduce((sum, challan) => sum + (challan.discount || 0), 0);
+            const openingBalance = student.openingBalance || 0;
+
+            const balance = openingBalance + totalNewFees - totalPaid - totalDiscount;
+            
+            balanceMap.set(student.id, balance);
+        });
+    
         return balanceMap;
     }, [students, fees]);
 

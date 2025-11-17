@@ -20,7 +20,6 @@ const availableColumns = {
 };
 type ColumnKey = keyof typeof availableColumns;
 
-// FIX: Define interfaces for student and class group summaries to ensure type safety in reduce and map operations.
 interface StudentDefaulterSummary {
     studentId: string;
     rollNumber: string;
@@ -126,13 +125,10 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)
-            // FIX: Explicitly typed 'a' and 'b' in the sort callback to resolve type inference issues where they were being inferred as 'unknown'.
-            // FIX: Explicitly typed 'a' and 'b' to ClassDefaulterGroup to resolve 'unknown' type, and corrected property access from 'b' to 'classB'.
             .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
                 const classB = schoolClassesMapForSort.get(b.classId);
                 if (!classA || !classB) return a.className.localeCompare(b.className);
-                // FIX: Corrected typo in sort callback. Used `classB` which is the `Class` object, instead of `b` which is `ClassDefaulterGroup` and doesn't have `sortOrder` or `name` properties.
                 return (classA.sortOrder ?? Infinity) - (classB.sortOrder ?? Infinity) || getClassLevel(classA.name) - getClassLevel(classB.name);
             })
             .map(classGroup => {

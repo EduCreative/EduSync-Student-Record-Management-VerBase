@@ -31,13 +31,23 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
     }, [classes, student]);
     
     const feeSummary = useMemo(() => {
-        const studentFees = fees.filter(f => f.studentId === studentId);
-        const totalDue = studentFees.reduce((acc, f) => acc + f.totalAmount - f.discount, 0) + (student?.openingBalance || 0);
-        const totalPaid = studentFees.reduce((acc, f) => acc + f.paidAmount, 0);
+        const studentFees = fees.filter(f => f.studentId === studentId && f.status !== 'Cancelled');
+        
+        const totalNewFees = studentFees.reduce((sum, challan) => {
+            const newFee = (challan.totalAmount || 0) - (challan.previousBalance || 0);
+            return sum + newFee;
+        }, 0);
+
+        const totalPaid = studentFees.reduce((sum, challan) => sum + (challan.paidAmount || 0), 0);
+        const totalDiscount = studentFees.reduce((sum, challan) => sum + (challan.discount || 0), 0);
+        const openingBalance = student?.openingBalance || 0;
+
+        const balance = openingBalance + totalNewFees - totalPaid - totalDiscount;
+
         return {
-            totalDue,
-            totalPaid,
-            balance: totalDue - totalPaid,
+            totalDue: openingBalance + totalNewFees - totalDiscount,
+            totalPaid: totalPaid,
+            balance: balance,
         };
     }, [fees, studentId, student]);
 
@@ -181,6 +191,6 @@ const InfoItem: React.FC<{ label: string; value?: string | number | null; classN
     );
 };
 
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 
 export default StudentProfilePage;
