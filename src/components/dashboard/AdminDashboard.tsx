@@ -143,7 +143,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
         const todayStr = now.toISOString().split('T')[0];
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
-        const currentMonthName = now.toLocaleString('default', { month: 'long' });
 
         const schoolFees = fees.filter(fee => {
             const student = students.find(s => s.id === fee.studentId);
@@ -158,21 +157,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             .filter(f => f.paidDate && new Date(f.paidDate).getMonth() === currentMonth && new Date(f.paidDate).getFullYear() === currentYear)
             .reduce((sum, f) => sum + f.paidAmount, 0);
 
-        const duesThisMonth = schoolFees
-            .filter(f => f.month === currentMonthName && f.year === currentYear)
-            .reduce((sum, f) => sum + (f.totalAmount - f.previousBalance), 0);
+        const outstandingChallans = schoolFees.filter(f => f.status === 'Unpaid' || f.status === 'Partial');
+        const totalOutstandingDues = outstandingChallans.reduce((sum, f) => {
+            const balance = f.totalAmount - f.discount - f.paidAmount;
+            return sum + balance;
+        }, 0);
             
         const pendingApprovals = schoolUsers.filter(u => u.status === 'Pending Approval').length;
         const totalPaidChallans = schoolFees.filter(f => f.status === 'Paid').length;
-        const totalUnpaidChallans = schoolFees.filter(f => f.status === 'Unpaid' || f.status === 'Partial').length;
         
         return {
             feesCollectedToday: `Rs. ${feesCollectedToday.toLocaleString()}`,
             pendingApprovals: pendingApprovals.toString(),
             collectedThisMonth: `Rs. ${collectedThisMonth.toLocaleString()}`,
             totalPaidChallans: totalPaidChallans.toLocaleString(),
-            duesThisMonth: `Rs. ${duesThisMonth.toLocaleString()}`,
-            totalUnpaidChallans: totalUnpaidChallans.toLocaleString(),
+            totalOutstandingDues: `Rs. ${totalOutstandingDues.toLocaleString()}`,
+            totalUnpaidChallans: outstandingChallans.length.toLocaleString(),
         };
     }, [fees, students, schoolUsers, effectiveSchoolId]);
 
@@ -438,7 +438,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                     <StatCard title="Fees Collected Today" value={stats.feesCollectedToday} color="bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300" icon={<DollarSignIcon />} />
                     
                     <StatCard title="Collected This Month" value={stats.collectedThisMonth} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" icon={<TrendingUpIcon />} />
-                    <StatCard title="Dues This Month" value={stats.duesThisMonth} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
+                    <StatCard title="Total Outstanding Dues" value={stats.totalOutstandingDues} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" icon={<FileTextIcon />} />
                     <StatCard title="Paid Challans" value={stats.totalPaidChallans} color="bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-300" icon={<CheckSquareIcon />} />
                     <StatCard title="Unpaid Challans" value={stats.totalUnpaidChallans} color="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300" icon={<AlertCircleIcon />} />
                 </div>

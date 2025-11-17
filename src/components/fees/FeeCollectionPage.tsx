@@ -8,6 +8,7 @@ import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import { Permission } from '../../permissions';
+import SingleChallanGenerationModal from './SingleChallanGenerationModal';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -28,6 +29,7 @@ const FeeCollectionPage: React.FC = () => {
     const [challanToCancel, setChallanToCancel] = useState<FeeChallan | null>(null);
     const [sessionDate, setSessionDate] = useState(getTodayString());
     const [statusFilter, setStatusFilter] = useState<'outstanding' | 'all' | FeeChallan['status']>('outstanding');
+    const [isSingleChallanModalOpen, setIsSingleChallanModalOpen] = useState(false);
 
     const canManage = hasPermission(Permission.CAN_MANAGE_FEES);
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
@@ -58,6 +60,18 @@ const FeeCollectionPage: React.FC = () => {
     }, [fees, selectedStudent, statusFilter]);
     
     const classMap = useMemo(() => new Map(classes.map((c: Class) => [c.id, c.name])), [classes]);
+
+    const hasCurrentMonthChallan = useMemo(() => {
+        if (!selectedStudent) return false;
+        const currentMonthStr = months[new Date().getMonth()];
+        const currentYearNum = new Date().getFullYear();
+        return fees.some(f => 
+            f.studentId === selectedStudent.id && 
+            f.month === currentMonthStr && 
+            f.year === currentYearNum &&
+            f.status !== 'Cancelled'
+        );
+    }, [selectedStudent, fees]);
 
     const handleSelectStudent = (student: Student) => {
         setSelectedStudent(student);
@@ -97,6 +111,13 @@ const FeeCollectionPage: React.FC = () => {
                     student={selectedStudent}
                     editMode={challanToManage.mode === 'edit'}
                     defaultDate={sessionDate}
+                />
+            )}
+            {selectedStudent && (
+                <SingleChallanGenerationModal
+                    isOpen={isSingleChallanModalOpen}
+                    onClose={() => setIsSingleChallanModalOpen(false)}
+                    student={selectedStudent}
                 />
             )}
             {challanToCancel && (
@@ -178,11 +199,18 @@ const FeeCollectionPage: React.FC = () => {
 
                 {selectedStudent && (
                     <div className="border-t dark:border-secondary-700 pt-4">
-                        <div className="flex justify-between items-center mb-4">
+                        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                              <h2 className="text-xl font-semibold">
                                 {headingText} {selectedStudent.name} <span className="text-sm font-normal text-secondary-500">(ID: {selectedStudent.rollNumber})</span>
                             </h2>
-                             <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">Clear Selection</button>
+                             <div className="flex items-center gap-4">
+                                {!hasCurrentMonthChallan && canManage && (
+                                    <button onClick={() => setIsSingleChallanModalOpen(true)} className="btn-primary text-sm">
+                                        + Generate Challan for {months[new Date().getMonth()]}
+                                    </button>
+                                )}
+                                <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">Clear Selection</button>
+                            </div>
                         </div>
                         
                         <div className="space-y-3">

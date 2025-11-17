@@ -76,7 +76,7 @@ const DivergingBarChart: FC<DivergingBarChartProps> = ({ title, data, labels, co
                     >
                         {/* Bar 1 (left) */}
                         <div className="flex justify-end items-center" 
-                             onMouseOver={(e) => handleMouseOver(e, `${labels.value1}: ${item.value1}`)}
+                             onMouseOver={(e) => handleMouseOver(e, `${item.label} - ${labels.value1}: ${item.value1}`)}
                         >
                             <span className="text-xs font-semibold mr-2 text-secondary-700 dark:text-secondary-300">{item.value1 > 0 ? item.value1 : ''}</span>
                             <div className="h-5 rounded-l-md transition-all duration-500 ease-out group-hover:brightness-110" 
@@ -88,11 +88,21 @@ const DivergingBarChart: FC<DivergingBarChartProps> = ({ title, data, labels, co
                         </div>
                         
                         {/* Label */}
-                        <div className="text-center text-sm font-medium text-secondary-600 dark:text-secondary-400 px-1 sm:px-2 group-hover:font-bold truncate">{item.label}</div>
+                        <div 
+                            className="text-center px-1 sm:px-2 w-28 sm:w-32 shrink-0"
+                            onMouseOver={(e) => handleMouseOver(e, `${item.label} - Total: ${item.value1 + item.value2}`)}
+                        >
+                            <div className="text-sm font-medium text-secondary-600 dark:text-secondary-400 group-hover:font-bold truncate" title={item.label}>
+                                {item.label}
+                            </div>
+                            <div className="text-xs text-secondary-500 dark:text-secondary-400 font-semibold">
+                                {item.value1 + item.value2}
+                            </div>
+                        </div>
 
                         {/* Bar 2 (right) */}
                         <div className="flex items-center"
-                             onMouseOver={(e) => handleMouseOver(e, `${labels.value2}: ${item.value2}`)}
+                             onMouseOver={(e) => handleMouseOver(e, `${item.label} - ${labels.value2}: ${item.value2}`)}
                         >
                             <div className="h-5 rounded-r-md transition-all duration-500 ease-out group-hover:brightness-110" 
                                  style={{ 
