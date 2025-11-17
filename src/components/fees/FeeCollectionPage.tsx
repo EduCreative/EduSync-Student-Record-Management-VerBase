@@ -76,6 +76,13 @@ const FeeCollectionPage: React.FC = () => {
     const handleSelectStudent = (student: Student) => {
         setSelectedStudent(student);
         setSearchTerm('');
+
+        const hasOutstandingChallans = fees.some(
+            (f: FeeChallan) => f.studentId === student.id && (f.status === 'Unpaid' || f.status === 'Partial')
+        );
+        
+        // If student has fees to pay, show them by default. Otherwise, show all history.
+        setStatusFilter(hasOutstandingChallans ? 'outstanding' : 'all');
     };
     
     const getStatusColor = (status: FeeChallan['status']) => {
