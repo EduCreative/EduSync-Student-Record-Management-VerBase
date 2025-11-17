@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Student, UserRole, FeeChallan, Class } from '../../types';
@@ -30,17 +30,90 @@ const FeeCollectionPage: React.FC = () => {
     const [sessionDate, setSessionDate] = useState(getTodayString());
     const [statusFilter, setStatusFilter] = useState<'outstanding' | 'all' | FeeChallan['status']>('outstanding');
     const [isSingleChallanModalOpen, setIsSingleChallanModalOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const STUDENTS_PER_PAGE = 15;
 
     const canManage = hasPermission(Permission.CAN_MANAGE_FEES);
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+
+    const classMap = useMemo(() => new Map(classes.map((c: Class) => [c.id, c.name])), [classes]);
+
+    const studentBalanceMap = useMemo(() => {
+        const balanceMap = new Map<string, number>();
+
+        const feesByStudent = fees.reduce((acc, fee) => {
+            if (fee.status !== 'Cancelled') {
+                if (!acc[fee.studentId]) {
+                    acc[fee.studentId] = [];
+                }
+                acc[fee.studentId].push(fee);
+            }
+            return acc;
+        }, {} as Record<string, FeeChallan[]>);
+
+        students.forEach(student => {
+            if (student.schoolId !== effectiveSchoolId || student.status !== 'Active') return;
+
+            const studentFees = feesByStudent[student.id] || [];
+            
+            const totalNewFees = studentFees.reduce((sum, challan) => {
+                const newFee = (challan.totalAmount || 0) - (challan.previousBalance || 0);
+                return sum + newFee;
+            }, 0);
+            
+            const totalPaid = studentFees.reduce((sum, challan) => sum + (challan.paidAmount || 0), 0);
+            const totalDiscount = studentFees.reduce((sum, challan) => sum + (challan.discount || 0), 0);
+            const openingBalance = student.openingBalance || 0;
+
+            const balance = openingBalance + totalNewFees - totalPaid - totalDiscount;
+            
+            balanceMap.set(student.id, balance);
+        });
     
-    const filteredStudents = useMemo(() => {
-        if (!searchTerm) return [];
-        return students.filter((s: Student) =>
-            s.schoolId === effectiveSchoolId &&
-            (s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.rollNumber.includes(searchTerm))
-        ).slice(0, 10); // Limit results for performance
-    }, [students, searchTerm, effectiveSchoolId]);
+        return balanceMap;
+    }, [students, fees, effectiveSchoolId]);
+
+    const defaulterList = useMemo(() => {
+        return students.filter(s => {
+            const balance = studentBalanceMap.get(s.id);
+            return s.schoolId === effectiveSchoolId && s.status === 'Active' && balance && balance > 0;
+        });
+    }, [students, studentBalanceMap, effectiveSchoolId]);
+
+    const filteredDefaulters = useMemo(() => {
+        let sorted = [...defaulterList];
+
+        if (searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            sorted = sorted.filter(s =>
+                s.name.toLowerCase().includes(lowerSearchTerm) || s.rollNumber.includes(lowerSearchTerm)
+            );
+
+            // Sorting logic as requested by user
+            const isNumericSearch = /^\d+$/.test(searchTerm.trim());
+            if (isNumericSearch) {
+                sorted.sort((a, b) => a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true }));
+            } else {
+                sorted.sort((a, b) => a.name.localeCompare(b.name));
+            }
+        } else {
+            // Default sort when no search term
+            sorted.sort((a, b) => (studentBalanceMap.get(b.id) ?? 0) - (studentBalanceMap.get(a.id) ?? 0));
+        }
+
+        return sorted;
+    }, [defaulterList, searchTerm, studentBalanceMap]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const totalPages = Math.ceil(filteredDefaulters.length / STUDENTS_PER_PAGE);
+    const paginatedStudents = useMemo(() => {
+        const startIndex = (currentPage - 1) * STUDENTS_PER_PAGE;
+        return filteredDefaulters.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
+    }, [filteredDefaulters, currentPage]);
+
 
     const studentChallans = useMemo(() => {
         if (!selectedStudent) return [];
@@ -59,8 +132,6 @@ const FeeCollectionPage: React.FC = () => {
             .sort((a, b) => new Date(b.year, months.indexOf(b.month)).getTime() - new Date(a.year, months.indexOf(a.month)).getTime());
     }, [fees, selectedStudent, statusFilter]);
     
-    const classMap = useMemo(() => new Map(classes.map((c: Class) => [c.id, c.name])), [classes]);
-
     const hasCurrentMonthChallan = useMemo(() => {
         if (!selectedStudent) return false;
         const currentMonthStr = months[new Date().getMonth()];
@@ -76,13 +147,7 @@ const FeeCollectionPage: React.FC = () => {
     const handleSelectStudent = (student: Student) => {
         setSelectedStudent(student);
         setSearchTerm('');
-
-        const hasOutstandingChallans = fees.some(
-            (f: FeeChallan) => f.studentId === student.id && (f.status === 'Unpaid' || f.status === 'Partial')
-        );
-        
-        // If student has fees to pay, show them by default. Otherwise, show all history.
-        setStatusFilter(hasOutstandingChallans ? 'outstanding' : 'all');
+        setStatusFilter('outstanding');
     };
     
     const getStatusColor = (status: FeeChallan['status']) => {
@@ -107,6 +172,9 @@ const FeeCollectionPage: React.FC = () => {
         'Partial': 'Partially Paid Challans for',
         'Cancelled': 'Cancelled Challans for'
     }[statusFilter];
+
+    const showingFrom = filteredDefaulters.length > 0 ? (currentPage - 1) * STUDENTS_PER_PAGE + 1 : 0;
+    const showingTo = Math.min(currentPage * STUDENTS_PER_PAGE, filteredDefaulters.length);
 
     return (
         <>
@@ -141,70 +209,85 @@ const FeeCollectionPage: React.FC = () => {
                 </Modal>
             )}
             <div className="p-4 sm:p-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div className="md:col-span-2 relative">
-                        <label htmlFor="student-search" className="input-label">Search Student by Name or Student ID</label>
-                        <input
-                            id="student-search"
-                            type="text"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="input-field"
-                            placeholder="e.g., Ali Ahmed or 101"
-                        />
-                        {searchTerm && (
-                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-secondary-800 border dark:border-secondary-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {filteredStudents.length > 0 ? (
-                                    filteredStudents.map(student => (
-                                        <button
-                                            key={student.id}
-                                            onClick={() => handleSelectStudent(student)}
-                                            className="w-full text-left px-4 py-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 flex items-center space-x-3"
-                                        >
-                                            <Avatar student={student} className="w-8 h-8"/>
-                                            <div>
-                                                <p className="font-medium">{student.name}</p>
-                                                <p className="text-xs text-secondary-500">Student ID: {student.rollNumber} - Class: {classMap.get(student.classId)}</p>
-                                            </div>
-                                        </button>
-                                    ))
-                                ) : (
-                                    <p className="p-4 text-sm text-secondary-500">No students found.</p>
-                                )}
+                {!selectedStudent ? (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="student-search" className="input-label">Search Outstanding Students</label>
+                                <input
+                                    id="student-search"
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="input-field"
+                                    placeholder="By name or student ID..."
+                                />
                             </div>
-                        )}
-                    </div>
-                    <div>
-                        <label htmlFor="status-filter" className="input-label">Challan Status</label>
-                        <select
-                            id="status-filter"
-                            value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value as any)}
-                            className="input-field"
-                        >
-                            <option value="outstanding">Outstanding</option>
-                            <option value="all">All</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Unpaid">Unpaid</option>
-                            <option value="Partial">Partial</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label htmlFor="session-date" className="input-label">Default Payment Date</label>
-                        <input
-                            id="session-date"
-                            type="date"
-                            value={sessionDate}
-                            onChange={e => setSessionDate(e.target.value)}
-                            className="input-field"
-                        />
-                        <p className="text-xs text-secondary-500 mt-1">Sets the default date for new payments in this session.</p>
-                    </div>
-                </div>
-
-
-                {selectedStudent && (
+                            <div>
+                                <label htmlFor="session-date" className="input-label">Default Payment Date</label>
+                                <input
+                                    id="session-date"
+                                    type="date"
+                                    value={sessionDate}
+                                    onChange={e => setSessionDate(e.target.value)}
+                                    className="input-field"
+                                />
+                            </div>
+                        </div>
+                        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md mt-4">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
+                                        <tr>
+                                            <th className="px-6 py-3">Student</th>
+                                            <th className="px-6 py-3">Class</th>
+                                            <th className="px-6 py-3 text-right">Outstanding Balance</th>
+                                            <th className="px-6 py-3"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y dark:divide-secondary-700">
+                                        {paginatedStudents.map(student => (
+                                            <tr key={student.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
+                                                <td className="px-6 py-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar student={student} className="w-9 h-9" />
+                                                        <div>
+                                                            <p className="font-medium">{student.name}</p>
+                                                            <p className="text-xs text-secondary-500">ID: {student.rollNumber}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-3">{classMap.get(student.classId)}</td>
+                                                <td className="px-6 py-3 text-right font-semibold text-red-600 dark:text-red-400">
+                                                    Rs. {(studentBalanceMap.get(student.id) ?? 0).toLocaleString()}
+                                                </td>
+                                                <td className="px-6 py-3 text-right">
+                                                    <button onClick={() => handleSelectStudent(student)} className="font-medium text-primary-600 hover:underline">
+                                                        View Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {totalPages > 0 && (
+                                <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
+                                    <span className="text-sm text-secondary-700 dark:text-secondary-400">
+                                        Showing {showingFrom} - {showingTo} of {filteredDefaulters.length} students
+                                    </span>
+                                    {totalPages > 1 && (
+                                        <div className="flex items-center space-x-2">
+                                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="btn-secondary text-sm">Prev</button>
+                                            <span className="text-sm px-2">{currentPage} of {totalPages}</span>
+                                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="btn-secondary text-sm">Next</button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                ) : (
                     <div className="border-t dark:border-secondary-700 pt-4">
                         <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                              <h2 className="text-xl font-semibold">
@@ -216,7 +299,7 @@ const FeeCollectionPage: React.FC = () => {
                                         + Generate Challan for {months[new Date().getMonth()]}
                                     </button>
                                 )}
-                                <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">Clear Selection</button>
+                                <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">&larr; Back to List</button>
                             </div>
                         </div>
                         
