@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -371,7 +370,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             id: s.id,
             avatar: <Avatar student={s} className="w-9 h-9" />,
             primary: s.name,
-            secondary: <>ID: <span className="font-bold text-primary-600 dark:text-primary-400">{s.rollNumber}</span></>,
+            secondary: <>ID: <span className="font-bold text-primary-700 dark:text-primary-400">{s.rollNumber}</span></>,
         }));
 
         setModalDetails({ title: `Students: ${status}`, items });

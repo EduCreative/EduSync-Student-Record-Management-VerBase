@@ -110,7 +110,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
             showPrintPreview(certificateContent, `EduSync - Leaving Certificate - ${student.name}`);
         } catch (error) {
             console.error("Error issuing certificate:", error);
-            // Toast is handled in context
+            showToast('Error', 'Failed to issue certificate.', 'error');
         } finally {
             setIsIssuing(false);
         }
@@ -125,12 +125,14 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
 
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">
-                        Issue Leaving Certificate
-                    </h1>
-                    <span className="px-3 py-1 bg-secondary-100 dark:bg-secondary-700 text-secondary-700 dark:text-secondary-300 rounded-full text-sm">
-                        {student.name}
-                    </span>
+                    <div>
+                        <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">
+                            Issue Leaving Certificate
+                        </h1>
+                        <p className="text-sm text-secondary-500">
+                            For: <span className="font-bold text-primary-700 dark:text-primary-400">{student.name} (ID: {student.rollNumber})</span>
+                        </p>
+                    </div>
                 </div>
 
                 <div className="space-y-4">

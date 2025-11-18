@@ -1,11 +1,9 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Student, UserRole, FeeChallan, Class } from '../../types';
 import Avatar from '../common/Avatar';
 import FeePaymentModal from './FeePaymentModal';
-import { formatDate } from '../../constants';
 import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import { Permission } from '../../permissions';
@@ -174,7 +172,7 @@ const FeeCollectionPage: React.FC = () => {
                                 <ul className="divide-y dark:divide-secondary-600">
                                     {filteredStudentsForSelection.map(s => (
                                         <li key={s.id} onClick={() => handleSelectStudentForChallan(s)} className="p-2 hover:bg-secondary-50 dark:hover:bg-secondary-700 cursor-pointer flex justify-between items-center">
-                                            <span>{s.name} <span className="text-xs text-primary-600 dark:text-primary-400 font-bold">(ID: {s.rollNumber})</span></span>
+                                            <span>{s.name} <span className="text-xs text-primary-700 dark:text-primary-400 font-bold">(ID: {s.rollNumber})</span></span>
                                             <span className="text-xs text-secondary-400">{classMap.get(s.classId)}</span>
                                         </li>
                                     ))}
@@ -307,7 +305,7 @@ const FeeCollectionPage: React.FC = () => {
                                                     <Avatar student={student} className="w-8 h-8" />
                                                     <div>
                                                         <div className="font-medium text-secondary-900 dark:text-white">{student.name}</div>
-                                                        <div className="text-xs font-bold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</div>
+                                                        <div className="text-xs font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</div>
                                                     </div>
                                                 </div>
                                             </td>

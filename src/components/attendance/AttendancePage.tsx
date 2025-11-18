@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -187,7 +186,7 @@ const AttendanceMarker: React.FC = () => {
                                                         <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-3 font-bold text-primary-600 dark:text-primary-400">{student.rollNumber}</td>
+                                                <td className="px-6 py-3 font-bold text-primary-700 dark:text-primary-400">{student.rollNumber}</td>
                                                 <td className="px-6 py-3">
                                                     <div className="flex justify-center">
                                                         <button 
@@ -216,7 +215,7 @@ const AttendanceMarker: React.FC = () => {
                                             <Avatar student={student} className="w-10 h-10 flex-shrink-0"/>
                                             <div className="overflow-hidden">
                                                 <p className="font-medium text-secondary-900 dark:text-white truncate">{student.name}</p>
-                                                <p className="text-xs font-bold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</p>
+                                                <p className="text-xs font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">

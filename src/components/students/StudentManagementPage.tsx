@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -416,7 +415,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                                                                     {student.name}
                                                                 </button>
                                                                 <div className="text-xs text-secondary-500">
-                                                                    <span className="font-black text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</span> | {student.fatherName}
+                                                                    <span className="font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</span> | {student.fatherName}
                                                                 </div>
                                                             </div>
                                                         </div>

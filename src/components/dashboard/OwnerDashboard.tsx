@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { School, UserRole } from '../../types';
@@ -102,7 +101,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ setActiveView }) => {
                                     <Avatar student={student} className="w-10 h-10" />
                                     <div>
                                         <p className="font-medium text-secondary-800 dark:text-secondary-100">{student.name}</p>
-                                        <p className="text-sm text-primary-600 dark:text-primary-400 font-bold">ID: {student.rollNumber}</p>
+                                        <p className="text-sm font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</p>
                                     </div>
                                 </li>
                             ))

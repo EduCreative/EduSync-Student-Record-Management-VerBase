@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { formatDate } from '../../constants';
@@ -92,7 +91,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             </div>
                             <div className="flex items-center flex-wrap gap-x-4 gap-y-2 mt-2">
                                 <p className="text-secondary-500 dark:text-secondary-400">{studentClass?.fullName || 'N/A'}</p>
-                                <Badge color="blue">ID: <strong>{student.rollNumber}</strong></Badge>
+                                <span className="font-bold text-primary-700 dark:text-primary-400 text-lg">ID: {student.rollNumber}</span>
                             </div>
                             <div className="mt-4 flex flex-wrap gap-4">
                                 <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>
@@ -192,6 +191,6 @@ const InfoItem: React.FC<{ label: string; value?: string | number | null; classN
     );
 };
 
-const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
+const ArrowLeftIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>;
 
 export default StudentProfilePage;

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -243,7 +242,7 @@ const ResultsEntry: React.FC = () => {
                                                     <Avatar student={student} className="w-8 h-8"/>
                                                     <div>
                                                         <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
-                                                        <p className="text-xs font-bold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</p>
+                                                        <p className="text-xs font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</p>
                                                     </div>
                                                 </div>
                                             </td>

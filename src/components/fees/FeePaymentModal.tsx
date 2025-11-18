@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
@@ -72,7 +71,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
             <div className="space-y-4">
                 <div className="p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg text-sm">
                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <p><strong>Student ID:</strong> <span className="text-lg font-bold text-primary-600 dark:text-primary-400">{student.rollNumber}</span></p>
+                        <p><strong>Student ID:</strong> <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{student.rollNumber}</span></p>
                         <p><strong>Father Name:</strong> {student.fatherName}</p>
                         <p><strong>Challan Month:</strong> {challan.month} {challan.year}</p>
                     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { FeeChallan, Student } from '../../types';
@@ -221,37 +220,34 @@ const ChallanScannerPage: React.FC = () => {
                                     <Avatar student={scannedStudent} className="w-16 h-16"/>
                                     <div>
                                         <p className="font-bold text-lg">{scannedStudent.name}</p>
-                                        <p className="text-sm text-secondary-500">{classMap.get(scannedStudent.classId)} - <span className="font-bold text-primary-600 dark:text-primary-400">ID: {scannedStudent.rollNumber}</span></p>
+                                        <p className="text-sm text-secondary-500">{classMap.get(scannedStudent.classId)} - <span className="font-bold text-primary-700 dark:text-primary-400">ID: {scannedStudent.rollNumber}</span></p>
+                                        <p className="text-xs text-secondary-400">Challan: {scannedChallan.challanNumber}</p>
                                     </div>
                                 </div>
-                                <div className="text-sm space-y-2 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
-                                    <div className="flex justify-between"><span>Challan #:</span> <strong>{scannedChallan.challanNumber}</strong></div>
-                                    <div className="flex justify-between"><span>Month/Year:</span> <strong>{scannedChallan.month} {scannedChallan.year}</strong></div>
-                                    <div className="flex justify-between"><span>Due Date:</span> <strong>{formatDate(scannedChallan.dueDate)}</strong></div>
-                                    <div className="flex justify-between border-t dark:border-secondary-600 pt-2 mt-2"><span>Total Due:</span> <strong>Rs. {(scannedChallan.totalAmount - scannedChallan.discount).toLocaleString()}</strong></div>
-                                    <div className="flex justify-between"><span>Paid:</span> <strong>Rs. {scannedChallan.paidAmount.toLocaleString()}</strong></div>
-                                    <div className="flex justify-between font-bold text-base"><span>Balance:</span> <strong>Rs. {balanceDue.toLocaleString()}</strong></div>
+
+                                <div className="bg-secondary-50 dark:bg-secondary-700/50 p-3 rounded-md text-sm">
+                                    <div className="flex justify-between mb-1">
+                                        <span>Total Amount:</span>
+                                        <span className="font-bold">Rs. {scannedChallan.totalAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between mb-1">
+                                        <span>Paid Amount:</span>
+                                        <span className="font-bold text-green-600 dark:text-green-400">Rs. {scannedChallan.paidAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-2 border-t dark:border-secondary-600">
+                                        <span>Balance Due:</span>
+                                        <span className={`font-bold ${balanceDue > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                            Rs. {balanceDue.toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
-                                <button onClick={() => setIsPaymentModalOpen(true)} className="btn-primary w-full" disabled={balanceDue <= 0}>
-                                    {balanceDue > 0 ? 'Record Payment' : 'Fully Paid'}
+
+                                <button onClick={() => setIsPaymentModalOpen(true)} className="btn-primary w-full mt-2">
+                                    Record Payment
                                 </button>
                             </div>
-                        ) : !error && (
-                            <div className="text-center py-8 text-secondary-500 flex flex-col items-center justify-center h-full">
-                                {isScanning ? (
-                                    <>
-                                        <SearchIcon />
-                                        <p className="mt-2">Point your camera at a challan's barcode.</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p>Start the camera to begin scanning, or enter a challan number manually.</p>
-                                        <p className="text-xs text-secondary-400 mt-2">
-                                            This feature requires camera access. You may be prompted for permission.
-                                        </p>
-                                    </>
-                                )}
-                            </div>
+                        ) : (
+                            !error && <p className="text-center text-secondary-500 py-8">Scan a QR code or barcode to view details.</p>
                         )}
                     </div>
                 </div>

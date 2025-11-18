@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Avatar from '../common/Avatar';
@@ -93,7 +92,7 @@ const ChallanPreviewModal: React.FC<ChallanPreviewModalProps> = ({ isOpen, onClo
                                                 <Avatar student={item.student} className="w-8 h-8" />
                                                 <div>
                                                     <p className="font-medium">{item.student.name}</p>
-                                                    <p className="text-xs text-secondary-500">{item.className} - <span className="font-bold text-primary-600 dark:text-primary-400">ID: {item.student.rollNumber}</span></p>
+                                                    <p className="text-xs text-secondary-500">{item.className} - <span className="font-bold text-primary-700 dark:text-primary-400">ID: {item.student.rollNumber}</span></p>
                                                 </div>
                                             </div>
                                         </td>

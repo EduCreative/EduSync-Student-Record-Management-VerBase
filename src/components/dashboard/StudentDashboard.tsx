@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -69,7 +68,7 @@ const StudentDashboard: React.FC = () => {
                  <div>
                     <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">Welcome, {user.name}!</h1>
                     <p className="text-secondary-500 dark:text-secondary-400">
-                        {studentClass?.name} | <span className="font-bold text-primary-600 dark:text-primary-400">ID: {studentProfile.rollNumber}</span>
+                        {studentClass?.name} | <span className="font-bold text-primary-700 dark:text-primary-400">ID: {studentProfile.rollNumber}</span>
                     </p>
                  </div>
             </div>
