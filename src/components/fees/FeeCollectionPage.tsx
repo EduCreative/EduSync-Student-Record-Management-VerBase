@@ -9,6 +9,7 @@ import Modal from '../common/Modal';
 import { Permission } from '../../permissions';
 import SingleChallanGenerationModal from './SingleChallanGenerationModal';
 import { getClassLevel } from '../../utils/sorting';
+import { useToast } from '../../context/ToastContext';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -172,7 +173,7 @@ const FeeCollectionPage: React.FC = () => {
                                 <ul className="divide-y dark:divide-secondary-600">
                                     {filteredStudentsForSelection.map(s => (
                                         <li key={s.id} onClick={() => handleSelectStudentForChallan(s)} className="p-2 hover:bg-secondary-50 dark:hover:bg-secondary-700 cursor-pointer flex justify-between items-center">
-                                            <span>{s.name} <span className="text-xs text-primary-700 dark:text-primary-400 font-bold">(ID: {s.rollNumber})</span></span>
+                                            <span>{s.name} <span className="text-xs font-bold text-primary-700 dark:text-primary-400">(ID: {s.rollNumber})</span></span>
                                             <span className="text-xs text-secondary-400">{classMap.get(s.classId)}</span>
                                         </li>
                                     ))}

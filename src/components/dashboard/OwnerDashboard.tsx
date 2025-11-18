@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { School, UserRole } from '../../types';
 import DoughnutChart from '../charts/DoughnutChart';
-// FIX: Import BarChartData to fix type error on onClick handler
 import BarChart, { BarChartData } from '../charts/BarChart';
 import StatCard from '../common/StatCard';
 import { ActiveView } from '../layout/Layout';

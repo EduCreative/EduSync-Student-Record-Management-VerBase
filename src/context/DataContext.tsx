@@ -1,3 +1,4 @@
+// ... (imports remain the same)
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam } from '../types';
 import { useAuth } from './AuthContext';
@@ -8,7 +9,7 @@ import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 import type { Table } from 'dexie';
 import { useTheme } from './ThemeContext';
 
-// --- COMPONENTS ---
+// ... (Components AlertTriangleIcon and UnrecoverableErrorScreen remain the same)
 const AlertTriangleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 
 const UnrecoverableErrorScreen: React.FC<{
@@ -41,10 +42,8 @@ const UnrecoverableErrorScreen: React.FC<{
     </div>
 );
 
-
-// --- CONTEXT ---
+// ... (DataContextType interface remains the same)
 interface DataContextType {
-    // Data states
     schools: School[];
     users: User[];
     classes: Class[];
@@ -60,10 +59,8 @@ interface DataContextType {
     loading: boolean;
     isInitialLoad: boolean;
     lastSyncTime: Date | null;
-    // FIX: Add syncError to the context type to be used in the Header's SyncStatus component.
     syncError: string | null;
 
-    // Data functions
     fetchData: () => Promise<void>;
     getSchoolById: (schoolId: string) => School | undefined;
     updateUser: (updatedUser: User) => Promise<void>;
@@ -119,6 +116,7 @@ export const useData = (): DataContextType => {
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // ... (State and effects remain the same)
     const { user, activeSchoolId } = useAuth();
     const { showToast } = useToast();
     const { syncMode } = useTheme();
@@ -139,7 +137,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [logs, setLogs] = useState<ActivityLog[]>([]);
     const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
     const [events, setEvents] = useState<SchoolEvent[]>([]);
-    
+
+    // ... (fetchData function remains the same)
     const fetchData = useCallback(async () => {
         if (!user) {
             setLoading(false);
@@ -337,6 +336,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [user, activeSchoolId, isInitialLoad, syncMode]);
 
+    // ... (rest of the code, useEffects, etc.)
     useEffect(() => {
         fetchData();
     }, [fetchData]);
@@ -352,8 +352,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    // FIX: Removed the early return for `unrecoverableError`. The error screen is now conditionally rendered inside the provider,
-    // allowing the rest of the app to receive context updates (like the error itself) and display non-critical error states.
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
 
@@ -376,6 +374,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
     
+    // ... (updateUser, deleteUser, addUserByAdmin, addStudent, updateStudent, deleteStudent... methods)
+
     const updateUser = async (updatedUser: User) => {
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
@@ -414,27 +414,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     
     const addUserByAdmin = async (userData: (Omit<User, 'id'> & { password?: string })) => {
-        // 1. Preserve admin session
         const { data: { session: adminSession } } = await (supabase.auth as any).getSession();
         if (!adminSession) {
             showToast('Error', 'Your session has expired. Please log in again.', 'error');
             throw new Error("Admin session not found.");
         }
     
-        // 2. Sign up the new user
         const { name, email, password, role, schoolId, status, avatarUrl } = userData;
         const { data: signUpData, error: signUpError } = await (supabase.auth as any).signUp({
             email: email!,
             password: password!,
         });
     
-        // 3. Immediately restore admin session to prevent being logged out.
         const { error: setSessionError } = await (supabase.auth as any).setSession({
             access_token: adminSession.access_token,
             refresh_token: adminSession.refresh_token,
         });
         
-        // 4. Handle errors after session is restored.
         if (setSessionError) {
             showToast('Critical Error', 'Could not restore your session. Please log in again.', 'error');
             window.location.reload();
@@ -450,7 +446,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error("User creation failed unexpectedly.");
         }
         
-        // 5. Manually insert the profile data.
         const { error: profileError } = await supabase.from('profiles').insert(toSnakeCase({
             id: signUpData.user.id,
             name,
@@ -466,7 +461,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw profileError;
         }
     
-        // 6. Success: Refresh data and notify.
         await fetchData();
         addLog('User Added', `New user created: ${name}.`);
         showToast('Success', `User ${name} created successfully.`, 'success');
@@ -514,8 +508,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `${studentToDelete.name}'s profile has been deleted.`);
     };
 
+    // ... (addClass, updateClass, deleteClass, addSubject... etc)
     const addClass = async (classData: Omit<Class, 'id'>) => {
-        // Get current classes for the school to determine next sort order
         const { data: schoolClassesData } = await supabase.from('classes').select('sort_order').eq('school_id', classData.schoolId);
         
         const maxSortOrder = schoolClassesData && schoolClassesData.length > 0 
@@ -848,9 +842,35 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => {
-        const { error } = await supabase.from('students')
-            .update(toSnakeCase({ ...details, status: 'Left' }))
+        const { dateOfLeaving, reasonForLeaving, conduct } = details;
+        
+        // First try: Update all fields (assuming schema supports it)
+        const fullUpdateData = toSnakeCase({
+            dateOfLeaving,
+            reasonForLeaving,
+            conduct,
+            status: 'Left'
+        });
+
+        let { error } = await supabase.from('students')
+            .update(fullUpdateData)
             .eq('id', studentId);
+
+        // Fallback: If columns missing (code 42703 is undefined_column, or check message), just update status
+        if (error && (error.code === '42703' || error.message.includes('Could not find the'))) {
+             console.warn("Extended student columns missing in DB. Falling back to status update only.");
+             const { error: fallbackError } = await supabase.from('students')
+                .update({ status: 'Left' })
+                .eq('id', studentId);
+             
+             if (!fallbackError) {
+                 error = null; 
+                 showToast('Warning', 'Certificate issued but extended details (reason, conduct) were not saved to the database due to schema limitations.', 'info');
+             } else {
+                 error = fallbackError;
+             }
+        }
+
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
@@ -858,7 +878,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await fetchData();
         const student = students.find(s=>s.id === studentId);
         addLog('Certificate Issued', `Leaving Certificate issued for ${student?.name}.`);
-        showToast('Success', 'Leaving Certificate issued.');
+        if (!error) {
+             showToast('Success', 'Leaving Certificate issued.');
+        }
     };
 
     const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
@@ -874,7 +896,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { classId, exam, subject } = resultsToSave[0];
         
-        // Auto-create exam if it doesn't exist
         const examExists = exams.some(e => e.name.toLowerCase() === exam.toLowerCase() && e.schoolId === effectiveSchoolId);
         if (!examExists) {
             const { error: examInsertError } = await supabase.from('exams').insert({
@@ -887,7 +908,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
-        // Auto-create subject if it doesn't exist
         const subjectExists = subjects.some(s => s.name.toLowerCase() === subject.toLowerCase() && s.schoolId === effectiveSchoolId);
         if (!subjectExists) {
             const { error: subjectInsertError } = await supabase.from('subjects').insert({
@@ -900,7 +920,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
-        // Upsert results
         const studentIds = resultsToSave.map(r => r.studentId);
         const { error: deleteError } = await supabase
             .from('results')
@@ -928,6 +947,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', 'Results have been saved successfully.');
     };
     
+    // ... (addSchool, updateSchool, deleteSchool, addEvent... remaining functions)
     const addSchool = async (name: string, address: string, logoUrl?: string | null) => {
         const { error } = await supabase.from('schools').insert({ name, address, logo_url: logoUrl });
         if (error) {
@@ -1134,14 +1154,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             let newFeeStructure;
 
             if (tuitionFeeIndex > -1) {
-                // Tuition fee already exists, update it
                 newFeeStructure = [...currentFeeStructure];
                 newFeeStructure[tuitionFeeIndex] = {
                     ...newFeeStructure[tuitionFeeIndex],
                     amount: newFeeStructure[tuitionFeeIndex].amount + increaseAmount,
                 };
             } else {
-                // Tuition fee doesn't exist, add it based on the default
                 newFeeStructure = [
                     ...currentFeeStructure,
                     {
@@ -1173,7 +1191,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     }, [user, activeSchoolId, students, feeHeads, showToast, addLog, fetchData]);
 
-    // This function is being removed as the notifications table does not exist.
     const sendFeeReminders = useCallback(async (challanIds: string[]) => {
         if (!user) return;
         showToast('Success', `Simulated sending ${challanIds.length} fee reminders.`, 'success');
@@ -1187,7 +1204,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        await fetchData(); // Refresh local data
+        await fetchData();
         addLog('Class Order Updated', `Reordered ${classesToUpdate.length} classes.`);
         showToast('Success', 'Class order saved successfully.');
     };

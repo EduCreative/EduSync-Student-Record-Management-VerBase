@@ -245,10 +245,9 @@ const AttendanceMarker: React.FC = () => {
                                                         key={s}
                                                         onClick={() => handleStatusChange(student.id, s)}
                                                         className={buttonClass}
-                                                        aria-label={`Mark as ${s}`}
                                                         title={`Mark as ${s}`}
                                                     >
-                                                        {s[0]}
+                                                        {s.charAt(0)}
                                                     </button>
                                                 );
                                             })}
@@ -257,32 +256,30 @@ const AttendanceMarker: React.FC = () => {
                                 );
                             })}
                         </div>
-
-
-                        <div className="p-4 flex justify-end border-t dark:border-secondary-700">
-                            <button onClick={handleSaveAttendance} disabled={isSaving} className="btn-primary">
-                                {isSaving ? 'Saving...' : 'Save Attendance'}
-                            </button>
-                        </div>
                     </div>
                 )}
-                 <style>{`
-                    .btn-present { @apply bg-green-500 text-white hover:bg-green-600; }
-                    .btn-absent { @apply bg-red-500 text-white hover:bg-red-600; }
-                    .btn-leave { @apply bg-yellow-500 text-white hover:bg-yellow-600; }
-                `}</style>
+
+                <div className="flex justify-end pt-4">
+                    <button 
+                        onClick={handleSaveAttendance} 
+                        disabled={isSaving} 
+                        className="btn-primary w-full sm:w-auto"
+                    >
+                        {isSaving ? 'Saving...' : 'Save Attendance'}
+                    </button>
+                </div>
             </div>
         </>
     );
 };
 
-
 const AttendancePage: React.FC = () => {
     const { effectiveRole } = useAuth();
     
-    const isMarker = effectiveRole === UserRole.Admin || effectiveRole === UserRole.Teacher;
+    // Check permissions: Only Admin, Teacher, and Owner can mark attendance.
+    const canMarkAttendance = [UserRole.Admin, UserRole.Teacher, UserRole.Owner].includes(effectiveRole as UserRole);
 
-    if (isMarker) {
+    if (canMarkAttendance) {
         return <AttendanceMarker />;
     } else {
         return <AttendanceViewer />;

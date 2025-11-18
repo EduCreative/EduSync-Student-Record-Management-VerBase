@@ -123,7 +123,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // Update last_login
-            await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', signInData.user.id);
+            try {
+                await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', signInData.user.id);
+            } catch (err) {
+                console.warn("Failed to update last_login", err);
+                // Continue login process even if timestamp update fails
+            }
         }
     
         return { success: true };

@@ -77,7 +77,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                             was a bona fide student of this institution.
                         </p>
                         <p>
-                            He/She was studying in Class <strong className="border-b border-dotted border-black px-2 min-w-[100px] inline-block text-center">{studentClass?.name || 'N/A'}</strong> (Roll No: <strong>{student.rollNumber}</strong>).
+                            He/She was studying in Class <strong className="border-b border-dotted border-black px-2 min-w-[100px] inline-block text-center">{studentClass?.name || 'N/A'}</strong> (Roll No: <strong className="font-bold">{student.rollNumber}</strong>).
                         </p>
                         <p>
                             His/Her date of admission was <strong className="border-b border-dotted border-black px-2">{formatDate(student.dateOfAdmission)}</strong> 
@@ -110,7 +110,6 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
             showPrintPreview(certificateContent, `EduSync - Leaving Certificate - ${student.name}`);
         } catch (error) {
             console.error("Error issuing certificate:", error);
-            showToast('Error', 'Failed to issue certificate.', 'error');
         } finally {
             setIsIssuing(false);
         }

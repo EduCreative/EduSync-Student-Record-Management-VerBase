@@ -57,7 +57,7 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                     </div>
                     <div className="flex justify-between w-1/3 px-1 border-l border-gray-200">
                         <span>ID:</span>
-                        <span className="text-right font-extrabold text-sm">{student.rollNumber}</span>
+                        <span className="text-right font-extrabold text-sm text-primary-700">{student.rollNumber}</span>
                     </div>
                     <div className="flex justify-between w-1/3 pl-1 border-l border-gray-200">
                         <span>GR No.:</span>
