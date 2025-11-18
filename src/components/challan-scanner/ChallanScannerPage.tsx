@@ -4,7 +4,6 @@ import { FeeChallan, Student } from '../../types';
 import FeePaymentModal from '../fees/FeePaymentModal';
 import Avatar from '../common/Avatar';
 import { useToast } from '../../context/ToastContext';
-import { formatDate } from '../../constants';
 
 // Declare BarcodeDetector for environments where it might not be typed
 declare class BarcodeDetector {
