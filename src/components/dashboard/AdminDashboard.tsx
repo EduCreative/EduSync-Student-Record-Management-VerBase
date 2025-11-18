@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -125,7 +126,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
     const { user, activeSchoolId } = useAuth();
     const { users, students, getSchoolById, fees, attendance, loading, logs, classes } = useData();
     
-    const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: string }[] } | null>(null);
+    const [modalDetails, setModalDetails] = useState<{ title: string; items: { id: string; avatar: React.ReactNode; primary: string; secondary: React.ReactNode }[] } | null>(null);
     const [feeChartType, setFeeChartType] = useState<'line' | 'bar'>('line');
     const [feePeriod, setFeePeriod] = useState<'week' | '15days' | 'month' | '30days'>('week');
 
@@ -346,7 +347,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                 id: c.id,
                 avatar: <Avatar student={student} className="w-9 h-9" />,
                 primary: student?.name || 'Unknown Student',
-                secondary: `${c.month} ${c.year} - Balance: Rs. ${(c.totalAmount - c.discount - c.paidAmount).toLocaleString()}`,
+                secondary: <>{c.month} {c.year} - Balance: Rs. {(c.totalAmount - c.discount - c.paidAmount).toLocaleString()}</>,
             };
         });
 
@@ -370,7 +371,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
             id: s.id,
             avatar: <Avatar student={s} className="w-9 h-9" />,
             primary: s.name,
-            secondary: `Student ID: ${s.rollNumber}`,
+            secondary: <>ID: <span className="font-bold text-primary-600 dark:text-primary-400">{s.rollNumber}</span></>,
         }));
 
         setModalDetails({ title: `Students: ${status}`, items });
@@ -415,7 +416,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ setActiveView }) => {
                                 {item.avatar}
                                 <div>
                                     <p className="font-medium text-secondary-800 dark:text-secondary-100">{item.primary}</p>
-                                    <p className="text-sm text-secondary-500">{item.secondary}</p>
+                                    <div className="text-sm text-secondary-500">{item.secondary}</div>
                                 </div>
                             </li>
                         ))}

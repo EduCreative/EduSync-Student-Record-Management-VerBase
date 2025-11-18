@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +10,7 @@ import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import { Permission } from '../../permissions';
 import SingleChallanGenerationModal from './SingleChallanGenerationModal';
+import { getClassLevel } from '../../utils/sorting';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -24,132 +26,93 @@ const FeeCollectionPage: React.FC = () => {
     const { user, activeSchoolId, hasPermission } = useAuth();
     const { students, fees, classes, cancelChallan } = useData();
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-    const [challanToManage, setChallanToManage] = useState<{ challan: FeeChallan, mode: 'pay' | 'edit' } | null>(null);
+    
+    const [challanToManage, setChallanToManage] = useState<{ challan: FeeChallan, student: Student, mode: 'pay' | 'edit' } | null>(null);
     const [challanToCancel, setChallanToCancel] = useState<FeeChallan | null>(null);
     const [sessionDate, setSessionDate] = useState(getTodayString());
-    const [statusFilter, setStatusFilter] = useState<'outstanding' | 'all' | FeeChallan['status']>('outstanding');
+    
+    // Filters
+    const [statusFilter, setStatusFilter] = useState<'Outstanding' | 'All' | 'Paid' | 'Unpaid' | 'Partial'>('Outstanding');
+    const [classFilter, setClassFilter] = useState('all');
+
+    // Single Challan Generation
+    const [isStudentSelectModalOpen, setIsStudentSelectModalOpen] = useState(false);
+    const [studentForChallan, setStudentForChallan] = useState<Student | null>(null);
     const [isSingleChallanModalOpen, setIsSingleChallanModalOpen] = useState(false);
+    const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
     const [currentPage, setCurrentPage] = useState(1);
-    const STUDENTS_PER_PAGE = 15;
+    const ROWS_PER_PAGE = 15;
 
     const canManage = hasPermission(Permission.CAN_MANAGE_FEES);
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
+    const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId)
+        .sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), 
+        [classes, effectiveSchoolId]);
     const classMap = useMemo(() => new Map(classes.map((c: Class) => [c.id, c.name])), [classes]);
+    const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
 
-    const studentBalanceMap = useMemo(() => {
-        const balanceMap = new Map<string, number>();
+    const filteredChallans = useMemo(() => {
+        const filtered = fees.filter(challan => {
+            if (challan.status === 'Cancelled') return false;
+            
+            const student = studentMap.get(challan.studentId);
+            if (!student || student.schoolId !== effectiveSchoolId) return false;
 
-        const feesByStudent = fees.reduce((acc, fee) => {
-            if (fee.status !== 'Cancelled') {
-                if (!acc[fee.studentId]) {
-                    acc[fee.studentId] = [];
-                }
-                acc[fee.studentId].push(fee);
+            // Class Filter
+            if (classFilter !== 'all' && student.classId !== classFilter) return false;
+
+            // Status Filter
+            if (statusFilter === 'Outstanding') {
+                if (challan.status === 'Paid') return false;
+            } else if (statusFilter !== 'All') {
+                 // Map 'Partial' to match specific cases if needed, but 'Partial' status matches directly
+                 if (statusFilter === 'Partial' && challan.status !== 'Partial') return false;
+                 if (statusFilter === 'Paid' && challan.status !== 'Paid') return false;
+                 if (statusFilter === 'Unpaid' && challan.status !== 'Unpaid') return false;
             }
-            return acc;
-        }, {} as Record<string, FeeChallan[]>);
 
-        students.forEach(student => {
-            if (student.schoolId !== effectiveSchoolId || student.status !== 'Active') return;
-
-            const studentFees = feesByStudent[student.id] || [];
-            
-            const totalNewFees = studentFees.reduce((sum, challan) => {
-                const newFee = (challan.totalAmount || 0) - (challan.previousBalance || 0);
-                return sum + newFee;
-            }, 0);
-            
-            const totalPaid = studentFees.reduce((sum, challan) => sum + (challan.paidAmount || 0), 0);
-            const totalDiscount = studentFees.reduce((sum, challan) => sum + (challan.discount || 0), 0);
-            const openingBalance = student.openingBalance || 0;
-
-            const balance = openingBalance + totalNewFees - totalPaid - totalDiscount;
-            
-            balanceMap.set(student.id, balance);
-        });
-    
-        return balanceMap;
-    }, [students, fees, effectiveSchoolId]);
-
-    const defaulterList = useMemo(() => {
-        return students.filter(s => {
-            const balance = studentBalanceMap.get(s.id);
-            return s.schoolId === effectiveSchoolId && s.status === 'Active' && balance && balance > 0;
-        });
-    }, [students, studentBalanceMap, effectiveSchoolId]);
-
-    const filteredDefaulters = useMemo(() => {
-        let sorted = [...defaulterList];
-
-        if (searchTerm) {
-            const lowerSearchTerm = searchTerm.toLowerCase();
-            sorted = sorted.filter(s =>
-                s.name.toLowerCase().includes(lowerSearchTerm) || s.rollNumber.includes(lowerSearchTerm)
-            );
-
-            // Sorting logic as requested by user
-            const isNumericSearch = /^\d+$/.test(searchTerm.trim());
-            if (isNumericSearch) {
-                sorted.sort((a, b) => a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true }));
-            } else {
-                sorted.sort((a, b) => a.name.localeCompare(b.name));
+            // Search Filter
+            if (searchTerm) {
+                const lowerTerm = searchTerm.toLowerCase();
+                return (
+                    student.name.toLowerCase().includes(lowerTerm) ||
+                    student.rollNumber.toLowerCase().includes(lowerTerm) ||
+                    challan.challanNumber.toLowerCase().includes(lowerTerm)
+                );
             }
-        } else {
-            // Default sort when no search term
-            sorted.sort((a, b) => (studentBalanceMap.get(b.id) ?? 0) - (studentBalanceMap.get(a.id) ?? 0));
-        }
 
-        return sorted;
-    }, [defaulterList, searchTerm, studentBalanceMap]);
+            return true;
+        });
+        
+        // Sort: Unpaid/Partial first, then by Date desc
+        return filtered.sort((a, b) => {
+            const isAOutstanding = a.status === 'Unpaid' || a.status === 'Partial';
+            const isBOutstanding = b.status === 'Unpaid' || b.status === 'Partial';
+            
+            if (isAOutstanding && !isBOutstanding) return -1;
+            if (!isAOutstanding && isBOutstanding) return 1;
+            
+            // If status priority is same, sort by date desc
+            const dateA = new Date(a.year, months.indexOf(a.month)).getTime();
+            const dateB = new Date(b.year, months.indexOf(b.month)).getTime();
+            return dateB - dateA;
+        });
+
+    }, [fees, studentMap, effectiveSchoolId, statusFilter, classFilter, searchTerm]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, statusFilter, classFilter]);
 
-    const totalPages = Math.ceil(filteredDefaulters.length / STUDENTS_PER_PAGE);
-    const paginatedStudents = useMemo(() => {
-        const startIndex = (currentPage - 1) * STUDENTS_PER_PAGE;
-        return filteredDefaulters.slice(startIndex, startIndex + STUDENTS_PER_PAGE);
-    }, [filteredDefaulters, currentPage]);
+    const totalPages = Math.ceil(filteredChallans.length / ROWS_PER_PAGE);
+    const paginatedChallans = useMemo(() => {
+        const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+        return filteredChallans.slice(startIndex, startIndex + ROWS_PER_PAGE);
+    }, [filteredChallans, currentPage]);
 
 
-    const studentChallans = useMemo(() => {
-        if (!selectedStudent) return [];
-        return fees
-            .filter((f: FeeChallan) => {
-                if (f.studentId !== selectedStudent.id) return false;
-            
-                if (statusFilter === 'outstanding') {
-                    return f.status === 'Unpaid' || f.status === 'Partial';
-                }
-                if (statusFilter === 'all') {
-                    return true;
-                }
-                return f.status === statusFilter;
-            })
-            .sort((a, b) => new Date(b.year, months.indexOf(b.month)).getTime() - new Date(a.year, months.indexOf(a.month)).getTime());
-    }, [fees, selectedStudent, statusFilter]);
-    
-    const hasCurrentMonthChallan = useMemo(() => {
-        if (!selectedStudent) return false;
-        const currentMonthStr = months[new Date().getMonth()];
-        const currentYearNum = new Date().getFullYear();
-        return fees.some(f => 
-            f.studentId === selectedStudent.id && 
-            f.month === currentMonthStr && 
-            f.year === currentYearNum &&
-            f.status !== 'Cancelled'
-        );
-    }, [selectedStudent, fees]);
-
-    const handleSelectStudent = (student: Student) => {
-        setSelectedStudent(student);
-        setSearchTerm('');
-        setStatusFilter('outstanding');
-    };
-    
     const getStatusColor = (status: FeeChallan['status']) => {
         if (status === 'Paid') return 'green';
         if (status === 'Unpaid') return 'red';
@@ -163,38 +126,78 @@ const FeeCollectionPage: React.FC = () => {
             setChallanToCancel(null);
         }
     };
-    
-    const headingText = {
-        'outstanding': 'Outstanding Challans for',
-        'all': 'All Challans for',
-        'Paid': 'Paid Challans for',
-        'Unpaid': 'Unpaid Challans for',
-        'Partial': 'Partially Paid Challans for',
-        'Cancelled': 'Cancelled Challans for'
-    }[statusFilter];
 
-    const showingFrom = filteredDefaulters.length > 0 ? (currentPage - 1) * STUDENTS_PER_PAGE + 1 : 0;
-    const showingTo = Math.min(currentPage * STUDENTS_PER_PAGE, filteredDefaulters.length);
+    const handleSelectStudentForChallan = (student: Student) => {
+        setStudentForChallan(student);
+        setIsStudentSelectModalOpen(false);
+        setIsSingleChallanModalOpen(true);
+    };
+
+    const filteredStudentsForSelection = useMemo(() => {
+        return students.filter(s => 
+            s.schoolId === effectiveSchoolId && 
+            s.status === 'Active' &&
+            (studentSearchTerm === '' || s.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) || s.rollNumber.includes(studentSearchTerm))
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    }, [students, effectiveSchoolId, studentSearchTerm]);
+
+    const showingFrom = filteredChallans.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
+    const showingTo = Math.min(currentPage * ROWS_PER_PAGE, filteredChallans.length);
 
     return (
         <>
-            {challanToManage && selectedStudent && (
+            {challanToManage && (
                 <FeePaymentModal
                     isOpen={!!challanToManage}
                     onClose={() => setChallanToManage(null)}
                     challan={challanToManage.challan}
-                    student={selectedStudent}
+                    student={challanToManage.student}
                     editMode={challanToManage.mode === 'edit'}
                     defaultDate={sessionDate}
                 />
             )}
-            {selectedStudent && (
+            
+            {/* Single Challan Generation Modal Flow */}
+            {isStudentSelectModalOpen && (
+                <Modal isOpen={isStudentSelectModalOpen} onClose={() => setIsStudentSelectModalOpen(false)} title="Select Student for Single Challan">
+                    <div className="space-y-4">
+                        <input 
+                            type="text" 
+                            placeholder="Search student..." 
+                            className="input-field" 
+                            value={studentSearchTerm}
+                            onChange={e => setStudentSearchTerm(e.target.value)}
+                            autoFocus
+                        />
+                        <div className="max-h-60 overflow-y-auto border dark:border-secondary-600 rounded-md">
+                            {filteredStudentsForSelection.length > 0 ? (
+                                <ul className="divide-y dark:divide-secondary-600">
+                                    {filteredStudentsForSelection.map(s => (
+                                        <li key={s.id} onClick={() => handleSelectStudentForChallan(s)} className="p-2 hover:bg-secondary-50 dark:hover:bg-secondary-700 cursor-pointer flex justify-between items-center">
+                                            <span>{s.name} <span className="text-xs text-primary-600 dark:text-primary-400 font-bold">(ID: {s.rollNumber})</span></span>
+                                            <span className="text-xs text-secondary-400">{classMap.get(s.classId)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="p-4 text-center text-secondary-500 text-sm">No students found.</p>
+                            )}
+                        </div>
+                        <div className="flex justify-end">
+                            <button onClick={() => setIsStudentSelectModalOpen(false)} className="btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+            
+            {studentForChallan && (
                 <SingleChallanGenerationModal
                     isOpen={isSingleChallanModalOpen}
                     onClose={() => setIsSingleChallanModalOpen(false)}
-                    student={selectedStudent}
+                    student={studentForChallan}
                 />
             )}
+
             {challanToCancel && (
                 <Modal
                     isOpen={!!challanToCancel}
@@ -208,142 +211,161 @@ const FeeCollectionPage: React.FC = () => {
                     </div>
                 </Modal>
             )}
+
             <div className="p-4 sm:p-6 space-y-4">
-                {!selectedStudent ? (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="student-search" className="input-label">Search Outstanding Students</label>
-                                <input
-                                    id="student-search"
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                    className="input-field"
-                                    placeholder="By name or student ID..."
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="session-date" className="input-label">Default Payment Date</label>
-                                <input
-                                    id="session-date"
-                                    type="date"
-                                    value={sessionDate}
-                                    onChange={e => setSessionDate(e.target.value)}
-                                    className="input-field"
-                                />
-                            </div>
-                        </div>
-                        <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md mt-4">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
-                                        <tr>
-                                            <th className="px-6 py-3">Student</th>
-                                            <th className="px-6 py-3">Class</th>
-                                            <th className="px-6 py-3 text-right">Outstanding Balance</th>
-                                            <th className="px-6 py-3"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y dark:divide-secondary-700">
-                                        {paginatedStudents.map(student => (
-                                            <tr key={student.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700/50">
-                                                <td className="px-6 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <Avatar student={student} className="w-9 h-9" />
-                                                        <div>
-                                                            <p className="font-medium">{student.name}</p>
-                                                            <p className="text-xs text-secondary-500">ID: {student.rollNumber}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-3">{classMap.get(student.classId)}</td>
-                                                <td className="px-6 py-3 text-right font-semibold text-red-600 dark:text-red-400">
-                                                    Rs. {(studentBalanceMap.get(student.id) ?? 0).toLocaleString()}
-                                                </td>
-                                                <td className="px-6 py-3 text-right">
-                                                    <button onClick={() => handleSelectStudent(student)} className="font-medium text-primary-600 hover:underline">
-                                                        View Details
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {totalPages > 0 && (
-                                <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
-                                    <span className="text-sm text-secondary-700 dark:text-secondary-400">
-                                        Showing {showingFrom} - {showingTo} of {filteredDefaulters.length} students
-                                    </span>
-                                    {totalPages > 1 && (
-                                        <div className="flex items-center space-x-2">
-                                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="btn-secondary text-sm">Prev</button>
-                                            <span className="text-sm px-2">{currentPage} of {totalPages}</span>
-                                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="btn-secondary text-sm">Next</button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </>
-                ) : (
-                    <div className="border-t dark:border-secondary-700 pt-4">
-                        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                             <h2 className="text-xl font-semibold">
-                                {headingText} {selectedStudent.name} <span className="text-sm font-normal text-secondary-500">(ID: {selectedStudent.rollNumber})</span>
-                            </h2>
-                             <div className="flex items-center gap-4">
-                                {!hasCurrentMonthChallan && canManage && (
-                                    <button onClick={() => setIsSingleChallanModalOpen(true)} className="btn-primary text-sm">
-                                        + Generate Challan for {months[new Date().getMonth()]}
-                                    </button>
-                                )}
-                                <button onClick={() => setSelectedStudent(null)} className="text-sm text-primary-600 hover:underline">&larr; Back to List</button>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                            {studentChallans.length > 0 ? (
-                                studentChallans.map(challan => (
-                                    <div key={challan.id} className="p-4 border dark:border-secondary-700 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                        <div>
-                                            <div className="flex items-center gap-3">
-                                                <h3 className="font-semibold">{challan.month} {challan.year}</h3>
-                                                <Badge color={getStatusColor(challan.status)}>{challan.status}</Badge>
-                                            </div>
-                                            <p className="text-sm text-secondary-500">Due: {formatDate(challan.dueDate)} | Total: Rs. {(challan.totalAmount - challan.discount).toLocaleString()}</p>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                                            {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') && (
-                                                <button onClick={() => setChallanToManage({ challan, mode: 'pay' })} className="btn-primary flex-grow">
-                                                    Record Payment
-                                                </button>
-                                            )}
-                                            {canManage && (challan.status === 'Paid' || challan.status === 'Partial') && (
-                                                <button onClick={() => setChallanToManage({ challan, mode: 'edit' })} className="btn-secondary flex-grow">
-                                                    Edit Payment
-                                                </button>
-                                            )}
-                                            {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') && (
-                                                <button onClick={() => setChallanToCancel(challan)} className="btn-danger flex-grow">
-                                                    Cancel
-                                                </button>
-                                            )}
-                                            {challan.status === 'Cancelled' && (
-                                                <span className="text-sm text-secondary-500 italic">No actions available</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="p-4 text-center bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
-                                    <p>No {statusFilter !== 'all' && statusFilter !== 'outstanding' ? statusFilter.toLowerCase() : ''} fee challans found for this student.</p>
-                                </div>
-                            )}
-                        </div>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">Fee Collection</h1>
+                     <div className="flex gap-2">
+                         {canManage && (
+                             <button onClick={() => setIsStudentSelectModalOpen(true)} className="btn-primary text-sm">
+                                 + New Single Challan
+                             </button>
+                         )}
+                     </div>
+                </div>
+
+                <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-1">
+                        <label htmlFor="status-filter" className="input-label">Challan Status</label>
+                        <select
+                            id="status-filter"
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value as any)}
+                            className="input-field"
+                        >
+                            <option value="Outstanding">Outstanding (Default)</option>
+                            <option value="All">All</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Unpaid">Unpaid</option>
+                            <option value="Partial">Partial Paid</option>
+                        </select>
                     </div>
-                )}
+                     <div className="md:col-span-1">
+                        <label htmlFor="class-filter" className="input-label">Class</label>
+                         <select
+                            id="class-filter"
+                            value={classFilter}
+                            onChange={e => setClassFilter(e.target.value)}
+                            className="input-field"
+                        >
+                            <option value="all">All Classes</option>
+                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                        </select>
+                    </div>
+                    <div className="md:col-span-1">
+                        <label htmlFor="student-search" className="input-label">Search</label>
+                        <input
+                            id="student-search"
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="input-field"
+                            placeholder="Student Name, ID, or Challan #"
+                        />
+                    </div>
+                    <div className="md:col-span-1">
+                        <label htmlFor="session-date" className="input-label">Payment Date</label>
+                        <input
+                            id="session-date"
+                            type="date"
+                            value={sessionDate}
+                            onChange={e => setSessionDate(e.target.value)}
+                            className="input-field"
+                            title="Default date for new payments"
+                        />
+                    </div>
+                </div>
+                
+                <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
+                                <tr>
+                                    <th className="px-4 py-3">Student</th>
+                                    <th className="px-4 py-3">Class</th>
+                                    <th className="px-4 py-3">Challan</th>
+                                    <th className="px-4 py-3 text-right">Arrears</th>
+                                    <th className="px-4 py-3 text-right">Current Dues</th>
+                                    <th className="px-4 py-3 text-right">Outstanding Balance</th>
+                                    <th className="px-4 py-3 text-center">Status</th>
+                                    <th className="px-4 py-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y dark:divide-secondary-700">
+                                {paginatedChallans.map(challan => {
+                                    const student = studentMap.get(challan.studentId);
+                                    if (!student) return null;
+                                    
+                                    const arrears = challan.previousBalance || 0;
+                                    const currentDues = challan.totalAmount - arrears;
+                                    const outstanding = challan.totalAmount - challan.discount - challan.paidAmount;
+                                    
+                                    return (
+                                        <tr key={challan.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar student={student} className="w-8 h-8" />
+                                                    <div>
+                                                        <div className="font-medium text-secondary-900 dark:text-white">{student.name}</div>
+                                                        <div className="text-xs font-bold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-secondary-600 dark:text-secondary-400">{classMap.get(student.classId)}</td>
+                                            <td className="px-4 py-3 font-medium">{challan.month} {challan.year}</td>
+                                            <td className="px-4 py-3 text-right text-secondary-600 dark:text-secondary-400">{arrears > 0 ? `Rs. ${arrears.toLocaleString()}` : '-'}</td>
+                                            <td className="px-4 py-3 text-right text-secondary-600 dark:text-secondary-400">Rs. {currentDues.toLocaleString()}</td>
+                                            <td className={`px-4 py-3 text-right font-bold ${outstanding > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                                Rs. {outstanding.toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <Badge color={getStatusColor(challan.status)}>{challan.status}</Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') ? (
+                                                    <button 
+                                                        onClick={() => setChallanToManage({ challan, student, mode: 'pay' })} 
+                                                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                                                    >
+                                                        Record Payment
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex justify-center gap-2">
+                                                        {canManage && (challan.status === 'Paid' || challan.status === 'Partial') && (
+                                                            <button onClick={() => setChallanToManage({ challan, student, mode: 'edit' })} className="text-xs text-primary-600 hover:underline">Record Payment</button>
+                                                        )}
+                                                        {canManage && challan.status !== 'Paid' && challan.status !== 'Cancelled' && (
+                                                             <button onClick={() => setChallanToCancel(challan)} className="text-xs text-red-600 hover:underline">Cancel</button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                         {filteredChallans.length === 0 && (
+                            <div className="p-8 text-center text-secondary-500 dark:text-secondary-400">
+                                No challans found matching the selected criteria.
+                            </div>
+                        )}
+                    </div>
+                     {totalPages > 0 && (
+                        <div className="flex justify-between items-center p-4 border-t dark:border-secondary-700">
+                            <span className="text-sm text-secondary-700 dark:text-secondary-400">
+                                Showing {showingFrom} - {showingTo} of {filteredChallans.length} records
+                            </span>
+                            {totalPages > 1 && (
+                                <div className="flex items-center space-x-2">
+                                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="btn-secondary text-sm py-1 px-2">Prev</button>
+                                    <span className="text-sm px-2">{currentPage} of {totalPages}</span>
+                                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="btn-secondary text-sm py-1 px-2">Next</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </>
     );

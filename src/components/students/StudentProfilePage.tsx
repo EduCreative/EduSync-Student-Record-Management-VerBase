@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { formatDate } from '../../constants';
@@ -91,7 +92,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             </div>
                             <div className="flex items-center flex-wrap gap-x-4 gap-y-2 mt-2">
                                 <p className="text-secondary-500 dark:text-secondary-400">{studentClass?.fullName || 'N/A'}</p>
-                                <Badge color="blue">Student ID: {student.rollNumber}</Badge>
+                                <Badge color="blue">ID: <strong>{student.rollNumber}</strong></Badge>
                             </div>
                             <div className="mt-4 flex flex-wrap gap-4">
                                 <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { FeeChallan, Student } from '../../types';
@@ -220,7 +221,7 @@ const ChallanScannerPage: React.FC = () => {
                                     <Avatar student={scannedStudent} className="w-16 h-16"/>
                                     <div>
                                         <p className="font-bold text-lg">{scannedStudent.name}</p>
-                                        <p className="text-sm text-secondary-500">{classMap.get(scannedStudent.classId)} - Roll #: {scannedStudent.rollNumber}</p>
+                                        <p className="text-sm text-secondary-500">{classMap.get(scannedStudent.classId)} - <span className="font-bold text-primary-600 dark:text-primary-400">ID: {scannedStudent.rollNumber}</span></p>
                                     </div>
                                 </div>
                                 <div className="text-sm space-y-2 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">

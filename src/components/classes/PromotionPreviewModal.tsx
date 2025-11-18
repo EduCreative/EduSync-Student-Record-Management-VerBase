@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { Class, Student } from '../../types';
@@ -122,7 +123,7 @@ const PromotionPreviewModal: React.FC<PromotionPreviewModalProps> = ({ isOpen, o
                                 <Avatar student={student} className="w-8 h-8" />
                                 <div>
                                     <p className="text-sm font-medium">{student.name}</p>
-                                    <p className="text-xs text-secondary-500">Roll: {student.rollNumber}</p>
+                                    <p className="text-xs font-bold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</p>
                                 </div>
                             </label>
                         ))}

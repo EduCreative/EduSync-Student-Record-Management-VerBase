@@ -1,3 +1,4 @@
+
 import type { FC } from 'react';
 import { Student, School, Result } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
@@ -52,7 +53,7 @@ const PrintableReportCard: FC<PrintableReportCardProps> = ({ student, studentCla
                 <div><strong>Student:</strong> {student.name}</div>
                 <div><strong>Class:</strong> {studentClass}</div>
                 <div><strong>Father's Name:</strong> {student.fatherName}</div>
-                <div><strong>Student ID:</strong> {student.rollNumber}</div>
+                <div><strong>Student ID:</strong> <span className="font-bold text-base">{student.rollNumber}</span></div>
             </div>
 
             {/* Results Table */}

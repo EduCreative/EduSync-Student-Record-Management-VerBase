@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePrint } from '../../context/PrintContext';
 import { downloadCsvString, escapeCsvCell } from '../../utils/csvHelper';
-import { UserRole } from '../../types';
+import { UserRole, Class } from '../../types';
 import { getClassLevel } from '../../utils/sorting';
 import PrintableReportLayout from './PrintableReportLayout';
 
@@ -121,7 +121,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             return acc;
         }, {} as Record<string, ClassDefaulterGroup>);
 
-        const schoolClassesMapForSort = new Map(schoolClasses.map(c => [c.id, c]));
+        const schoolClassesMapForSort = new Map<string, Class>(schoolClasses.map(c => [c.id, c]));
 
         // 4. Sort classes and students within each class
         return Object.values(groupedByClass)

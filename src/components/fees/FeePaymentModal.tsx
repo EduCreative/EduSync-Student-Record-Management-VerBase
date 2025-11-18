@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
@@ -67,68 +68,106 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
     const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editMode ? `Edit Payment for ${student.name} (ID: ${student.rollNumber})`: `Record Payment for ${student.name} (ID: ${student.rollNumber})`}>
-            <div className="text-sm space-y-2 mb-4 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg">
-                <p><strong>Challan:</strong> {challan.month} {challan.year}</p>
-                <p><strong>Total Amount:</strong> Rs. {challan.totalAmount.toLocaleString()}</p>
-                {editMode ? (
-                     <p className="font-bold"><strong>Currently Paid:</strong> Rs. {challan.paidAmount.toLocaleString()}</p>
-                ) : (
-                    <>
-                        <p><strong>Already Paid:</strong> Rs. {challan.paidAmount.toLocaleString()}</p>
-                        <p className="font-bold"><strong>Current Balance Due:</strong> Rs. {balanceDue.toLocaleString()}</p>
-                    </>
-                )}
+        <Modal isOpen={isOpen} onClose={onClose} title={editMode ? `Edit Payment for ${student.name}`: `Record Payment for ${student.name}`}>
+            <div className="space-y-4">
+                <div className="p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg text-sm">
+                     <div className="grid grid-cols-2 gap-2 mb-2">
+                        <p><strong>Student ID:</strong> <span className="text-lg font-bold text-primary-600 dark:text-primary-400">{student.rollNumber}</span></p>
+                        <p><strong>Father Name:</strong> {student.fatherName}</p>
+                        <p><strong>Challan Month:</strong> {challan.month} {challan.year}</p>
+                    </div>
+                    
+                    <div className="border-t dark:border-secondary-600 pt-2 mt-2">
+                         <p className="font-semibold mb-1">Fee Breakdown:</p>
+                         <ul className="space-y-1 text-xs text-secondary-600 dark:text-secondary-300">
+                            {challan.feeItems.map((item, idx) => (
+                                <li key={idx} className="flex justify-between">
+                                    <span>{item.description}</span>
+                                    <span>Rs. {item.amount.toLocaleString()}</span>
+                                </li>
+                            ))}
+                             {challan.previousBalance > 0 && (
+                                <li className="flex justify-between font-medium text-red-600 dark:text-red-400">
+                                    <span>Arrears (Previous Balance)</span>
+                                    <span>Rs. {challan.previousBalance.toLocaleString()}</span>
+                                </li>
+                            )}
+                         </ul>
+                    </div>
+
+                    <div className="border-t dark:border-secondary-600 pt-2 mt-2 flex justify-between items-center text-base">
+                        <strong>Total Amount:</strong> 
+                        <strong>Rs. {challan.totalAmount.toLocaleString()}</strong>
+                    </div>
+                    
+                    {editMode ? (
+                         <div className="flex justify-between items-center mt-2">
+                            <strong>Currently Paid:</strong> 
+                            <span>Rs. {challan.paidAmount.toLocaleString()}</span>
+                         </div>
+                    ) : (
+                        <>
+                            <div className="flex justify-between items-center mt-1 text-xs">
+                                <span>Already Paid:</span>
+                                <span>Rs. {challan.paidAmount.toLocaleString()}</span>
+                            </div>
+                             <div className="flex justify-between items-center mt-2 text-base font-bold text-primary-600 dark:text-primary-400">
+                                <span>Current Balance Due:</span>
+                                <span>Rs. {balanceDue.toLocaleString()}</span>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="amount" className="input-label">{editMode ? 'Paid Amount' : 'Amount Paying Now'}</label>
+                        <input
+                            type="number"
+                            id="amount"
+                            value={amount}
+                            onChange={e => setAmount(Number(e.target.value))}
+                            className="input-field"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="discount" className="input-label">Discount</label>
+                        <input
+                            type="number"
+                            id="discount"
+                            value={discount}
+                            onChange={e => setDiscount(Number(e.target.value))}
+                            className="input-field"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="paidDate" className="input-label">Payment Date</label>
+                        <input
+                            type="date"
+                            id="paidDate"
+                            value={paidDate}
+                            onChange={e => setPaidDate(e.target.value)}
+                            className="input-field"
+                            required
+                        />
+                    </div>
+
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg text-center font-medium text-sm">
+                        Remaining Balance After this Payment: 
+                        <span className={`ml-2 ${remainingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            Rs. {remainingBalance.toLocaleString()}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-end space-x-3 pt-2">
+                        <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+                        <button type="submit" disabled={isSubmitting} className="btn-primary">
+                            {isSubmitting ? 'Saving...' : (editMode ? 'Update Payment' : 'Record Payment')}
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="amount" className="input-label">{editMode ? 'Paid Amount' : 'Amount Paying Now'}</label>
-                    <input
-                        type="number"
-                        id="amount"
-                        value={amount}
-                        onChange={e => setAmount(Number(e.target.value))}
-                        className="input-field"
-                        required
-                    />
-                </div>
-                <div>
-                    <label htmlFor="discount" className="input-label">Discount</label>
-                    <input
-                        type="number"
-                        id="discount"
-                        value={discount}
-                        onChange={e => setDiscount(Number(e.target.value))}
-                        className="input-field"
-                    />
-                </div>
-                <div>
-                    <label htmlFor="paidDate" className="input-label">Payment Date</label>
-                    <input
-                        type="date"
-                        id="paidDate"
-                        value={paidDate}
-                        onChange={e => setPaidDate(e.target.value)}
-                        className="input-field"
-                        required
-                    />
-                </div>
-
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg text-center font-medium">
-                    Remaining Balance After this Payment: 
-                    <span className={`ml-2 ${remainingBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        Rs. {remainingBalance.toLocaleString()}
-                    </span>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-2">
-                    <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                    <button type="submit" disabled={isSubmitting} className="btn-primary">
-                        {isSubmitting ? 'Saving...' : (editMode ? 'Update Payment' : 'Confirm Payment')}
-                    </button>
-                </div>
-            </form>
         </Modal>
     );
 };

@@ -30,7 +30,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
     
     useEffect(() => {
         if (isOpen && student) {
-            const studentFeeStructureMap = new Map((student.feeStructure || []).map(item => [item.feeHeadId, item.amount]));
+            const studentFeeStructureMap = new Map<string, number>((student.feeStructure || []).map(item => [item.feeHeadId, item.amount]));
             const newMap = new Map<string, { selected: boolean; amount: number }>();
             schoolFeeHeads.forEach((fh: FeeHead) => {
                 const studentSpecificAmount = studentFeeStructureMap.get(fh.id);
@@ -46,7 +46,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
     }, [isOpen, student, schoolFeeHeads]);
 
     const handleFeeHeadToggle = (id: string) => {
-        setSelectedFeeHeads(prev => {
+        setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
             if (current) {
@@ -60,7 +60,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
         const numAmount = parseInt(amount, 10);
         if (isNaN(numAmount)) return;
         
-        setSelectedFeeHeads(prev => {
+        setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
             const newMap = new Map(prev);
             const current = newMap.get(id);
             if (current) {
@@ -94,7 +94,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Generate Challan for ${student.name}`}>
+        <Modal isOpen={isOpen} onClose={onClose} title={`Generate Single Challan for ${student.name}`}>
             <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

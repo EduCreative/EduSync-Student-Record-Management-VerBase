@@ -1,3 +1,4 @@
+
 import type { FC } from 'react';
 import { Student, School } from '../../types';
 import Avatar from '../common/Avatar';
@@ -30,7 +31,7 @@ const PrintableIdCard: FC<PrintableIdCardProps> = ({ student, school, studentCla
                     <h2 className="id-card-student-name">{student.name}</h2>
                     <p><strong>Father's Name:</strong> {student.fatherName}</p>
                     <p><strong>Class:</strong> {studentClass || 'N/A'}</p>
-                    <p><strong>Student ID:</strong> {student.rollNumber}</p>
+                    <p><strong>Student ID:</strong> <span className="font-bold text-lg">{student.rollNumber}</span></p>
                     <p><strong>Contact:</strong> {student.contactNumber}</p>
                 </div>
             </div>

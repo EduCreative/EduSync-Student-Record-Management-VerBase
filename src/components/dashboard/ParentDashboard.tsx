@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -93,7 +94,7 @@ const ChildCard: React.FC<{ student: Student; results: Result[] }> = ({ student,
                 <Avatar student={student} className="w-16 h-16"/>
                 <div>
                     <h2 className="text-2xl font-bold">{student.name}</h2>
-                    <p className="text-secondary-500">Class: Class Name | Roll No: {student.rollNumber}</p>
+                    <p className="text-secondary-500">Class: Class Name | <span className="font-bold text-primary-600 dark:text-primary-400">ID: {student.rollNumber}</span></p>
                 </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

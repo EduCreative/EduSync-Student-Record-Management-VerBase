@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -324,7 +325,7 @@ const ClassManagementPage: React.FC = () => {
                                             <Avatar student={student} className="w-8 h-8"/>
                                             <div>
                                                 <p className="font-medium text-sm">{student.name}</p>
-                                                <p className="text-xs text-secondary-500">Roll No: {student.rollNumber}</p>
+                                                <p className="text-xs text-primary-600 dark:text-primary-400 font-bold">ID: {student.rollNumber}</p>
                                             </div>
                                         </li>
                                     )) : (

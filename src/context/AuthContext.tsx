@@ -146,6 +146,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 await (supabase.auth as any).signOut();
                 return { success: false, error: 'Your account is inactive or has been suspended.' };
             }
+
+            // Update last_login
+            await supabase.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', signInData.user.id);
         }
     
         // The onAuthStateChange listener will handle setting the user state for a valid user.
