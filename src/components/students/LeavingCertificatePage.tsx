@@ -1,9 +1,7 @@
 
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { usePrint } from '../../context/PrintContext';
-import { formatDate } from '../../constants';
 import { ActiveView } from '../layout/Layout';
 import { Student } from '../../types';
 import { useToast } from '../../context/ToastContext';
@@ -33,7 +31,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
     const [details, setDetails] = useState({
         dateOfLeaving: getTodayString(),
         reasonForLeaving: '',
-        conduct: 'Good' as Student['conduct'],
+        conduct: 'Good', // Initialized as string to satisfy PrintableLeavingCertificate prop types
         progress: 'Satisfactory',
         placeOfBirth: '',
     });
@@ -47,7 +45,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                 ...prev,
                 dateOfLeaving: student.dateOfLeaving || prev.dateOfLeaving,
                 reasonForLeaving: student.reasonForLeaving || prev.reasonForLeaving,
-                conduct: student.conduct || prev.conduct,
+                conduct: (student.conduct || prev.conduct) as string,
                 progress: student.progress || prev.progress,
                 placeOfBirth: student.placeOfBirth || prev.placeOfBirth
             }));
@@ -67,8 +65,11 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
 
         setIsIssuing(true);
         try {
-            // Even if reprinting, we update the record to save any changes made in the form (like adding missing place of birth)
-            await issueLeavingCertificate(student.id, details);
+            // Even if reprinting, we update the record to save any changes made in the form
+            await issueLeavingCertificate(student.id, {
+                ...details,
+                conduct: details.conduct as Student['conduct'] // Cast string back to specific type for DB
+            });
             
             const content = (
                 <PrintableLeavingCertificate 
@@ -122,7 +123,7 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
                         </div>
                          <div>
                             <label htmlFor="conduct" className="input-label">Conduct</label>
-                            <select id="conduct" value={details.conduct} onChange={e => setDetails(d => ({...d, conduct: e.target.value as Student['conduct']}))} className="input-field">
+                            <select id="conduct" value={details.conduct} onChange={e => setDetails(d => ({...d, conduct: e.target.value}))} className="input-field">
                                 <option>Excellent</option>
                                 <option>Good</option>
                                 <option>Fair</option>
