@@ -24,6 +24,7 @@ const ChallanGenerationPage: React.FC = () => {
 
     const [month, setMonth] = useState(months[new Date().getMonth()]);
     const [year, setYear] = useState(currentYear);
+    const [dueDate, setDueDate] = useState('');
     const [selectedFeeHeads, setSelectedFeeHeads] = useState<Map<string, { selected: boolean; amount: number }>>(new Map());
     
     const [isPreparingPreview, setIsPreparingPreview] = useState(false);
@@ -46,6 +47,12 @@ const ChallanGenerationPage: React.FC = () => {
         });
         setSelectedFeeHeads(newMap);
     }, [schoolFeeHeads]);
+    
+    useEffect(() => {
+        const monthIndex = months.indexOf(month);
+        const m = (monthIndex + 1).toString().padStart(2, '0');
+        setDueDate(`${year}-${m}-10`);
+    }, [month, year]);
 
     const handleFeeHeadToggle = (id: string) => {
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
@@ -132,7 +139,7 @@ const ChallanGenerationPage: React.FC = () => {
 
         setIsGenerating(true);
         try {
-            await generateChallansForMonth(month, year, feeHeadsToGenerate, studentIdsToGenerate);
+            await generateChallansForMonth(month, year, feeHeadsToGenerate, studentIdsToGenerate, dueDate);
             setIsPreviewOpen(false); // Close modal on success
         } catch (error) {
             // Error toast is handled in DataContext
@@ -156,7 +163,7 @@ const ChallanGenerationPage: React.FC = () => {
                     <p className="text-sm text-secondary-500">This will create new challans for all active students who don't already have one for the selected month and year.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label htmlFor="month-select" className="input-label">For Month</label>
                         <select id="month-select" value={month} onChange={e => setMonth(e.target.value)} className="input-field">
@@ -168,6 +175,10 @@ const ChallanGenerationPage: React.FC = () => {
                         <select id="year-select" value={year} onChange={e => setYear(Number(e.target.value))} className="input-field">
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
+                    </div>
+                     <div>
+                        <label htmlFor="due-date" className="input-label">Due Date</label>
+                        <input type="date" id="due-date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="input-field" />
                     </div>
                 </div>
 

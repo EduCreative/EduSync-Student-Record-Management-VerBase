@@ -20,6 +20,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
 
     const [month, setMonth] = useState(months[new Date().getMonth()]);
     const [year, setYear] = useState(currentYear);
+    const [dueDate, setDueDate] = useState('');
     const [selectedFeeHeads, setSelectedFeeHeads] = useState<Map<string, { selected: boolean; amount: number }>>(new Map());
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -44,6 +45,14 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
             setYear(currentYear);
         }
     }, [isOpen, student, schoolFeeHeads]);
+    
+    useEffect(() => {
+        if (isOpen) {
+            const monthIndex = months.indexOf(month);
+            const m = (monthIndex + 1).toString().padStart(2, '0');
+            setDueDate(`${year}-${m}-10`);
+        }
+    }, [month, year, isOpen]);
 
     const handleFeeHeadToggle = (id: string) => {
         setSelectedFeeHeads((prev: Map<string, { selected: boolean; amount: number }>) => {
@@ -82,7 +91,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
 
         setIsGenerating(true);
         try {
-            const count = await generateChallansForMonth(month, year, feeHeadsToGenerate, [student.id]);
+            const count = await generateChallansForMonth(month, year, feeHeadsToGenerate, [student.id], dueDate);
             if (count > 0) {
                 onClose();
             }
@@ -96,7 +105,7 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Generate Single Challan for ${student.name}`}>
             <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="input-label">For Month</label>
                         <select value={month} onChange={e => setMonth(e.target.value)} className="input-field">
@@ -108,6 +117,10 @@ const SingleChallanGenerationModal: React.FC<SingleChallanGenerationModalProps> 
                         <select value={year} onChange={e => setYear(Number(e.target.value))} className="input-field">
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
+                    </div>
+                     <div>
+                        <label className="input-label">Due Date</label>
+                        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="input-field" />
                     </div>
                 </div>
 

@@ -42,7 +42,7 @@ const UnrecoverableErrorScreen: React.FC<{
     </div>
 );
 
-// ... (DataContextType interface remains the same)
+// ... (DataContextType interface)
 interface DataContextType {
     schools: School[];
     users: User[];
@@ -82,7 +82,7 @@ interface DataContextType {
     recordFeePayment: (challanId: string, amount: number, discount: number, paidDate: string) => Promise<void>;
     updateFeePayment: (challanId: string, paidAmount: number, discount: number, paidDate: string) => Promise<void>;
     cancelChallan: (challanId: string) => Promise<void>;
-    generateChallansForMonth: (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => Promise<number>;
+    generateChallansForMonth: (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[], dueDate?: string) => Promise<number>;
     addFeeHead: (feeHeadData: Omit<FeeHead, 'id'>) => Promise<void>;
     updateFeeHead: (updatedFeeHead: FeeHead) => Promise<void>;
     deleteFeeHead: (feeHeadId: string) => Promise<void>;
@@ -340,7 +340,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
+    
+    // ... (other methods: handleHardReset, addLog, getSchoolById, user management, student management, class management)
+    // ...
     const handleHardReset = async () => {
         showToast('Resetting...', 'Clearing local data and preparing to re-sync.', 'info');
         try {
@@ -351,7 +353,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Reset Failed', 'Could not clear local data. Please try clearing your browser cache manually.', 'error');
         }
     };
-    
+
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
 
@@ -373,9 +375,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [user, activeSchoolId]);
 
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
-    
-    // ... (updateUser, deleteUser, addUserByAdmin, addStudent, updateStudent, deleteStudent... methods)
 
+    // ... updateUser, deleteUser, addUserByAdmin, addStudent, updateStudent, deleteStudent ...
     const updateUser = async (updatedUser: User) => {
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
@@ -508,7 +509,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `${studentToDelete.name}'s profile has been deleted.`);
     };
 
-    // ... (addClass, updateClass, deleteClass, addSubject... etc)
     const addClass = async (classData: Omit<Class, 'id'>) => {
         const { data: schoolClassesData } = await supabase.from('classes').select('sort_order').eq('school_id', classData.schoolId);
         
@@ -558,6 +558,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `Class ${classToDelete.name} has been deleted.`);
     };
 
+    // ... (addSubject, updateSubject, deleteSubject, addExam, updateExam, deleteExam)
     const addSubject = async (subjectData: Omit<Subject, 'id'>) => {
         const { error } = await supabase.from('subjects').insert(toSnakeCase(subjectData)).select().single();
         if (error) {
@@ -720,7 +721,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', 'Challan has been cancelled.');
     };
 
-    const generateChallansForMonth = async (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[]) => {
+    const generateChallansForMonth = async (month: string, year: number, selectedFeeHeads: { feeHeadId: string, amount: number }[], studentIds: string[], dueDateOverride?: string) => {
         if (studentIds.length === 0) {
             showToast('Info', 'No students selected for challan generation.', 'info');
             return 0;
@@ -734,6 +735,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
 
             const monthIndex = new Date(Date.parse(month +" 1, 2012")).getMonth();
+            const defaultDueDate = new Date(year, monthIndex, 10).toISOString().split('T')[0];
+            const dueDate = dueDateOverride || defaultDueDate;
 
             for (const studentId of studentIds) {
                 const student = studentMap.get(studentId);
@@ -769,8 +772,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const monthNum = (monthIndex + 1).toString().padStart(2, '0');
                 const challanNumber = `${year}${monthNum}-${student.rollNumber}`;
                 
-                const dueDate = new Date(year, monthIndex, 10).toISOString().split('T')[0];
-
                 challansToCreate.push({
                     challanNumber,
                     studentId,

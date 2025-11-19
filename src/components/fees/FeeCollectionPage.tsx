@@ -9,6 +9,7 @@ import Modal from '../common/Modal';
 import { Permission } from '../../permissions';
 import SingleChallanGenerationModal from './SingleChallanGenerationModal';
 import { getClassLevel } from '../../utils/sorting';
+import { formatDate } from '../../constants';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -282,6 +283,7 @@ const FeeCollectionPage: React.FC = () => {
                                     <th className="px-4 py-3">Student</th>
                                     <th className="px-4 py-3">Class</th>
                                     <th className="px-4 py-3">Challan</th>
+                                    <th className="px-4 py-3">Due Date</th>
                                     <th className="px-4 py-3 text-right">Arrears</th>
                                     <th className="px-4 py-3 text-right">Current Dues</th>
                                     <th className="px-4 py-3 text-right">Outstanding Balance</th>
@@ -297,6 +299,7 @@ const FeeCollectionPage: React.FC = () => {
                                     const arrears = challan.previousBalance || 0;
                                     const currentDues = challan.totalAmount - arrears;
                                     const outstanding = challan.totalAmount - challan.discount - challan.paidAmount;
+                                    const isOverdue = new Date(challan.dueDate) < new Date() && (challan.status === 'Unpaid' || challan.status === 'Partial');
                                     
                                     return (
                                         <tr key={challan.id} className="hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors">
@@ -311,6 +314,9 @@ const FeeCollectionPage: React.FC = () => {
                                             </td>
                                             <td className="px-4 py-3 text-secondary-600 dark:text-secondary-400">{classMap.get(student.classId)}</td>
                                             <td className="px-4 py-3 font-medium">{challan.month} {challan.year}</td>
+                                            <td className={`px-4 py-3 text-sm ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : ''}`}>
+                                                {formatDate(challan.dueDate)}
+                                            </td>
                                             <td className="px-4 py-3 text-right text-secondary-600 dark:text-secondary-400">{arrears > 0 ? `Rs. ${arrears.toLocaleString()}` : '-'}</td>
                                             <td className="px-4 py-3 text-right text-secondary-600 dark:text-secondary-400">Rs. {currentDues.toLocaleString()}</td>
                                             <td className={`px-4 py-3 text-right font-bold ${outstanding > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
 import { useData } from '../../context/DataContext';
+import { formatDate } from '../../constants';
 
 interface FeePaymentModalProps {
     isOpen: boolean;
@@ -74,6 +75,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                         <p><strong>Student ID:</strong> <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{student.rollNumber}</span></p>
                         <p><strong>Father Name:</strong> {student.fatherName}</p>
                         <p><strong>Challan Month:</strong> {challan.month} {challan.year}</p>
+                        <p><strong>Due Date:</strong> <span className={new Date(challan.dueDate) < new Date() && (challan.status !== 'Paid') ? 'text-red-600' : ''}>{formatDate(challan.dueDate)}</span></p>
                     </div>
                     
                     <div className="border-t dark:border-secondary-600 pt-2 mt-2">

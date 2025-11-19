@@ -183,6 +183,9 @@ This project is configured to run with a modern frontend toolchain (Vite) and co
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
 CREATE TABLE public.activity_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
@@ -212,6 +215,8 @@ CREATE TABLE public.classes (
   teacher_id uuid,
   school_id uuid,
   created_at timestamp with time zone DEFAULT now(),
+  sort_order integer,
+  section text DEFAULT ''::text,
   CONSTRAINT classes_pkey PRIMARY KEY (id),
   CONSTRAINT classes_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES auth.users(id),
   CONSTRAINT classes_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)
@@ -264,6 +269,7 @@ CREATE TABLE public.profiles (
   last_login timestamp with time zone,
   child_student_ids ARRAY,
   disabled_nav_links ARRAY,
+  permissions_overrides jsonb,
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
   CONSTRAINT profiles_school_id_fkey FOREIGN KEY (school_id) REFERENCES public.schools(id)

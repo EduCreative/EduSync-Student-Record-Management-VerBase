@@ -68,6 +68,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     const [success, setSuccess] = useState(false);
     const { register } = useAuth();
 
+    // Define input styles inline to ensure they are applied correctly
+    const inputAuthClass = "pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-purple-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400";
+
     const validate = () => {
         const newErrors: { name?: string, email?: string; password?: string, confirmPassword?: string } = {};
         if (!name.trim()) {
@@ -170,7 +173,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-purple-200 text-sm font-bold mb-2" htmlFor="name">Full Name</label>
                             <div className="relative">
                                 <UserIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-purple-200/80"/>
-                                <input id="name" type="text" value={name} onChange={handleInputChange(setName, 'name')} className="input-auth" placeholder="John Doe" required />
+                                <input id="name" type="text" value={name} onChange={handleInputChange(setName, 'name')} className={inputAuthClass} placeholder="John Doe" required />
                             </div>
                              {formErrors.name && <p className="text-red-400 text-xs mt-1">{formErrors.name}</p>}
                         </div>
@@ -178,7 +181,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-purple-200 text-sm font-bold mb-2" htmlFor="email">Email Address</label>
                              <div className="relative">
                                 <MailIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-purple-200/80"/>
-                                <input id="email" type="email" value={email} onChange={handleInputChange(setEmail, 'email')} className="input-auth" placeholder="you@example.com" required />
+                                <input id="email" type="email" value={email} onChange={handleInputChange(setEmail, 'email')} className={inputAuthClass} placeholder="you@example.com" required />
                             </div>
                             {formErrors.email && <p className="text-red-400 text-xs mt-1">{formErrors.email}</p>}
                         </div>
@@ -186,7 +189,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-purple-200 text-sm font-bold mb-2" htmlFor="password">Password</label>
                             <div className="relative">
                                 <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-purple-200/80"/>
-                                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={handleInputChange(setPassword, 'password')} className="input-auth" placeholder="••••••••••••" required />
+                                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={handleInputChange(setPassword, 'password')} className={inputAuthClass} placeholder="••••••••••••" required />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-200/80 hover:text-white" aria-label={showPassword ? 'Hide password' : 'Show password'} title={showPassword ? 'Hide password' : 'Show password'}>
                                     {showPassword ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
                                 </button>
@@ -197,7 +200,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-purple-200 text-sm font-bold mb-2" htmlFor="confirmPassword">Confirm Password</label>
                             <div className="relative">
                                 <LockIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-purple-200/80"/>
-                                <input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={handleInputChange(setConfirmPassword, 'confirmPassword')} className="input-auth" placeholder="••••••••••••" required />
+                                <input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={handleInputChange(setConfirmPassword, 'confirmPassword')} className={inputAuthClass} placeholder="••••••••••••" required />
                                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-200/80 hover:text-white" aria-label={showConfirmPassword ? 'Hide password' : 'Show password'} title={showConfirmPassword ? 'Hide password' : 'Show password'}>
                                     {showConfirmPassword ? <EyeOffIcon className="w-5 h-5"/> : <EyeIcon className="w-5 h-5"/>}
                                 </button>
@@ -208,7 +211,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                             <label className="block text-purple-200 text-sm font-bold mb-2" htmlFor="role">I am a...</label>
                             <div className="relative">
                                 <BriefcaseIcon className="pointer-events-none w-5 h-5 absolute top-1/2 transform -translate-y-1/2 left-3 text-purple-200/80"/>
-                                <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-auth">
+                                <select id="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className={inputAuthClass}>
                                     <option className="text-black" value={UserRole.Admin}>Admin</option>
                                     <option className="text-black" value={UserRole.Accountant}>Accountant</option>
                                     <option className="text-black" value={UserRole.Teacher}>Teacher</option>
@@ -232,9 +235,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                     </p>
                 </div>
             </div>
-            <style>{`.input-auth {
-                @apply pl-10 appearance-none border rounded-lg w-full py-3 px-4 bg-black/20 text-white placeholder-purple-200/70 border-white/30 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-400;
-            }`}</style>
         </div>
     );
 };
