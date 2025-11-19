@@ -1,3 +1,4 @@
+
 # EduSync - Modern Student Record Management System
 
 [![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://reactjs.org/)
@@ -332,6 +333,11 @@ CREATE TABLE public.students (
   secondary_contact_number text,
   gr_number text,
   religion text,
+  place_of_birth text,
+  progress text,
+  date_of_leaving date,
+  reason_for_leaving text,
+  conduct text,
   CONSTRAINT students_pkey PRIMARY KEY (id),
   CONSTRAINT students_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
   CONSTRAINT students_class_id_fkey FOREIGN KEY (class_id) REFERENCES public.classes(id),

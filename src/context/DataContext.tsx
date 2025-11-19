@@ -1,3 +1,4 @@
+
 // ... (imports remain the same)
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam } from '../types';
@@ -86,7 +87,7 @@ interface DataContextType {
     addFeeHead: (feeHeadData: Omit<FeeHead, 'id'>) => Promise<void>;
     updateFeeHead: (updatedFeeHead: FeeHead) => Promise<void>;
     deleteFeeHead: (feeHeadId: string) => Promise<void>;
-    issueLeavingCertificate: (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => Promise<void>;
+    issueLeavingCertificate: (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct']; progress?: string; placeOfBirth?: string; }) => Promise<void>;
     saveResults: (resultsToSave: Omit<Result, 'id'>[]) => Promise<void>;
     addSchool: (name: string, address: string, logoUrl?: string | null) => Promise<void>;
     updateSchool: (updatedSchool: School) => Promise<void>;
@@ -341,8 +342,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchData();
     }, [fetchData]);
     
-    // ... (other methods: handleHardReset, addLog, getSchoolById, user management, student management, class management)
-    // ...
+    // ... (other methods)
+
     const handleHardReset = async () => {
         showToast('Resetting...', 'Clearing local data and preparing to re-sync.', 'info');
         try {
@@ -353,6 +354,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Reset Failed', 'Could not clear local data. Please try clearing your browser cache manually.', 'error');
         }
     };
+
+    // ... addLog, getSchoolById, updateUser, deleteUser, addUserByAdmin, addStudent, updateStudent, deleteStudent ...
+    // ... (These methods remain unchanged, just hidden for brevity)
+
+    // ... (Rest of the methods like addClass, updateClass, deleteClass, etc. remain unchanged)
+    
+    // ... (recordFeePayment, updateFeePayment, cancelChallan, generateChallansForMonth)
+    
+    // ... (addFeeHead, updateFeeHead, deleteFeeHead)
 
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
@@ -373,10 +383,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLogs(prev => [toCamelCase(data[0]) as ActivityLog, ...prev]);
         }
     }, [user, activeSchoolId]);
-
+    
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
 
-    // ... updateUser, deleteUser, addUserByAdmin, addStudent, updateStudent, deleteStudent ...
     const updateUser = async (updatedUser: User) => {
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
@@ -558,7 +567,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showToast('Success', `Class ${classToDelete.name} has been deleted.`);
     };
 
-    // ... (addSubject, updateSubject, deleteSubject, addExam, updateExam, deleteExam)
     const addSubject = async (subjectData: Omit<Subject, 'id'>) => {
         const { error } = await supabase.from('subjects').insert(toSnakeCase(subjectData)).select().single();
         if (error) {
@@ -842,14 +850,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addLog('Fee Head Deleted', `Fee head deleted: ${feeHeadToDelete.name}.`);
     };
 
-    const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct'] }) => {
-        const { dateOfLeaving, reasonForLeaving, conduct } = details;
+    const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct']; progress?: string; placeOfBirth?: string; }) => {
+        const { dateOfLeaving, reasonForLeaving, conduct, progress, placeOfBirth } = details;
         
-        // First try: Update all fields (assuming schema supports it)
         const fullUpdateData = toSnakeCase({
             dateOfLeaving,
             reasonForLeaving,
             conduct,
+            progress,
+            placeOfBirth,
             status: 'Left'
         });
 
@@ -858,7 +867,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .eq('id', studentId);
 
         // Fallback: If columns missing (code 42703 is undefined_column, or check message), just update status
-        if (error && (error.code === '42703' || error.message.includes('Could not find the'))) {
+        if (error && (error.code === '42703' || error.message.includes('Could not find the') || error.message.includes('column'))) {
              console.warn("Extended student columns missing in DB. Falling back to status update only.");
              const { error: fallbackError } = await supabase.from('students')
                 .update({ status: 'Left' })
@@ -866,7 +875,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
              
              if (!fallbackError) {
                  error = null; 
-                 showToast('Warning', 'Certificate issued but extended details (reason, conduct) were not saved to the database due to schema limitations.', 'info');
+                 showToast('Warning', 'Certificate issued but extended details were not saved due to database schema limitations. Please contact admin to update schema.', 'info');
              } else {
                  error = fallbackError;
              }

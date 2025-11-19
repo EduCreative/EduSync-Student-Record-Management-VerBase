@@ -1,3 +1,5 @@
+
+
 import React, { useMemo, useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { formatDate } from '../../constants';
@@ -96,7 +98,9 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ studentId, setA
                             <div className="mt-4 flex flex-wrap gap-4">
                                 <button className="btn-secondary" onClick={() => setActiveView({ view: 'reports'})}>View Report Card</button>
                                 <button className="btn-secondary" onClick={() => setActiveTab('feeHistory')}>View Fee History</button>
-                                <button onClick={() => setActiveView({ view: 'leavingCertificate', payload: { studentId: student.id }})} className="btn-secondary">Issue Leaving Certificate</button>
+                                <button onClick={() => setActiveView({ view: 'leavingCertificate', payload: { studentId: student.id }})} className="btn-secondary">
+                                    {student.status === 'Left' ? 'Reprint Leaving Certificate' : 'Issue Leaving Certificate'}
+                                </button>
                             </div>
                         </div>
                     </div>

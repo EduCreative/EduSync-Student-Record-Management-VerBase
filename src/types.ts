@@ -1,3 +1,5 @@
+
+
 import { Permission } from './permissions';
 
 export enum UserRole {
@@ -75,6 +77,8 @@ export interface Student {
     dateOfLeaving?: string;
     reasonForLeaving?: string;
     conduct?: 'Excellent' | 'Good' | 'Fair' | 'Poor';
+    progress?: string; // Added for Leaving Certificate
+    placeOfBirth?: string; // Added for Leaving Certificate
     // Fields for individual fee management
     openingBalance?: number;
     feeStructure?: { feeHeadId: string; amount: number }[];

@@ -1,9 +1,20 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.2.0] - 2025-02-20
+
+### Added
+- **Leaving Certificate Reprinting:** Added functionality to reprint previously issued leaving certificates, retaining the original issue data.
+- **Certificate Customization:** Expanded leaving certificate fields to include Place of Birth and Progress.
+- **New Certificate Layout:** Redesigned the printable leaving certificate to fit two copies (School 30% / Parent 70%) on a single A4 Landscape page.
+
+### Fixed
+- **Date Headers:** Corrected year in changelog entries.
 
 ## [2.1.0] - 2024-07-23
 

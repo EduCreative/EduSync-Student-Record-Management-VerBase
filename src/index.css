@@ -1,3 +1,5 @@
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,13 +51,12 @@
 
   /* Challan Print Styles */
   .printable-challan-container {
-    /* Spacing handled by challan-wrapper margin in print styles */
+    display: block;
   }
 
   .challan-wrapper {
-    @apply w-full border border-gray-400 flex flex-col md:flex-row bg-white text-black;
+    @apply w-full flex flex-row bg-white text-black;
     page-break-inside: avoid;
-    overflow: hidden;
   }
 
   .barcode-container {
@@ -148,7 +149,13 @@
 @media print {
   @page {
     size: A4;
-    margin: 0.75in;
+    margin: 0.5cm; /* Reduced margin */
+  }
+  
+  /* For specific landscape pages */
+  @page landscape-page {
+      size: A4 landscape;
+      margin: 0.5cm;
   }
 
   body {
@@ -224,7 +231,7 @@
   .printable-report tr, .printable-report .class-group-container {
     page-break-inside: avoid;
   }
-  .printable-result-card, .challan-wrapper, .id-card {
+  .printable-result-card, .id-card {
     page-break-inside: avoid !important;
   }
   .printable-result-card {
@@ -242,20 +249,31 @@
 
   /* Specific tweaks for better print appearance */
   .challan-wrapper {
-    height: 85mm; /* Squeezed to fit 3 per A4 page */
-    overflow: hidden !important;
-    margin-bottom: 10mm; /* Add space between challans */
-    position: relative; /* For the pseudo-element */
-    @apply flex-row;
+    height: 94mm; /* Fits 3 per A4 page vertically */
+    overflow: hidden;
+    border-bottom: 1px dashed #666;
+    padding: 2mm 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    page-break-inside: avoid;
   }
   
-  /* Add a dotted line after each challan, except the last one */
-  .challan-wrapper:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 5%; /* Don't go all the way to the edge */
-    right: 5%;
-    bottom: -5mm; /* Position it in the middle of the margin */
-    border-top: 2px dashed #9ca3af; /* gray-400 */
+  .challan-wrapper:last-child {
+      border-bottom: none;
+  }
+  
+  /* Remove the old pseudo-element styles */
+  .challan-wrapper::after {
+    content: none;
+  }
+
+  /* Leaving Certificate Landscape Mode */
+  .leaving-certificate-container {
+      page: landscape-page;
+      width: 100%;
+      height: 190mm; /* Approx landscape height minus margins */
+      page-break-after: always;
+      page-break-inside: avoid;
   }
 }
