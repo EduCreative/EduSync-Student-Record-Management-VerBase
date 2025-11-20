@@ -12,22 +12,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       persistSession: false,
     },
     global: {
-      // FIX: Typed the options parameter as RequestInit to fix error on `options.signal`.
-      fetch: async (url, options: RequestInit = {}) => {
-        // FIX: Bypass the aggressive 15s timeout for storage uploads, as they can be long-running.
-        // The storage client has its own internal timeout handling for uploads.
-        if (typeof url === 'string' && url.includes('/storage/v1/object/')) {
+      fetch: async (url, options) => {
+        // Convert RequestInfo | URL to string for string checks
+        const urlStr = typeof url === 'string' ? url : url.toString();
+
+        // Bypass the aggressive timeout for storage uploads (which can be long-running)
+        if (urlStr.includes('/storage/v1/object/')) {
             return fetch(url, options);
         }
 
-        // Do not apply timeout to requests that already have a signal, e.g., from realtime.
-        if (options.signal) {
+        // Do not apply timeout to requests that already have a signal (e.g., from realtime)
+        if (options?.signal) {
           return fetch(url, options);
         }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.warn(`Supabase request timed out: ${url}`);
+            console.warn(`Supabase request timed out: ${urlStr}`);
             controller.abort();
         }, 30000); // 30s timeout
 

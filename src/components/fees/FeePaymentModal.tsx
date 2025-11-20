@@ -68,9 +68,6 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
              setError('Please enter valid numbers.');
              return;
         }
-
-        const proposedTotalPaid = editMode ? amount : (challan.paidAmount + amount);
-        const totalDue = challan.totalAmount - discount;
         
         // Allow overpayment? Usually no, but sometimes yes for advance. 
         // For now, just warn if negative balance (overpayment)
