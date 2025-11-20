@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
@@ -28,6 +29,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
     const [discount, setDiscount] = useState(0);
     const [paidDate, setPaidDate] = useState(getTodayString());
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -41,6 +43,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                 setDiscount(challan.discount);
                 setPaidDate(defaultDate || getTodayString());
             }
+            setError('');
         }
     }, [isOpen, challan, editMode, defaultDate]);
 
@@ -50,6 +53,33 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+
+        // Client-side validation
+        if (amount < 0) {
+            setError('Amount cannot be negative.');
+            return;
+        }
+        if (discount < 0) {
+            setError('Discount cannot be negative.');
+            return;
+        }
+        if (isNaN(amount) || isNaN(discount)) {
+             setError('Please enter valid numbers.');
+             return;
+        }
+
+        const proposedTotalPaid = editMode ? amount : (challan.paidAmount + amount);
+        const totalDue = challan.totalAmount - discount;
+        
+        // Allow overpayment? Usually no, but sometimes yes for advance. 
+        // For now, just warn if negative balance (overpayment)
+        if (remainingBalance < 0) {
+            if (!window.confirm(`This payment will result in an overpayment of Rs. ${Math.abs(remainingBalance)}. Do you want to proceed?`)) {
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             if (editMode) {
@@ -58,8 +88,9 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                 await recordFeePayment(challan.id, amount, discount, paidDate);
             }
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to process payment:", error);
+            setError(error.message || 'An error occurred while processing payment.');
         } finally {
             setIsSubmitting(false);
         }
@@ -68,7 +99,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
     const balanceDue = challan.totalAmount - challan.discount - challan.paidAmount;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editMode ? `Edit Payment for ${student.name}`: `Record Payment for ${student.name}`}>
+        <Modal isOpen={isOpen} onClose={isSubmitting ? () => {} : onClose} title={editMode ? `Edit Payment for ${student.name}`: `Record Payment for ${student.name}`}>
             <div className="space-y-4">
                 <div className="p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg text-sm">
                      <div className="grid grid-cols-2 gap-2 mb-2">
@@ -119,6 +150,12 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                         </>
                     )}
                 </div>
+                
+                {error && (
+                    <div className="p-3 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 rounded-md text-sm">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -130,6 +167,8 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                             onChange={e => setAmount(Number(e.target.value))}
                             className="input-field"
                             required
+                            min="0"
+                            disabled={isSubmitting}
                         />
                     </div>
                     <div>
@@ -140,6 +179,8 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                             value={discount}
                             onChange={e => setDiscount(Number(e.target.value))}
                             className="input-field"
+                            min="0"
+                            disabled={isSubmitting}
                         />
                     </div>
                     <div>
@@ -151,6 +192,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                             onChange={e => setPaidDate(e.target.value)}
                             className="input-field"
                             required
+                            disabled={isSubmitting}
                         />
                     </div>
 
@@ -162,8 +204,9 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                     </div>
 
                     <div className="flex justify-end space-x-3 pt-2">
-                        <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                        <button type="submit" disabled={isSubmitting} className="btn-primary">
+                        <button type="button" onClick={onClose} className="btn-secondary" disabled={isSubmitting}>Cancel</button>
+                        <button type="submit" disabled={isSubmitting} className="btn-primary flex items-center gap-2">
+                            {isSubmitting && <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
                             {isSubmitting ? 'Saving...' : (editMode ? 'Update Payment' : 'Record Payment')}
                         </button>
                     </div>

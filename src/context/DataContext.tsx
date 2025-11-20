@@ -660,7 +660,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const totalPayable = challan.totalAmount - discount;
         const newStatus: FeeChallan['status'] = newPaidAmount >= totalPayable ? 'Paid' : 'Partial';
 
-        const { error } = await supabase.from('fee_challans')
+        const { data, error } = await supabase.from('fee_challans')
             .update({ paid_amount: newPaidAmount, discount, status: newStatus, paid_date: paidDate })
             .eq('id', challanId)
             .select()
@@ -670,7 +670,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        await fetchData();
+
+        // Optimized: Update local state and Dexie instead of full refetch
+        const updatedChallan = toCamelCase(data) as FeeChallan;
+        
+        // Update React State
+        setFees(prevFees => prevFees.map(f => f.id === challanId ? updatedChallan : f));
+        
+        // Update Dexie (if in offline mode or generally to keep sync)
+        if (syncMode === 'offline') {
+            await db.fees.put(updatedChallan);
+        }
+
         addLog('Fee Payment', `Payment of Rs. ${amount} recorded for challan ${challan.challanNumber}.`);
         showToast('Success', 'Payment recorded successfully.');
     };
@@ -687,21 +698,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             newStatus = 'Partial';
         }
 
-        const { error } = await supabase.from('fee_challans')
+        const { data, error } = await supabase.from('fee_challans')
             .update({
                 paid_amount: paidAmount,
                 discount: discount,
                 paid_date: paidDate,
                 status: newStatus,
             })
-            .eq('id', challanId);
+            .eq('id', challanId)
+            .select()
+            .single();
 
         if (error) {
             showToast('Error', `Failed to update payment: ${error.message}`, 'error');
             throw error;
         }
 
-        await fetchData();
+        // Optimized: Update local state and Dexie instead of full refetch
+        const updatedChallan = toCamelCase(data) as FeeChallan;
+        
+        // Update React State
+        setFees(prevFees => prevFees.map(f => f.id === challanId ? updatedChallan : f));
+        
+        // Update Dexie
+        if (syncMode === 'offline') {
+            await db.fees.put(updatedChallan);
+        }
+
         const student = students.find(s => s.id === challan.studentId);
         addLog('Payment Edited', `Payment edited for challan #${challan.challanNumber} for student ${student?.name}.`);
         showToast('Success', 'Payment updated successfully.');
@@ -716,15 +739,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(msg);
         }
 
-        const { error } = await supabase.from('fee_challans')
+        const { data, error } = await supabase.from('fee_challans')
             .update({ status: 'Cancelled' })
-            .eq('id', challanId);
+            .eq('id', challanId)
+            .select()
+            .single();
 
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        await fetchData();
+
+        // Optimized: Update local state and Dexie instead of full refetch
+        const updatedChallan = toCamelCase(data) as FeeChallan;
+        
+        // Update React State
+        setFees(prevFees => prevFees.map(f => f.id === challanId ? updatedChallan : f));
+        
+        // Update Dexie
+        if (syncMode === 'offline') {
+            await db.fees.put(updatedChallan);
+        }
+
         addLog('Challan Cancelled', `Challan ${challan.challanNumber} was cancelled.`);
         showToast('Success', 'Challan has been cancelled.');
     };
@@ -750,7 +786,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const student = studentMap.get(studentId);
                 if (!student) continue;
 
-                const alreadyExists = fees.some(f => f.studentId === studentId && f.month === month && f.year === year);
+                const alreadyExists = fees.some(f => f.studentId === studentId && f.month === month && f.year === year && f.status !== 'Cancelled');
                 if (alreadyExists) continue;
 
                 let previousBalance = student.openingBalance || 0;
@@ -801,10 +837,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (error) {
                     throw new Error(error.message);
                 }
-                const count = data?.length || 0;
+                const newChallans = toCamelCase(data) as FeeChallan[];
+                const count = newChallans.length;
+
+                // Optimized: Update local state and Dexie instead of full refetch
+                setFees(prevFees => [...prevFees, ...newChallans]);
+                
+                if (syncMode === 'offline') {
+                   await db.fees.bulkPut(newChallans);
+                }
+
                 showToast('Success', `${count} new challans were generated for ${month}, ${year}.`, 'success');
                 addLog('Challans Generated', `${count} challans generated for ${month}, ${year}.`);
-                await fetchData();
                 return count;
             } else {
                 showToast('Info', 'No new challans needed for the selected students.', 'info');
@@ -862,19 +906,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             status: 'Left'
         });
 
-        let { error } = await supabase.from('students')
+        let { data, error } = await supabase.from('students')
             .update(fullUpdateData)
-            .eq('id', studentId);
+            .eq('id', studentId)
+            .select()
+            .single();
 
         // Fallback: If columns missing (code 42703 is undefined_column, or check message), just update status
         if (error && (error.code === '42703' || error.message.includes('Could not find the') || error.message.includes('column'))) {
              console.warn("Extended student columns missing in DB. Falling back to status update only.");
-             const { error: fallbackError } = await supabase.from('students')
+             const { data: fallbackData, error: fallbackError } = await supabase.from('students')
                 .update({ status: 'Left' })
-                .eq('id', studentId);
+                .eq('id', studentId)
+                .select()
+                .single();
              
              if (!fallbackError) {
                  error = null; 
+                 data = fallbackData;
                  showToast('Warning', 'Certificate issued but extended details were not saved due to database schema limitations. Please contact admin to update schema.', 'info');
              } else {
                  error = fallbackError;
@@ -885,7 +934,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-        await fetchData();
+        
+        // Optimized: Update local state and Dexie
+        if (data) {
+             const updatedStudent = toCamelCase(data) as Student;
+             setStudents(prev => prev.map(s => s.id === studentId ? updatedStudent : s));
+             if (syncMode === 'offline') {
+                 await db.students.put(updatedStudent);
+             }
+        }
+
         const student = students.find(s=>s.id === studentId);
         addLog('Certificate Issued', `Leaving Certificate issued for ${student?.name}.`);
         if (!error) {
@@ -906,6 +964,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { classId, exam, subject } = resultsToSave[0];
         
+        // Note: New exam/subject creation still requires a refetch or manual list update, 
+        // keeping full flow for simplicity here as it's rare.
         const examExists = exams.some(e => e.name.toLowerCase() === exam.toLowerCase() && e.schoolId === effectiveSchoolId);
         if (!examExists) {
             const { error: examInsertError } = await supabase.from('exams').insert({
