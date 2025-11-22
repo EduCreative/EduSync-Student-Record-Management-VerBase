@@ -19,6 +19,7 @@ const ChallanRangeReportModal: React.FC<ChallanRangeReportModalProps> = ({ isOpe
     const [startChallan, setStartChallan] = useState('');
     const [endChallan, setEndChallan] = useState('');
     const [copies, setCopies] = useState<2 | 3>(3);
+    const [penaltyAmount, setPenaltyAmount] = useState(500);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
@@ -57,6 +58,7 @@ const ChallanRangeReportModal: React.FC<ChallanRangeReportModalProps> = ({ isOpe
                                 school={school}
                                 studentClass={classMap.get(student.classId)}
                                 copies={copies}
+                                lateFee={penaltyAmount}
                             />
                         </div>
                     );
@@ -77,6 +79,17 @@ const ChallanRangeReportModal: React.FC<ChallanRangeReportModalProps> = ({ isOpe
                     <div>
                         <label htmlFor="end-challan" className="input-label">End Challan Number</label>
                         <input type="text" id="end-challan" value={endChallan} onChange={e => setEndChallan(e.target.value)} className="input-field" placeholder="e.g., 202407-50" />
+                    </div>
+                    <div>
+                        <label htmlFor="penalty-amount" className="input-label">After Due Date Penalty</label>
+                        <input 
+                            type="number" 
+                            id="penalty-amount" 
+                            value={penaltyAmount} 
+                            onChange={e => setPenaltyAmount(Number(e.target.value))} 
+                            className="input-field" 
+                            min="0"
+                        />
                     </div>
                 </div>
                 <div>

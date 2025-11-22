@@ -25,6 +25,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
     const [month, setMonth] = useState(months[new Date().getMonth()]);
     const [year, setYear] = useState(currentYear);
     const [copies, setCopies] = useState<2 | 3>(3);
+    const [penaltyAmount, setPenaltyAmount] = useState(500);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
@@ -59,6 +60,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                                 school={school}
                                 studentClass={classMap.get(student.classId)}
                                 copies={copies}
+                                lateFee={penaltyAmount}
                             />
                         </div>
                     );
@@ -91,6 +93,17 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
                         <select id="year-select" value={year} onChange={e => setYear(Number(e.target.value))} className="input-field">
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
+                    </div>
+                    <div>
+                        <label htmlFor="penalty-amount" className="input-label">After Due Date Penalty</label>
+                        <input 
+                            type="number" 
+                            id="penalty-amount" 
+                            value={penaltyAmount} 
+                            onChange={e => setPenaltyAmount(Number(e.target.value))} 
+                            className="input-field" 
+                            min="0"
+                        />
                     </div>
                 </div>
                 <div>
