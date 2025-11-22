@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-02-21
+
+### Changed
+- **Results Entry Improvement:** The results entry interface has been updated to allow setting a "Default Total Marks" for the entire class upfront.
+- **Automatic Grading:** Added "Percentage" and "Grade" columns to the results entry table. These are calculated automatically in real-time as marks are entered.
+- **Report Card Update:** Added "Percentage" and "Remarks" columns to the printable student report card for more detailed feedback.
+
 ## [2.2.0] - 2025-02-20
 
 ### Added

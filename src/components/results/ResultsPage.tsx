@@ -99,7 +99,7 @@ const ResultsEntry: React.FC = () => {
             Array.from(newMap.keys()).forEach(key => {
                 const current = newMap.get(key);
                 if (current) {
-                    // FIX: Avoid spread on potentially undefined type (though checked) to resolve "Spread types may only be created from object types" error
+                    // FIX: Avoid spread on potentially undefined type
                     newMap.set(key, { marks: current.marks, totalMarks: newTotal });
                 }
             });
@@ -257,7 +257,7 @@ const ResultsEntry: React.FC = () => {
                             </button>
                         </div>
                         <div>
-                            <label htmlFor="default-total" className="input-label">Total Marks (All)</label>
+                            <label htmlFor="default-total" className="input-label">Default Total Marks</label>
                             <input 
                                 id="default-total" 
                                 type="number" 
