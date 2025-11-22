@@ -1,3 +1,4 @@
+
 import { type FC } from 'react';
 import { FeeChallan, Student, School } from '../../types';
 import { formatDate, EduSyncLogo } from '../../constants';
@@ -49,8 +50,8 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
 
             {/* Info Grid */}
             <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[8px] mb-1 leading-tight">
-                <div className="flex justify-between"><span>Challan #:</span> <span className="font-bold">{challan.challanNumber}</span></div>
-                <div className="flex justify-between"><span>Due Date:</span> <span className="font-bold">{formatDate(challan.dueDate)}</span></div>
+                <div className="flex justify-between whitespace-nowrap"><span>Challan #:</span> <span className="font-bold ml-1">{challan.challanNumber}</span></div>
+                <div className="flex justify-between whitespace-nowrap"><span>Due Date:</span> <span className="font-bold ml-1">{formatDate(challan.dueDate)}</span></div>
                 <div className="col-span-2 flex justify-between border-b border-dotted border-gray-400"><span>Student:</span> <span className="font-bold truncate ml-1">{student.name}</span></div>
                 <div className="col-span-2 flex justify-between border-b border-dotted border-gray-400"><span>Father:</span> <span className="font-bold truncate ml-1">{student.fatherName}</span></div>
                 
@@ -60,7 +61,7 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                         <span>Class:</span> <span className="font-bold truncate max-w-[50px]">{studentClass || 'N/A'}</span>
                     </div>
                     <div className="flex gap-1">
-                        <span>GR:</span> <span className="font-bold">{student.grNumber || '-'}</span>
+                        <span>GR #:</span> <span className="font-bold">{student.grNumber || '-'}</span>
                     </div>
                     <div className="flex gap-1">
                         <span>ID:</span> <span className="font-bold">{student.rollNumber}</span>
@@ -102,38 +103,37 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                     <span>Payable By Due Date:</span>
                     <span>Rs. {(challan.totalAmount - (challan.discount || 0)).toLocaleString()}</span>
                 </div>
+                <div className="flex justify-between font-bold text-[10px] bg-gray-100 px-1 py-0.5 border-x border-b border-gray-400 mb-1">
+                    <span>Payable After Due Date:</span>
+                    <span>Rs. {(challan.totalAmount - (challan.discount || 0) + lateFee).toLocaleString()}</span>
+                </div>
                 
                 {/* Manual Entry Fields for Accountant */}
                 <div className="border-t border-gray-400 pt-0.5 mt-0.5">
                     <div className="flex justify-between items-end text-[9px]">
                         <span>Payment Amount:</span>
-                        <span className="border-b border-black w-12 text-right">
+                        <span className="border-b border-black w-14 text-right">
                             {challan.paidAmount > 0 ? challan.paidAmount.toLocaleString() : '\u00A0'}
                         </span>
                     </div>
                     <div className="flex justify-between items-end text-[9px] mt-0.5">
-                        <span>Payment Date:</span>
-                        <span className="border-b border-black w-12 text-right">
+                        <span className="whitespace-nowrap">Payment Date:</span>
+                        <span className="border-b border-black w-14 text-right whitespace-nowrap">
                             {challan.paidDate ? formatDate(challan.paidDate) : '\u00A0'}
                         </span>
                     </div>
                     <div className="flex justify-between items-end text-[9px] mt-0.5">
                         <span>Balance:</span>
-                        <span className="border-b border-black w-12 text-right font-bold">
+                        <span className="border-b border-black w-14 text-right font-bold">
                             {challan.paidAmount > 0 ? currentBalance.toLocaleString() : '\u00A0'}
                         </span>
                     </div>
-                </div>
-
-                 <div className="flex justify-between text-[9px] font-bold pt-1">
-                    <span>Payable After Due Date:</span>
-                    <span>Rs. {(challan.totalAmount - (challan.discount || 0) + lateFee).toLocaleString()}</span>
                 </div>
             </div>
 
             {/* Footer */}
             <div className="mt-1 pt-1 flex justify-between items-end">
-                 <div className="flex flex-col items-center w-[30%]">
+                 <div className="flex flex-col items-center w-[25%]">
                      <div className="h-4 w-full border-b border-black"></div>
                      <span className="text-[7px] uppercase">Officer</span>
                  </div>
@@ -142,22 +142,22 @@ const PrintableChallan: FC<PrintableChallanProps> = ({ challan, student, school,
                         <Barcode value={challan.challanNumber} height={25} barWidth={0.8} />
                     </div>
                  </div>
-                 <div className="flex flex-col items-center w-[30%]">
+                 <div className="flex flex-col items-center w-[25%]">
                      <div className="h-4 w-full border-b border-black"></div>
                      <span className="text-[7px] uppercase">Cashier</span>
                  </div>
             </div>
             
             <div className="text-[6px] text-center text-gray-400 leading-none mt-0.5">
-                Generated: {formatDate(new Date())} | ID: {student.rollNumber}
+                Generated: {formatDate(new Date())}
             </div>
         </div>
     );
 
     return (
-        <div className="w-full h-full flex flex-row justify-between gap-0.5 px-1 box-border">
+        <div className="w-full h-full flex flex-row justify-between gap-0.5 px-8 box-border mx-auto">
              {copyLabels.map((label, index) => (
-                <div key={index} style={{ width: copies === 2 ? '49.5%' : '33%' }} className="h-full">
+                <div key={index} style={{ width: copies === 2 ? '48%' : '32%' }} className="h-full">
                     <ChallanBody copyName={label} />
                 </div>
              ))}

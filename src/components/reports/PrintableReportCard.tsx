@@ -21,11 +21,12 @@ const PrintableReportCard: FC<PrintableReportCardProps> = ({ student, studentCla
     const percentage = totalMaxMarks > 0 ? (totalMarks / totalMaxMarks) * 100 : 0;
 
     const getGrade = (p: number) => {
-        if (p >= 90) return 'A+';
-        if (p >= 80) return 'A';
-        if (p >= 70) return 'B';
-        if (p >= 60) return 'C';
-        if (p >= 50) return 'D';
+        if (p >= 90) return 'A1+';
+        if (p >= 80) return 'A1';
+        if (p >= 70) return 'A';
+        if (p >= 60) return 'B';
+        if (p >= 50) return 'C';
+        if (p >= 40) return 'D';
         return 'F';
     };
 
@@ -63,24 +64,33 @@ const PrintableReportCard: FC<PrintableReportCardProps> = ({ student, studentCla
                         <th className="p-2 border text-left">Subject</th>
                         <th className="p-2 border">Total Marks</th>
                         <th className="p-2 border">Marks Obtained</th>
+                        <th className="p-2 border">Percentage</th>
                         <th className="p-2 border">Grade</th>
+                        <th className="p-2 border">Remarks</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {results.map(r => (
-                        <tr key={r.id}>
-                            <td className="p-2 border">{r.subject}</td>
-                            <td className="p-2 border text-center">{r.totalMarks}</td>
-                            <td className="p-2 border text-center">{r.marks}</td>
-                            <td className="p-2 border text-center">{getGrade((r.marks/r.totalMarks) * 100)}</td>
-                        </tr>
-                    ))}
+                    {results.map(r => {
+                        const subjectPercentage = r.totalMarks > 0 ? (r.marks / r.totalMarks) * 100 : 0;
+                        return (
+                            <tr key={r.id}>
+                                <td className="p-2 border">{r.subject}</td>
+                                <td className="p-2 border text-center">{r.totalMarks}</td>
+                                <td className="p-2 border text-center">{r.marks}</td>
+                                <td className="p-2 border text-center">{subjectPercentage.toFixed(1)}%</td>
+                                <td className="p-2 border text-center">{getGrade(subjectPercentage)}</td>
+                                <td className="p-2 border"></td>
+                            </tr>
+                        );
+                    })}
                 </tbody>
                 <tfoot>
                     <tr className="font-bold bg-secondary-100">
                         <td className="p-2 border text-right">Total</td>
                         <td className="p-2 border text-center">{totalMaxMarks}</td>
                         <td className="p-2 border text-center">{totalMarks}</td>
+                        <td className="p-2 border text-center">{percentage.toFixed(2)}%</td>
+                        <td className="p-2 border text-center"></td>
                         <td className="p-2 border text-center"></td>
                     </tr>
                 </tfoot>

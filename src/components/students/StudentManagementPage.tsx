@@ -56,6 +56,8 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     const [searchTerm, setSearchTerm] = useState('');
     const [classFilter, setClassFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<Student['status'] | 'all'>('Active');
+    const [sortBy, setSortBy] = useState<'name' | 'rollNumber' | 'class'>('rollNumber');
+    
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
@@ -105,18 +107,33 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
     }, [students, fees]);
 
     const filteredStudents = useMemo(() => {
-        return students.filter(student => {
+        const result = students.filter(student => {
             if (student.schoolId !== effectiveSchoolId) return false;
             if (classFilter !== 'all' && student.classId !== classFilter) return false;
             if (statusFilter !== 'all' && student.status !== statusFilter) return false;
             if (searchTerm && !student.name.toLowerCase().includes(searchTerm.toLowerCase()) && !student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())) return false;
             return true;
         });
-    }, [students, effectiveSchoolId, searchTerm, classFilter, statusFilter]);
+
+        return result.sort((a, b) => {
+            if (sortBy === 'name') {
+                return a.name.localeCompare(b.name);
+            } else if (sortBy === 'class') {
+                const classA = classMap.get(a.classId) || '';
+                const classB = classMap.get(b.classId) || '';
+                const diff = getClassLevel(classA) - getClassLevel(classB);
+                if (diff !== 0) return diff;
+                return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
+            } else {
+                // Default to rollNumber
+                return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
+            }
+        });
+    }, [students, effectiveSchoolId, searchTerm, classFilter, statusFilter, sortBy, classMap]);
     
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, classFilter, statusFilter]);
+    }, [searchTerm, classFilter, statusFilter, sortBy]);
 
     const totalPages = Math.ceil(filteredStudents.length / STUDENTS_PER_PAGE);
     const paginatedStudents = useMemo(() => {
@@ -370,7 +387,7 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                 </div>
 
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <input type="text" placeholder="Search by name or roll number..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-field" />
                         <select value={classFilter} onChange={e => setClassFilter(e.target.value)} className="input-field">
                             <option value="all">All Classes</option>
@@ -382,6 +399,11 @@ const StudentManagementPage: React.FC<StudentManagementPageProps> = ({ setActive
                             <option value="Inactive">Inactive</option>
                             <option value="Left">Left</option>
                             <option value="Deleted">Deleted</option>
+                        </select>
+                        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="input-field">
+                            <option value="rollNumber">Sort by ID</option>
+                            <option value="name">Sort by Name</option>
+                            <option value="class">Sort by Class</option>
                         </select>
                     </div>
                 </div>

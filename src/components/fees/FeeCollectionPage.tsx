@@ -33,6 +33,7 @@ const FeeCollectionPage: React.FC = () => {
     // Filters
     const [statusFilter, setStatusFilter] = useState<'Outstanding' | 'All' | 'Paid' | 'Unpaid' | 'Partial'>('Outstanding');
     const [classFilter, setClassFilter] = useState('all');
+    const [sortBy, setSortBy] = useState<'date' | 'name' | 'rollNumber' | 'class'>('date');
 
     // Single Challan Generation
     const [isStudentSelectModalOpen, setIsStudentSelectModalOpen] = useState(false);
@@ -85,25 +86,41 @@ const FeeCollectionPage: React.FC = () => {
             return true;
         });
         
-        // Sort: Unpaid/Partial first, then by Date desc
         return filtered.sort((a, b) => {
+            const studentA = studentMap.get(a.studentId);
+            const studentB = studentMap.get(b.studentId);
+
+            if (sortBy === 'name') {
+                return (studentA?.name || '').localeCompare(studentB?.name || '');
+            }
+            if (sortBy === 'rollNumber') {
+                return (studentA?.rollNumber || '').localeCompare(studentB?.rollNumber || '', undefined, { numeric: true });
+            }
+            if (sortBy === 'class') {
+                const classA = classMap.get(studentA?.classId || '') || '';
+                const classB = classMap.get(studentB?.classId || '') || '';
+                const diff = getClassLevel(classA) - getClassLevel(classB);
+                if (diff !== 0) return diff;
+                return (studentA?.rollNumber || '').localeCompare(studentB?.rollNumber || '', undefined, { numeric: true });
+            }
+
+            // Default 'date' / priority logic
             const isAOutstanding = a.status === 'Unpaid' || a.status === 'Partial';
             const isBOutstanding = b.status === 'Unpaid' || b.status === 'Partial';
             
             if (isAOutstanding && !isBOutstanding) return -1;
             if (!isAOutstanding && isBOutstanding) return 1;
             
-            // If status priority is same, sort by date desc
             const dateA = new Date(a.year, months.indexOf(a.month)).getTime();
             const dateB = new Date(b.year, months.indexOf(b.month)).getTime();
             return dateB - dateA;
         });
 
-    }, [fees, studentMap, effectiveSchoolId, statusFilter, classFilter, searchTerm]);
+    }, [fees, studentMap, effectiveSchoolId, statusFilter, classFilter, searchTerm, sortBy, classMap]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter, classFilter]);
+    }, [searchTerm, statusFilter, classFilter, sortBy]);
 
     const totalPages = Math.ceil(filteredChallans.length / ROWS_PER_PAGE);
     const paginatedChallans = useMemo(() => {
@@ -223,7 +240,7 @@ const FeeCollectionPage: React.FC = () => {
                      </div>
                 </div>
 
-                <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div className="md:col-span-1">
                         <label htmlFor="status-filter" className="input-label">Challan Status</label>
                         <select
@@ -261,6 +278,20 @@ const FeeCollectionPage: React.FC = () => {
                             className="input-field"
                             placeholder="Student Name, ID, or Challan #"
                         />
+                    </div>
+                    <div className="md:col-span-1">
+                        <label htmlFor="sort-by" className="input-label">Sort By</label>
+                        <select
+                            id="sort-by"
+                            value={sortBy}
+                            onChange={e => setSortBy(e.target.value as any)}
+                            className="input-field"
+                        >
+                            <option value="date">Default (Status/Date)</option>
+                            <option value="rollNumber">Student ID</option>
+                            <option value="name">Student Name</option>
+                            <option value="class">Class</option>
+                        </select>
                     </div>
                     <div className="md:col-span-1">
                         <label htmlFor="session-date" className="input-label">Payment Date</label>

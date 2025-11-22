@@ -30,6 +30,7 @@ const AttendanceMarker: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState(getTodayString());
     const [attendanceRecords, setAttendanceRecords] = useState<Map<string, AttendanceStatus>>(new Map());
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [sortBy, setSortBy] = useState<'name' | 'rollNumber'>('rollNumber');
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
 
@@ -47,8 +48,16 @@ const AttendanceMarker: React.FC = () => {
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
         // FIX: Explicitly type 's' to ensure correct type inference.
-        return students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
-    }, [students, selectedClassId]);
+        const filtered = students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
+        
+        return filtered.sort((a, b) => {
+            if (sortBy === 'name') {
+                return a.name.localeCompare(b.name);
+            } else {
+                return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
+            }
+        });
+    }, [students, selectedClassId, sortBy]);
     
     useEffect(() => {
         if (userClasses.length > 0 && !selectedClassId) {
@@ -139,7 +148,7 @@ const AttendanceMarker: React.FC = () => {
                 </div>
                 
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <label htmlFor="class-select" className="input-label">Select Class</label>
                             <select id="class-select" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
@@ -150,6 +159,13 @@ const AttendanceMarker: React.FC = () => {
                          <div>
                             <label htmlFor="date-select" className="input-label">Select Date</label>
                             <input type="date" id="date-select" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="input-field" />
+                        </div>
+                        <div>
+                            <label htmlFor="sort-by" className="input-label">Sort Students By</label>
+                            <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="input-field">
+                                <option value="rollNumber">Student ID</option>
+                                <option value="name">Student Name</option>
+                            </select>
                         </div>
                     </div>
                 </div>

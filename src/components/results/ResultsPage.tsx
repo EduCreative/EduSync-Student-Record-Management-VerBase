@@ -13,7 +13,7 @@ import { PrinterIcon } from '../../constants';
 import { getClassLevel } from '../../utils/sorting';
 
 const CogIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>
 );
 
 const ResultsEntry: React.FC = () => {
@@ -24,7 +24,9 @@ const ResultsEntry: React.FC = () => {
     const [selectedClassId, setSelectedClassId] = useState('');
     const [selectedExam, setSelectedExam] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
+    const [defaultTotalMarks, setDefaultTotalMarks] = useState<number>(100);
     const [marks, setMarks] = useState<Map<string, { marks: number, totalMarks: number }>>(new Map());
+    const [sortBy, setSortBy] = useState<'name' | 'rollNumber'>('rollNumber');
 
     // State for managing subjects
     const [isManageSubjectsOpen, setIsManageSubjectsOpen] = useState(false);
@@ -56,8 +58,16 @@ const ResultsEntry: React.FC = () => {
     const studentsInClass = useMemo(() => {
         if (!selectedClassId) return [];
         // FIX: Explicitly type 's' to ensure correct type inference.
-        return students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
-    }, [students, selectedClassId]);
+        const filtered = students.filter((s: Student) => s.classId === selectedClassId && s.status === 'Active');
+        
+        return filtered.sort((a, b) => {
+            if (sortBy === 'name') {
+                return a.name.localeCompare(b.name);
+            } else {
+                return a.rollNumber.localeCompare(b.rollNumber, undefined, { numeric: true });
+            }
+        });
+    }, [students, selectedClassId, sortBy]);
     
     useEffect(() => {
         if (userClasses.length > 0 && !selectedClassId) {
@@ -67,33 +77,50 @@ const ResultsEntry: React.FC = () => {
 
     useEffect(() => {
         const newMarks = new Map<string, { marks: number, totalMarks: number }>();
-        // FIX: Explicitly typed the 'r' parameter to ensure that recordsForExamAndSubject is correctly typed as Result[], preventing type errors downstream.
         const recordsForExamAndSubject = results.filter((r: Result) => r.classId === selectedClassId && r.exam === selectedExam && r.subject === selectedSubject);
 
         studentsInClass.forEach(student => {
             const existingRecord = recordsForExamAndSubject.find(r => r.studentId === student.id);
             newMarks.set(student.id, {
                 marks: existingRecord ? existingRecord.marks : 0,
-                totalMarks: existingRecord ? existingRecord.totalMarks : 100,
+                // Use existing total marks if available, otherwise use the current default
+                totalMarks: existingRecord ? existingRecord.totalMarks : defaultTotalMarks,
             });
         });
         setMarks(newMarks);
-    }, [selectedClassId, selectedExam, selectedSubject, studentsInClass, results]);
+    }, [selectedClassId, selectedExam, selectedSubject, studentsInClass, results]); // removed defaultTotalMarks from dependency to avoid overwriting user edits on default change unless manual
+
+    // Helper to update all total marks when default changes
+    const handleDefaultTotalChange = (newTotal: number) => {
+        setDefaultTotalMarks(newTotal);
+        setMarks((prev: Map<string, { marks: number; totalMarks: number }>) => {
+            const newMap = new Map<string, { marks: number; totalMarks: number }>(prev);
+            // Update all rows to the new default for convenience
+            Array.from(newMap.keys()).forEach(key => {
+                const current = newMap.get(key);
+                if (current) {
+                    // FIX: Avoid spread on potentially undefined type (though checked) to resolve "Spread types may only be created from object types" error
+                    newMap.set(key, { marks: current.marks, totalMarks: newTotal });
+                }
+            });
+            return newMap;
+        });
+    };
 
     const handleMarksChange = (studentId: string, value: string, field: 'marks' | 'totalMarks') => {
-        const numValue = parseInt(value, 10);
-        if (isNaN(numValue)) return;
+        const numValue = parseFloat(value);
+        // Allow empty string during typing, treat as 0
+        const finalValue = isNaN(numValue) ? 0 : numValue;
 
-        // FIX: Explicitly typing `prev` prevents it from being inferred as `unknown`, resolving type errors on `current`.
         setMarks((prev: Map<string, { marks: number, totalMarks: number }>) => {
             const newMarks = new Map(prev);
             const current = newMarks.get(studentId);
             
             const updatedEntry = {
                 marks: current?.marks ?? 0,
-                totalMarks: current?.totalMarks ?? 100,
+                totalMarks: current?.totalMarks ?? defaultTotalMarks,
             };
-            updatedEntry[field] = numValue;
+            updatedEntry[field] = finalValue;
 
             newMarks.set(studentId, updatedEntry);
             return newMarks;
@@ -119,7 +146,6 @@ const ResultsEntry: React.FC = () => {
             await saveResults(resultsToSave);
         } catch (error) {
             console.error("Failed to save results:", error);
-            // The toast is shown in DataContext, so we don't need another one here.
         } finally {
             setIsSaving(false);
         }
@@ -136,6 +162,16 @@ const ResultsEntry: React.FC = () => {
         const managedSubjects = subjects.filter(s => s.schoolId === effectiveSchoolId).map(s => s.name);
         return [...new Set([...subjectsFromResults, ...managedSubjects])].sort();
     }, [results, subjects, effectiveSchoolId]);
+
+    const getGrade = (percentage: number) => {
+        if (percentage >= 90) return 'A1+';
+        if (percentage >= 80) return 'A1';
+        if (percentage >= 70) return 'A';
+        if (percentage >= 60) return 'B';
+        if (percentage >= 50) return 'C';
+        if (percentage >= 40) return 'D';
+        return 'F';
+    };
 
     // Handlers for subjects
     const handleOpenSubjectForm = (subject: Subject | null = null) => {
@@ -192,7 +228,7 @@ const ResultsEntry: React.FC = () => {
                 </div>
                 
                 <div className="p-4 bg-white dark:bg-secondary-800 rounded-lg shadow-md">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
                         <div>
                             <label htmlFor="class-select" className="input-label">Select Class</label>
                             <select id="class-select" value={selectedClassId} onChange={e => setSelectedClassId(e.target.value)} className="input-field">
@@ -220,6 +256,24 @@ const ResultsEntry: React.FC = () => {
                                 <CogIcon className="w-5 h-5" />
                             </button>
                         </div>
+                        <div>
+                            <label htmlFor="default-total" className="input-label">Total Marks (All)</label>
+                            <input 
+                                id="default-total" 
+                                type="number" 
+                                value={defaultTotalMarks} 
+                                onChange={e => handleDefaultTotalChange(Number(e.target.value))} 
+                                className="input-field" 
+                                min="0"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="sort-by" className="input-label">Sort Students By</label>
+                            <select id="sort-by" value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="input-field">
+                                <option value="rollNumber">Student ID</option>
+                                <option value="name">Student Name</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -232,28 +286,57 @@ const ResultsEntry: React.FC = () => {
                                         <th className="px-6 py-3 text-left">Student</th>
                                         <th className="px-6 py-3 text-left">Obtained Marks</th>
                                         <th className="px-6 py-3 text-left">Total Marks</th>
+                                        <th className="px-6 py-3 text-center">Percentage</th>
+                                        <th className="px-6 py-3 text-center">Grade</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {studentsInClass.map(student => (
-                                        <tr key={student.id} className="border-b dark:border-secondary-700">
-                                            <td className="px-6 py-3">
-                                                <div className="flex items-center space-x-3">
-                                                    <Avatar student={student} className="w-8 h-8"/>
-                                                    <div>
-                                                        <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
-                                                        <p className="text-xs font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</p>
+                                    {studentsInClass.map(student => {
+                                        const studentData = marks.get(student.id);
+                                        const obtained = studentData?.marks || 0;
+                                        const total = studentData?.totalMarks || defaultTotalMarks;
+                                        const percentage = total > 0 ? (obtained / total) * 100 : 0;
+                                        const grade = getGrade(percentage);
+                                        const isFail = grade === 'F';
+
+                                        return (
+                                            <tr key={student.id} className="border-b dark:border-secondary-700">
+                                                <td className="px-6 py-3">
+                                                    <div className="flex items-center space-x-3">
+                                                        <Avatar student={student} className="w-8 h-8"/>
+                                                        <div>
+                                                            <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
+                                                            <p className="text-xs font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-3">
-                                                <input type="number" value={marks.get(student.id)?.marks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'marks')} className="input-field w-24" />
-                                            </td>
-                                            <td className="px-6 py-3">
-                                                <input type="number" value={marks.get(student.id)?.totalMarks || ''} onChange={(e) => handleMarksChange(student.id, e.target.value, 'totalMarks')} className="input-field w-24" />
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td className="px-6 py-3">
+                                                    <input 
+                                                        type="number" 
+                                                        value={obtained} 
+                                                        onChange={(e) => handleMarksChange(student.id, e.target.value, 'marks')} 
+                                                        className="input-field w-24" 
+                                                        min="0"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-3">
+                                                    <input 
+                                                        type="number" 
+                                                        value={total} 
+                                                        onChange={(e) => handleMarksChange(student.id, e.target.value, 'totalMarks')} 
+                                                        className="input-field w-24" 
+                                                        min="0"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-3 text-center font-medium">
+                                                    {percentage.toFixed(1)}%
+                                                </td>
+                                                <td className={`px-6 py-3 text-center font-bold ${isFail ? 'text-red-600' : 'text-green-600'}`}>
+                                                    {grade}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

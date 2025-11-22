@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { Result } from '../../types';
@@ -30,11 +31,12 @@ const StudentResults: React.FC<StudentResultsProps> = ({ studentId }) => {
     const getGrade = (marks: number, totalMarks: number) => {
         if (totalMarks === 0) return '-';
         const percentage = (marks / totalMarks) * 100;
-        if (percentage >= 90) return 'A+';
-        if (percentage >= 80) return 'A';
-        if (percentage >= 70) return 'B';
-        if (percentage >= 60) return 'C';
-        if (percentage >= 50) return 'D';
+        if (percentage >= 90) return 'A1+';
+        if (percentage >= 80) return 'A1';
+        if (percentage >= 70) return 'A';
+        if (percentage >= 60) return 'B';
+        if (percentage >= 50) return 'C';
+        if (percentage >= 40) return 'D';
         return 'F';
     };
 
