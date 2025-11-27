@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -40,7 +41,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           return response;
         } catch (error) {
           if ((error as Error).name === 'AbortError') {
-            throw new Error('Request timed out. Please check your network connection. A firewall might be blocking access to the server.');
+            throw new Error('Request timed out. Please check your network connection.');
           }
           throw error;
         } finally {

@@ -155,6 +155,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(true);
         setUnrecoverableError(null);
 
+        // Safety timeout: If fetching takes > 45s, stop loading to unfreeze UI
+        const safetyTimeout = setTimeout(() => {
+            if (loading) {
+                console.warn("Fetch data safety timeout triggered.");
+                setLoading(false);
+                setIsInitialLoad(false);
+            }
+        }, 45000);
+
         try {
             const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
 
@@ -294,6 +303,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
 
                 // --- ATOMIC DATABASE WRITE ---
+                // CRITICAL FIX: Removed table clearing to prevent database lock during sync.
+                // bulkPut will upsert (update or insert) which is non-blocking for reads.
                 await db.transaction('rw', db.tables, async () => {
                     const allPuts = [
                         db.schools.bulkPut(schoolsData),
@@ -332,6 +343,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.error("A critical error occurred during data fetching:", error);
             setUnrecoverableError(error.message || 'An unknown error occurred during sync.');
         } finally {
+            clearTimeout(safetyTimeout);
             setLoading(false);
             if (isInitialLoad) setIsInitialLoad(false);
         }

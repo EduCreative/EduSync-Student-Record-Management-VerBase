@@ -69,8 +69,6 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
              return;
         }
         
-        // Allow overpayment? Usually no, but sometimes yes for advance. 
-        // For now, just warn if negative balance (overpayment)
         if (remainingBalance < 0) {
             if (!window.confirm(`This payment will result in an overpayment of Rs. ${Math.abs(remainingBalance)}. Do you want to proceed?`)) {
                 return;
@@ -78,11 +76,24 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
         }
 
         setIsSubmitting(true);
+        
         try {
+            // Create a timeout promise to reject after 15 seconds
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Request timed out. Please check your connection.")), 15000)
+            );
+
+            // Execute the payment operation or timeout
             if (editMode) {
-                await updateFeePayment(challan.id, amount, discount, paidDate);
+                await Promise.race([
+                    updateFeePayment(challan.id, amount, discount, paidDate),
+                    timeoutPromise
+                ]);
             } else {
-                await recordFeePayment(challan.id, amount, discount, paidDate);
+                await Promise.race([
+                    recordFeePayment(challan.id, amount, discount, paidDate),
+                    timeoutPromise
+                ]);
             }
             onClose();
         } catch (error: any) {
