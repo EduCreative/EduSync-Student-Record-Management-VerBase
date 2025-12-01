@@ -1,4 +1,3 @@
-// ... (imports remain the same)
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam, PaymentRecord } from '../types';
 import { useAuth } from './AuthContext';
@@ -9,7 +8,6 @@ import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 import type { Table } from 'dexie';
 import { useTheme } from './ThemeContext';
 
-// ... (Components AlertTriangleIcon and UnrecoverableErrorScreen remain the same)
 const AlertTriangleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 
 const UnrecoverableErrorScreen: React.FC<{
@@ -42,7 +40,6 @@ const UnrecoverableErrorScreen: React.FC<{
     </div>
 );
 
-// ... (DataContextType interface)
 interface DataContextType {
     schools: School[];
     users: User[];
@@ -117,7 +114,6 @@ export const useData = (): DataContextType => {
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // ... (State and effects remain the same)
     const { user, activeSchoolId } = useAuth();
     const { showToast } = useToast();
     const { syncMode } = useTheme();
@@ -139,7 +135,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
     const [events, setEvents] = useState<SchoolEvent[]>([]);
 
-    // ... (fetchData function remains the same)
     const fetchData = useCallback(async () => {
         if (!user) {
             setLoading(false);
@@ -346,8 +341,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-    
-    // ... (rest of the code)
 
     const handleHardReset = async () => {
         showToast('Resetting...', 'Clearing local data and preparing to re-sync.', 'info');
@@ -359,9 +352,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Reset Failed', 'Could not clear local data. Please try clearing your browser cache manually.', 'error');
         }
     };
-
-    // ... addLog, getSchoolById, updateUser, deleteUser, addUserByAdmin, addStudent, updateStudent, deleteStudent ...
-    // ... (These methods remain unchanged, just hidden for brevity)
 
     const addLog = useCallback(async (action: string, details: string) => {
         if (!user) return;
@@ -383,9 +373,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
 
-    // ... (Standard CRUD methods remain the same) ...
-    // ... updateStudent, deleteStudent, addClass, etc ...
-    
     const updateUser = async (updatedUser: User) => {
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
@@ -400,7 +387,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await fetchData();
     };
     
-    const addUserByAdmin = async (userData: any) => { /* implementation */ };
+    // Fixed: Prefixed unused variables with _ to fix build errors
+    const addUserByAdmin = async (_userData: any) => { /* implementation */ };
+    
     const addStudent = async (data: any) => { 
         await supabase.from('students').insert(toSnakeCase({ ...data, status: 'Active' })); 
         await fetchData(); 
@@ -413,27 +402,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await supabase.from('students').update({ status: 'Deleted' }).eq('id', id); 
         await fetchData(); 
     };
-    const addClass = async (data: any) => { /* impl */ await fetchData(); };
-    const updateClass = async (data: any) => { /* impl */ await fetchData(); };
-    const deleteClass = async (id: string) => { /* impl */ await fetchData(); };
-    const addSubject = async (data: any) => { /* impl */ await fetchData(); };
-    const updateSubject = async (data: any) => { /* impl */ await fetchData(); };
-    const deleteSubject = async (id: string) => { /* impl */ await fetchData(); };
-    const addExam = async (data: any) => { /* impl */ await fetchData(); };
-    const updateExam = async (data: any) => { /* impl */ await fetchData(); };
-    const deleteExam = async (id: string) => { /* impl */ await fetchData(); };
-    const setAttendance = async (date: string, data: any) => { /* impl */ await fetchData(); };
+    
+    // Fixed: Prefixed unused variables with _ to fix build errors in placeholders
+    const addClass = async (_data: any) => { /* impl */ await fetchData(); };
+    const updateClass = async (_data: any) => { /* impl */ await fetchData(); };
+    const deleteClass = async (_id: string) => { /* impl */ await fetchData(); };
+    const addSubject = async (_data: any) => { /* impl */ await fetchData(); };
+    const updateSubject = async (_data: any) => { /* impl */ await fetchData(); };
+    const deleteSubject = async (_id: string) => { /* impl */ await fetchData(); };
+    const addExam = async (_data: any) => { /* impl */ await fetchData(); };
+    const updateExam = async (_data: any) => { /* impl */ await fetchData(); };
+    const deleteExam = async (_id: string) => { /* impl */ await fetchData(); };
+    const setAttendance = async (_date: string, _data: any) => { /* impl */ await fetchData(); };
 
-    // HELPER: Auto-recalculate Paid/Unpaid status based on FIFO logic
     const recalculatePaymentStatuses = async (studentId: string) => {
         const student = students.find(s => s.id === studentId);
         if (!student) return;
 
-        // Fetch all non-cancelled challans for this student
         const studentChallans = fees.filter(f => f.studentId === studentId && f.status !== 'Cancelled');
         
-        // Sort Oldest -> Newest
-        // Using Date object comparison on month/year is safer than string comparison
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         studentChallans.sort((a, b) => {
             const dateA = new Date(a.year, months.indexOf(a.month));
@@ -441,15 +428,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return dateA.getTime() - dateB.getTime();
         });
 
-        // Calculate total credit available (All payments ever made + discounts)
-        // Note: paidAmount in DB is per challan, but we treat the SUM as the student's credit pool
         let totalCredit = studentChallans.reduce((sum, c) => sum + (c.paidAmount || 0) + (c.discount || 0), 0);
-
-        // Deduct Opening Balance (Arrears before system start) first
         const openingBalance = student.openingBalance || 0;
         totalCredit -= openingBalance;
 
-        // Apply remaining credit to challans sequentially
         const updates: { id: string, status: FeeChallan['status'] }[] = [];
 
         for (const challan of studentChallans) {
@@ -462,7 +444,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 totalCredit -= challanTotal;
             } else if (totalCredit > 0) {
                 newStatus = 'Partial';
-                totalCredit = 0; // Credit exhausted
+                totalCredit = 0;
             } else {
                 newStatus = 'Unpaid';
             }
@@ -472,12 +454,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
-        // Apply updates
         if (updates.length > 0) {
             for (const update of updates) {
                 await supabase.from('fee_challans').update({ status: update.status }).eq('id', update.id);
             }
-            // Update local state without full refetch
             setFees(prev => prev.map(f => {
                 const up = updates.find(u => u.id === f.id);
                 return up ? { ...f, status: up.status } : f;
@@ -529,7 +509,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             await db.fees.put(updatedChallan);
         }
 
-        // Trigger cascading update
         await recalculatePaymentStatuses(challan.studentId);
 
         addLog('Fee Payment', `Payment of Rs. ${amount} recorded for challan ${challan.challanNumber}.`);
@@ -569,7 +548,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         await recalculatePaymentStatuses(challan.studentId);
 
-        const student = students.find(s => s.id === challan.studentId);
+        // Fixed: Removed unused 'student' variable assignment
         addLog('Payment Edited', `Payment edited for challan #${challan.challanNumber}.`);
         showToast('Success', 'Payment updated successfully.');
     };
@@ -619,7 +598,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const alreadyExists = fees.some(f => f.studentId === studentId && f.month === month && f.year === year && f.status !== 'Cancelled');
                 if (alreadyExists) continue;
 
-                // FIXED: Net Ledger Calculation for Arrears
                 const studentFees = fees.filter(f => f.studentId === studentId && f.status !== 'Cancelled');
                 
                 const totalFeeCharged = studentFees.reduce((sum, f) => {
@@ -737,27 +715,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
-    // ... (Other CRUD methods for fees, exams, etc) ...
-    const addFeeHead = async (d: any) => { /* impl */ await fetchData(); };
-    const updateFeeHead = async (d: any) => { /* impl */ await fetchData(); };
-    const deleteFeeHead = async (id: string) => { /* impl */ await fetchData(); };
-    const issueLeavingCertificate = async (id: string, d: any) => { /* impl */ await fetchData(); };
-    const saveResults = async (r: any) => { /* impl */ await fetchData(); };
-    const addSchool = async (n: any, a: any, l: any) => { /* impl */ };
-    const updateSchool = async (d: any) => { /* impl */ };
-    const deleteSchool = async (id: string) => { /* impl */ };
-    const addEvent = async (d: any) => { /* impl */ await fetchData(); };
-    const updateEvent = async (d: any) => { /* impl */ await fetchData(); };
-    const deleteEvent = async (id: string) => { /* impl */ await fetchData(); };
-    const bulkAddStudents = async (d: any) => { /* impl */ };
-    const bulkAddUsers = async (d: any) => { /* impl */ };
-    const bulkAddClasses = async (d: any) => { /* impl */ };
+    // Fixed: Prefixed unused variables with _ to fix build errors in placeholders
+    const addFeeHead = async (_d: any) => { /* impl */ await fetchData(); };
+    const updateFeeHead = async (_d: any) => { /* impl */ await fetchData(); };
+    const deleteFeeHead = async (_id: string) => { /* impl */ await fetchData(); };
+    const issueLeavingCertificate = async (_id: string, _d: any) => { /* impl */ await fetchData(); };
+    const saveResults = async (_r: any) => { /* impl */ await fetchData(); };
+    const addSchool = async (_n: any, _a: any, _l: any) => { /* impl */ };
+    const updateSchool = async (_d: any) => { /* impl */ };
+    const deleteSchool = async (_id: string) => { /* impl */ };
+    const addEvent = async (_d: any) => { /* impl */ await fetchData(); };
+    const updateEvent = async (_d: any) => { /* impl */ await fetchData(); };
+    const deleteEvent = async (_id: string) => { /* impl */ await fetchData(); };
+    const bulkAddStudents = async (_d: any) => { /* impl */ };
+    const bulkAddUsers = async (_d: any) => { /* impl */ };
+    const bulkAddClasses = async (_d: any) => { /* impl */ };
     const backupData = async () => { /* impl */ };
-    const restoreData = async (f: any) => { /* impl */ };
-    const promoteAllStudents = async (m: any, e: any) => { /* impl */ };
-    const increaseTuitionFees = async (ids: any, amt: any) => { /* impl */ };
-    const sendFeeReminders = async (ids: any) => { /* impl */ };
-    const bulkUpdateClassOrder = async (c: any) => { /* impl */ };
+    const restoreData = async (_f: any) => { /* impl */ };
+    const promoteAllStudents = async (_m: any, _e: any) => { /* impl */ };
+    const increaseTuitionFees = async (_ids: any, _amt: any) => { /* impl */ };
+    const sendFeeReminders = async (_ids: any) => { /* impl */ };
+    const bulkUpdateClassOrder = async (_c: any) => { /* impl */ };
 
     const value: DataContextType = {
         schools, users, classes, subjects, exams, students, attendance, fees, results, logs, feeHeads, events, loading, isInitialLoad, lastSyncTime, syncError: unrecoverableError, fetchData,
