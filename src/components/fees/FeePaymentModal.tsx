@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { FeeChallan, Student } from '../../types';
 import { useData } from '../../context/DataContext';
@@ -23,13 +23,28 @@ const getTodayString = () => {
 };
 
 const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, challan, student, editMode = false, defaultDate }) => {
-    const { recordFeePayment, updateFeePayment } = useData();
+    const { recordFeePayment, updateFeePayment, fees } = useData();
     
     const [amount, setAmount] = useState(0);
     const [discount, setDiscount] = useState(0);
     const [paidDate, setPaidDate] = useState(getTodayString());
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    // Check if there is a newer challan for this student
+    const newerChallanExists = useMemo(() => {
+        if (!challan) return false;
+        
+        const currentChallanDate = new Date(challan.year, months.indexOf(challan.month));
+        
+        return fees.some(f => {
+            if (f.studentId !== challan.studentId || f.status === 'Cancelled' || f.id === challan.id) return false;
+            const fDate = new Date(f.year, months.indexOf(f.month));
+            return fDate > currentChallanDate;
+        });
+    }, [challan, fees]);
 
     useEffect(() => {
         if (isOpen) {
@@ -112,6 +127,13 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
     return (
         <Modal isOpen={isOpen} onClose={isSubmitting ? () => {} : onClose} title={editMode ? `Edit Payment for ${student.name}`: `Record Payment for ${student.name}`}>
             <div className="space-y-4">
+                {newerChallanExists && !editMode && (
+                    <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-r-md text-sm mb-4">
+                        <p className="font-bold">Warning: Newer Challan Exists</p>
+                        <p>A newer fee challan has already been generated for this student. It is recommended to record payment on the <strong>latest challan</strong> to automatically clear previous dues and keep the ledger accurate.</p>
+                    </div>
+                )}
+
                 <div className="p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg text-sm">
                      <div className="grid grid-cols-2 gap-2 mb-2">
                         <p><strong>Student ID:</strong> <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{student.rollNumber}</span></p>

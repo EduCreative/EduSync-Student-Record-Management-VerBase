@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole, FeeHead, Student } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import ChallanPreviewModal from './ChallanPreviewModal';
+import Modal from '../common/Modal';
 
 const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
 const currentYear = new Date().getFullYear();
@@ -19,7 +20,7 @@ export interface ChallanPreviewItem {
 
 const ChallanGenerationPage: React.FC = () => {
     const { user, activeSchoolId } = useAuth();
-    const { students, fees, classes, feeHeads, generateChallansForMonth } = useData();
+    const { students, fees, classes, feeHeads, generateChallansForMonth, deleteChallansForMonth } = useData();
     const { showToast } = useToast();
 
     const [month, setMonth] = useState(months[new Date().getMonth()]);
@@ -31,6 +32,9 @@ const ChallanGenerationPage: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [challanPreview, setChallanPreview] = useState<ChallanPreviewItem[]>([]);
+    
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
@@ -39,6 +43,13 @@ const ChallanGenerationPage: React.FC = () => {
         if (!effectiveSchoolId) return [];
         return feeHeads.filter(fh => fh.schoolId === effectiveSchoolId);
     }, [feeHeads, effectiveSchoolId]);
+
+    const existingChallansCount = useMemo(() => {
+        return fees.filter(f => {
+            const student = students.find(s => s.id === f.studentId);
+            return student?.schoolId === effectiveSchoolId && f.month === month && f.year === year;
+        }).length;
+    }, [fees, month, year, effectiveSchoolId, students]);
 
     useEffect(() => {
         const newMap = new Map<string, { selected: boolean; amount: number }>();
@@ -108,8 +119,21 @@ const ChallanGenerationPage: React.FC = () => {
                 return { description: fh.name, amount };
             });
 
+            // Calculate correct previous balance (Ledger based)
+            const studentFees = fees.filter(f => f.studentId === student.id && f.status !== 'Cancelled');
+            const totalFeeCharged = studentFees.reduce((sum, f) => {
+                const feeSum = f.feeItems.reduce((acc, item) => acc + item.amount, 0);
+                return sum + feeSum;
+            }, 0);
+            const totalPaidAndDiscount = studentFees.reduce((sum, f) => {
+                return sum + (f.paidAmount || 0) + (f.discount || 0);
+            }, 0);
+            const openingBalance = student.openingBalance || 0;
+            
+            let previousBalance = (openingBalance + totalFeeCharged) - totalPaidAndDiscount;
+            if (previousBalance < 0) previousBalance = 0;
+
             const subTotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
-            const previousBalance = student.openingBalance || 0;
             const totalAmount = subTotal + previousBalance;
             const className = classMap.get(student.classId) || 'N/A';
 
@@ -155,6 +179,19 @@ const ChallanGenerationPage: React.FC = () => {
         }
     };
 
+    const handleDeleteChallans = async () => {
+        setIsDeleting(true);
+        try {
+            const count = await deleteChallansForMonth(month, year);
+            showToast('Success', `Deleted ${count} unpaid challans for ${month} ${year}.`, 'success');
+            setIsDeleteModalOpen(false);
+        } catch (error: any) {
+            showToast('Error', 'Failed to delete challans. ' + error.message, 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <>
             <ChallanPreviewModal
@@ -164,6 +201,23 @@ const ChallanGenerationPage: React.FC = () => {
                 previewData={challanPreview}
                 isGenerating={isGenerating}
             />
+            <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Confirm Deletion">
+                <div>
+                    <p className="text-secondary-600 dark:text-secondary-300">
+                        Are you sure you want to delete <strong>{existingChallansCount}</strong> generated challans for <strong>{month} {year}</strong>?
+                    </p>
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-2 font-semibold">
+                        Warning: Only UNPAID challans will be deleted. Any challan with a recorded payment will be kept safe.
+                    </p>
+                    <div className="mt-6 flex justify-end space-x-3">
+                        <button onClick={() => setIsDeleteModalOpen(false)} className="btn-secondary" disabled={isDeleting}>Cancel</button>
+                        <button onClick={handleDeleteChallans} className="btn-danger" disabled={isDeleting}>
+                            {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
             <div className="p-4 sm:p-6 space-y-6">
                 <div>
                     <h2 className="text-xl font-semibold">Generate Monthly Fee Challans</h2>
@@ -233,7 +287,16 @@ const ChallanGenerationPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end pt-4 gap-4">
+                    {existingChallansCount > 0 && (
+                        <button 
+                            onClick={() => setIsDeleteModalOpen(true)} 
+                            className="btn-danger w-full sm:w-auto"
+                            title="Delete unpaid challans for this month to regenerate"
+                        >
+                            Delete {month} Challans ({existingChallansCount})
+                        </button>
+                    )}
                     <button
                         onClick={handlePreview}
                         disabled={isPreparingPreview || isGenerating}
