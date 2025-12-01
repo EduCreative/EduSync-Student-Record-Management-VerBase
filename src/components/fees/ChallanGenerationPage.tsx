@@ -139,10 +139,17 @@ const ChallanGenerationPage: React.FC = () => {
 
         setIsGenerating(true);
         try {
-            await generateChallansForMonth(month, year, feeHeadsToGenerate, studentIdsToGenerate, dueDate);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Request timed out. Please check your connection.")), 20000)
+            );
+
+            await Promise.race([
+                generateChallansForMonth(month, year, feeHeadsToGenerate, studentIdsToGenerate, dueDate),
+                timeoutPromise
+            ]);
             setIsPreviewOpen(false); // Close modal on success
-        } catch (error) {
-            // Error toast is handled in DataContext
+        } catch (error: any) {
+            showToast('Error', error.message || 'Challan generation failed or timed out.', 'error');
         } finally {
             setIsGenerating(false);
         }

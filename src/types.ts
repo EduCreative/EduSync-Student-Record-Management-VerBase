@@ -102,6 +102,12 @@ export interface FeeHead {
     schoolId: string;
 }
 
+export interface PaymentRecord {
+    amount: number;
+    date: string;
+    method?: string; // e.g., 'Cash', 'Online'
+}
+
 export interface FeeChallan {
     id: string;
     challanNumber: string;
@@ -117,6 +123,8 @@ export interface FeeChallan {
     discount: number;
     paidAmount: number;
     paidDate?: string;
+    paymentHistory?: PaymentRecord[]; // New field for partial payment tracking
+    fineAmount?: number; // New field for recording penalties
 }
 
 

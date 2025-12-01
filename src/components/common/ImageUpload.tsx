@@ -82,11 +82,18 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ imageUrl, onChange, bucketNam
             const fileName = `${crypto.randomUUID()}.${fileExt}`;
             filePath = `${fileName}`;
 
-            // FIX: Removed the custom Promise.race timeout which was causing the upload to hang.
-            // Directly await the Supabase client upload method and use its native error handling.
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from(bucketName)
-                .upload(filePath, file);
+            // Create a timeout promise to reject after 30 seconds
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Upload timed out. Please check your connection.")), 30000)
+            );
+
+            // Execute the upload operation or timeout
+            const uploadPromise = supabase.storage.from(bucketName).upload(filePath, file);
+            
+            const { data: uploadData, error: uploadError } = await Promise.race([
+                uploadPromise, 
+                timeoutPromise
+            ]) as any;
 
             if (uploadError) {
                 throw uploadError;
@@ -110,9 +117,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ imageUrl, onChange, bucketNam
         } catch (error: any) {
             // If an error occurred and a file was potentially uploaded, try to clean it up.
             if (filePath) {
-                await supabase.storage.from(bucketName).remove([filePath]);
+                try {
+                    await supabase.storage.from(bucketName).remove([filePath]);
+                } catch (e) {
+                    console.error("Failed to cleanup file after error:", e);
+                }
             }
-            showToast('Upload Error', error.message, 'error');
+            showToast('Upload Error', error.message || 'Image upload failed.', 'error');
         } finally {
             setUploading(false);
         }

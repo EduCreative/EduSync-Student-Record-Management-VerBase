@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -187,6 +188,7 @@ const AttendanceMarker: React.FC = () => {
                                 <thead className="text-xs text-secondary-700 uppercase bg-secondary-50 dark:bg-secondary-700 dark:text-secondary-300">
                                     <tr>
                                         <th className="px-6 py-3 text-left">Student</th>
+                                        <th className="px-6 py-3 text-left">Father Name</th>
                                         <th className="px-6 py-3 text-left">Student ID</th>
                                         <th className="px-6 py-3 text-center">Status</th>
                                     </tr>
@@ -202,6 +204,7 @@ const AttendanceMarker: React.FC = () => {
                                                         <span className="font-medium text-secondary-900 dark:text-white">{student.name}</span>
                                                     </div>
                                                 </td>
+                                                <td className="px-6 py-3 text-secondary-600 dark:text-secondary-400">{student.fatherName}</td>
                                                 <td className="px-6 py-3 font-bold text-primary-700 dark:text-primary-400">{student.rollNumber}</td>
                                                 <td className="px-6 py-3">
                                                     <div className="flex justify-center">
@@ -231,6 +234,7 @@ const AttendanceMarker: React.FC = () => {
                                             <Avatar student={student} className="w-10 h-10 flex-shrink-0"/>
                                             <div className="overflow-hidden">
                                                 <p className="font-medium text-secondary-900 dark:text-white truncate">{student.name}</p>
+                                                <p className="text-xs text-secondary-500 truncate">s/o {student.fatherName}</p>
                                                 <p className="text-xs font-bold text-primary-700 dark:text-primary-400">ID: {student.rollNumber}</p>
                                             </div>
                                         </div>

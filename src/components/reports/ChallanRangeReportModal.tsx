@@ -20,7 +20,7 @@ const ChallanRangeReportModal: React.FC<ChallanRangeReportModalProps> = ({ isOpe
     const [startChallan, setStartChallan] = useState('');
     const [endChallan, setEndChallan] = useState('');
     const [copies, setCopies] = useState<2 | 3>(3);
-    const [penaltyAmount, setPenaltyAmount] = useState(500);
+    const [penaltyAmount, setPenaltyAmount] = useState(0);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);

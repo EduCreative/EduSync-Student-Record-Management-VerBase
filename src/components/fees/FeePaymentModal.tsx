@@ -34,10 +34,13 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
     useEffect(() => {
         if (isOpen) {
             if (editMode) {
+                // In edit mode (correcting data), start with the total currently recorded
                 setAmount(challan.paidAmount);
                 setDiscount(challan.discount);
                 setPaidDate(challan.paidDate || getTodayString());
             } else {
+                // In payment mode, start with 0 to let user enter "Paying Now" amount, 
+                // or default to balance for quick full payment.
                 const balance = challan.totalAmount - challan.discount - challan.paidAmount;
                 setAmount(balance);
                 setDiscount(challan.discount);
@@ -148,7 +151,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                     ) : (
                         <>
                             <div className="flex justify-between items-center mt-1 text-xs">
-                                <span>Already Paid:</span>
+                                <span>Total Paid So Far:</span>
                                 <span>Rs. {challan.paidAmount.toLocaleString()}</span>
                             </div>
                              <div className="flex justify-between items-center mt-2 text-base font-bold text-primary-600 dark:text-primary-400">
@@ -159,6 +162,29 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                     )}
                 </div>
                 
+                {/* Payment History Section */}
+                {!editMode && challan.paymentHistory && challan.paymentHistory.length > 0 && (
+                    <div className="p-3 border rounded-lg dark:border-secondary-700">
+                        <h4 className="text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-2 uppercase">Payment History</h4>
+                        <table className="w-full text-xs text-left">
+                            <thead className="bg-secondary-100 dark:bg-secondary-800">
+                                <tr>
+                                    <th className="p-1">Date</th>
+                                    <th className="p-1 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y dark:divide-secondary-700">
+                                {challan.paymentHistory.map((record, index) => (
+                                    <tr key={index}>
+                                        <td className="p-1">{formatDate(record.date)}</td>
+                                        <td className="p-1 text-right">Rs. {record.amount.toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                
                 {error && (
                     <div className="p-3 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 rounded-md text-sm">
                         {error}
@@ -167,7 +193,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="amount" className="input-label">{editMode ? 'Paid Amount' : 'Amount Paying Now'}</label>
+                        <label htmlFor="amount" className="input-label">{editMode ? 'Update Total Paid Amount' : 'Amount Paying Now'}</label>
                         <input
                             type="number"
                             id="amount"
@@ -178,6 +204,7 @@ const FeePaymentModal: React.FC<FeePaymentModalProps> = ({ isOpen, onClose, chal
                             min="0"
                             disabled={isSubmitting}
                         />
+                        {editMode && <p className="text-xs text-secondary-500 mt-1">Note: Editing overwrites the total paid amount.</p>}
                     </div>
                     <div>
                         <label htmlFor="discount" className="input-label">Discount</label>

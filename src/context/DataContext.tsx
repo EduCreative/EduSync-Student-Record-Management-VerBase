@@ -1,7 +1,6 @@
-
 // ... (imports remain the same)
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam } from '../types';
+import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam, PaymentRecord } from '../types';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { supabase } from '../lib/supabaseClient';
@@ -165,6 +164,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }, 45000);
 
         try {
+            // Soft Refresh: Ensure session is valid before heavy data pull
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+                console.warn("Session refresh warning:", refreshError.message);
+            }
+
             const effectiveSchoolId = user.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user.schoolId;
 
             const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
@@ -398,6 +403,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
 
+    // ... (previous methods kept for brevity) ...
     const updateUser = async (updatedUser: User) => {
         const { password, ...restOfUser } = updatedUser;
         let updateData = toSnakeCase(restOfUser);
@@ -668,12 +674,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const challan = fees.find(f => f.id === challanId);
         if (!challan) throw new Error('Challan not found.');
 
-        const newPaidAmount = challan.paidAmount + amount;
+        // Updated Logic: Use payment history to track partial payments
+        const currentHistory = challan.paymentHistory || [];
+        const newPaymentEntry: PaymentRecord = {
+            amount: amount,
+            date: paidDate,
+            method: 'Manual' // Could be expanded to take input
+        };
+        const updatedHistory = [...currentHistory, newPaymentEntry];
+
+        // Recalculate total paid amount from history + current amount (if strictly adding)
+        // Or simply add to existing paidAmount if we trust it. To be safe, let's recalculate if history exists.
+        let newPaidAmount = 0;
+        if (currentHistory.length > 0) {
+             newPaidAmount = updatedHistory.reduce((sum, p) => sum + p.amount, 0);
+        } else {
+             // Fallback for old records without history: add current payment to existing paid amount
+             newPaidAmount = challan.paidAmount + amount;
+        }
+
         const totalPayable = challan.totalAmount - discount;
         const newStatus: FeeChallan['status'] = newPaidAmount >= totalPayable ? 'Paid' : 'Partial';
 
         const { data, error } = await supabase.from('fee_challans')
-            .update({ paid_amount: newPaidAmount, discount, status: newStatus, paid_date: paidDate })
+            .update({ 
+                paid_amount: newPaidAmount, 
+                discount, 
+                status: newStatus, 
+                paid_date: paidDate, // Stores the LATEST payment date
+                payment_history: updatedHistory
+            })
             .eq('id', challanId)
             .select()
             .single();
@@ -683,13 +713,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
 
-        // Optimized: Update local state and Dexie instead of full refetch
         const updatedChallan = toCamelCase(data) as FeeChallan;
-        
-        // Update React State
         setFees(prevFees => prevFees.map(f => f.id === challanId ? updatedChallan : f));
-        
-        // Update Dexie (if in offline mode or generally to keep sync)
         if (syncMode === 'offline') {
             await db.fees.put(updatedChallan);
         }
@@ -710,6 +735,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             newStatus = 'Partial';
         }
 
+        // NOTE: Direct edit replaces the total paid amount. Ideally this should also edit history,
+        // but for manual correction, we'll just update the top-level fields for simplicity in this version.
+        // The user should use 'Record Payment' for partial payments.
+
         const { data, error } = await supabase.from('fee_challans')
             .update({
                 paid_amount: paidAmount,
@@ -726,13 +755,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw error;
         }
 
-        // Optimized: Update local state and Dexie instead of full refetch
         const updatedChallan = toCamelCase(data) as FeeChallan;
-        
-        // Update React State
         setFees(prevFees => prevFees.map(f => f.id === challanId ? updatedChallan : f));
-        
-        // Update Dexie
         if (syncMode === 'offline') {
             await db.fees.put(updatedChallan);
         }
@@ -762,13 +786,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
 
-        // Optimized: Update local state and Dexie instead of full refetch
         const updatedChallan = toCamelCase(data) as FeeChallan;
-        
-        // Update React State
         setFees(prevFees => prevFees.map(f => f.id === challanId ? updatedChallan : f));
-        
-        // Update Dexie
         if (syncMode === 'offline') {
             await db.fees.put(updatedChallan);
         }
@@ -812,9 +831,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 const feeItems = selectedFeeHeads.map(({ feeHeadId, amount }) => {
                     let finalAmount = amount;
-                    // If this is the tuition fee head, prioritize the student's specific fee
                     if (tuitionFeeHead && feeHeadId === tuitionFeeHead.id) {
-                        finalAmount = studentFeeStructureMap.get(feeHeadId) ?? amount; // Fallback to default if not set for student
+                        finalAmount = studentFeeStructureMap.get(feeHeadId) ?? amount;
                     }
                     return {
                         description: feeHeadMap.get(feeHeadId) || 'Unknown Fee',
@@ -841,6 +859,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     totalAmount,
                     discount: 0,
                     paidAmount: 0,
+                    paymentHistory: [],
+                    fineAmount: 0,
                 });
             }
 
@@ -852,9 +872,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const newChallans = toCamelCase(data) as FeeChallan[];
                 const count = newChallans.length;
 
-                // Optimized: Update local state and Dexie instead of full refetch
                 setFees(prevFees => [...prevFees, ...newChallans]);
-                
                 if (syncMode === 'offline') {
                    await db.fees.bulkPut(newChallans);
                 }
@@ -873,6 +891,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
     
+    // ... (rest of methods: addFeeHead, updateFeeHead, deleteFeeHead, issueLeavingCertificate, saveResults, etc. remain the same)
     const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
         const { error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
         if (error) {
@@ -924,7 +943,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .select()
             .single();
 
-        // Fallback: If columns missing (code 42703 is undefined_column, or check message), just update status
         if (error && (error.code === '42703' || error.message.includes('Could not find the') || error.message.includes('column'))) {
              console.warn("Extended student columns missing in DB. Falling back to status update only.");
              const { data: fallbackData, error: fallbackError } = await supabase.from('students')
@@ -947,7 +965,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw new Error(error.message);
         }
         
-        // Optimized: Update local state and Dexie
         if (data) {
              const updatedStudent = toCamelCase(data) as Student;
              setStudents(prev => prev.map(s => s.id === studentId ? updatedStudent : s));
@@ -964,9 +981,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
-        if (resultsToSave.length === 0) {
-            return; // Nothing to save
-        }
+        if (resultsToSave.length === 0) return;
         
         const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
         if (!effectiveSchoolId) {
@@ -976,18 +991,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { classId, exam, subject } = resultsToSave[0];
         
-        // Note: New exam/subject creation still requires a refetch or manual list update, 
-        // keeping full flow for simplicity here as it's rare.
         const examExists = exams.some(e => e.name.toLowerCase() === exam.toLowerCase() && e.schoolId === effectiveSchoolId);
         if (!examExists) {
             const { error: examInsertError } = await supabase.from('exams').insert({
                 name: exam,
                 school_id: effectiveSchoolId
             });
-            if (examInsertError) {
-                showToast('Error', `Failed to create new exam: ${examInsertError.message}`, 'error');
-                throw new Error(examInsertError.message);
-            }
+            if (examInsertError) throw new Error(examInsertError.message);
         }
 
         const subjectExists = subjects.some(s => s.name.toLowerCase() === subject.toLowerCase() && s.schoolId === effectiveSchoolId);
@@ -996,10 +1006,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 name: subject,
                 school_id: effectiveSchoolId
             });
-            if (subjectInsertError) {
-                showToast('Error', `Failed to create new subject: ${subjectInsertError.message}`, 'error');
-                throw new Error(subjectInsertError.message);
-            }
+            if (subjectInsertError) throw new Error(subjectInsertError.message);
         }
 
         const studentIds = resultsToSave.map(r => r.studentId);
@@ -1011,25 +1018,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .eq('subject', subject)
             .in('student_id', studentIds);
 
-        if (deleteError) {
-            showToast('Error', `Failed to clear previous results: ${deleteError.message}`, 'error');
-            throw new Error(deleteError.message);
-        }
+        if (deleteError) throw new Error(deleteError.message);
 
         const resultsWithSchoolId = resultsToSave.map(r => ({ ...r, schoolId: effectiveSchoolId }));
         const { error: insertError } = await supabase.from('results').insert(toSnakeCase(resultsWithSchoolId));
 
-        if (insertError) {
-            showToast('Error', `Failed to save new results: ${insertError.message}`, 'error');
-            throw new Error(insertError.message);
-        }
+        if (insertError) throw new Error(insertError.message);
 
         await fetchData();
         addLog('Results Saved', `${resultsToSave.length} results saved for exam: ${exam}.`);
         showToast('Success', 'Results have been saved successfully.');
     };
     
-    // ... (addSchool, updateSchool, deleteSchool, addEvent... remaining functions)
+    // ... (rest of functions remain exactly same as previous file version)
     const addSchool = async (name: string, address: string, logoUrl?: string | null) => {
         const { error } = await supabase.from('schools').insert({ name, address, logo_url: logoUrl });
         if (error) {
@@ -1134,14 +1135,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', 'No school context selected for backup.', 'error');
             return;
         }
-        
         const { data, error } = await supabase.rpc('backup_school_data', { p_school_id: effectiveSchoolId });
-
         if (error) {
             showToast('Error', error.message, 'error');
             throw new Error(error.message);
         }
-
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const schoolName = schools.find(s => s.id === effectiveSchoolId)?.name.replace(/\s+/g, '_') || 'school';
         const link = document.createElement('a');
@@ -1149,7 +1147,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         link.download = `edusync_backup_${schoolName}_${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         URL.revokeObjectURL(link.href);
-        
         showToast('Success', 'Backup file downloaded.', 'success');
     };
 
@@ -1159,21 +1156,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', 'No school context selected for restore.', 'error');
             return;
         }
-        
         const fileContent = await backupFile.text();
-        
         try {
             const backupJson = JSON.parse(fileContent);
             const { error } = await supabase.rpc('restore_school_data', { 
                 p_school_id: effectiveSchoolId, 
                 p_backup_data: backupJson 
             });
-
             if (error) throw error;
-            
             showToast('Success', 'Data restored successfully. Refreshing...', 'success');
             setTimeout(() => window.location.reload(), 2000);
-            
         } catch (err: any) {
             showToast('Restore Error', err.message || 'Invalid backup file format.', 'error');
             throw new Error(err.message || 'Invalid backup file format.');
@@ -1183,11 +1175,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const promoteAllStudents = useCallback(async (mappings: Record<string, string | 'graduate'>, exemptedStudentIds: string[]) => {
         const exemptedSet = new Set(exemptedStudentIds);
         const updates: { id: string, class_id?: string, status?: string }[] = [];
-    
         for (const fromClassId in mappings) {
             const toClassIdOrAction = mappings[fromClassId];
             const studentsToProcess = students.filter(s => s.classId === fromClassId && s.status === 'Active' && !exemptedSet.has(s.id));
-    
             studentsToProcess.forEach(student => {
                 if (toClassIdOrAction === 'graduate') {
                     const fromClass = classes.find(c => c.id === fromClassId);
@@ -1197,7 +1187,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             });
         }
-        
         if (updates.length > 0) {
             const { error } = await supabase.from('students').upsert(updates);
             if (error) {
@@ -1205,11 +1194,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 throw error;
             }
         }
-        
         addLog('Students Promoted', `Promoted/Graduated ${updates.length} students.`);
         showToast('Success', 'All selected students have been promoted successfully.', 'success');
         await fetchData();
-
     }, [user, activeSchoolId, classes, students, showToast, addLog, fetchData]);
 
     const increaseTuitionFees = useCallback(async (studentIds: string[], increaseAmount: number) => {
@@ -1219,22 +1206,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Error', msg, 'error');
             throw new Error(msg);
         }
-
         const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
         if (!tuitionFeeHead) {
             const msg = "'Tuition Fee' head not found. Please create a fee head named 'Tuition Fee'.";
             showToast('Error', msg, 'error');
             throw new Error(msg);
         }
-
         const studentsToUpdate = students.filter(s => studentIds.includes(s.id));
-        
         const updatePromises = studentsToUpdate.map(student => {
             const currentFeeStructure = student.feeStructure || [];
             const tuitionFeeIndex = currentFeeStructure.findIndex(item => item.feeHeadId === tuitionFeeHead.id);
-            
             let newFeeStructure;
-
             if (tuitionFeeIndex > -1) {
                 newFeeStructure = [...currentFeeStructure];
                 newFeeStructure[tuitionFeeIndex] = {
@@ -1250,15 +1232,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     },
                 ];
             }
-            
-            return supabase
-                .from('students')
-                .update({ fee_structure: newFeeStructure })
-                .eq('id', student.id);
+            return supabase.from('students').update({ fee_structure: newFeeStructure }).eq('id', student.id);
         });
-
         const results = await Promise.allSettled(updatePromises);
-        
         const failedUpdates = results.filter(r => r.status === 'rejected');
         if (failedUpdates.length > 0) {
             console.error('Some student fee updates failed:', failedUpdates);
@@ -1266,11 +1242,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             showToast('Partial Failure', msg, 'error');
             throw new Error(msg);
         }
-
         addLog('Tuition Fees Increased', `Increased tuition fee by Rs. ${increaseAmount} for ${studentsToUpdate.length} students.`);
         showToast('Success', `Tuition fees increased for ${studentsToUpdate.length} students.`, 'success');
         await fetchData();
-
     }, [user, activeSchoolId, students, feeHeads, showToast, addLog, fetchData]);
 
     const sendFeeReminders = useCallback(async (challanIds: string[]) => {

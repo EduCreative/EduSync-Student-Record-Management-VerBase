@@ -47,6 +47,52 @@ const isValidEmail = (email: string): boolean => {
     return emailRegex.test(email);
 };
 
+// Define permission groups for comprehensive display
+const PERMISSION_GROUPS = [
+    {
+        title: 'Fees & Finance',
+        permissions: [
+            { key: Permission.CAN_MANAGE_FEES, label: 'Manage Fees (Challans/Payments)' },
+            { key: Permission.CAN_MANAGE_FEE_HEADS, label: 'Manage Fee Heads' },
+            { key: Permission.CAN_SEND_FEE_REMINDERS, label: 'Send Fee Reminders' },
+            { key: Permission.CAN_VIEW_FINANCIAL_REPORTS, label: 'View Financial Reports' },
+        ]
+    },
+    {
+        title: 'Student Management',
+        permissions: [
+            { key: Permission.CAN_VIEW_STUDENTS, label: 'View Students' },
+            { key: Permission.CAN_EDIT_STUDENTS, label: 'Create/Edit Students' },
+            { key: Permission.CAN_DELETE_STUDENTS, label: 'Delete Students' },
+            { key: Permission.CAN_PROMOTE_STUDENTS, label: 'Promote Students' },
+            { key: Permission.CAN_GENERATE_ID_CARDS, label: 'Generate ID Cards' },
+        ]
+    },
+    {
+        title: 'Class Management',
+        permissions: [
+            { key: Permission.CAN_VIEW_CLASSES, label: 'View Classes' },
+            { key: Permission.CAN_EDIT_CLASSES, label: 'Create/Edit Classes' },
+            { key: Permission.CAN_DELETE_CLASSES, label: 'Delete Classes' },
+        ]
+    },
+    {
+        title: 'Academic',
+        permissions: [
+            { key: Permission.CAN_MANAGE_ATTENDANCE, label: 'Manage Attendance' },
+            { key: Permission.CAN_MANAGE_RESULTS, label: 'Manage Results' },
+            { key: Permission.CAN_VIEW_ACADEMIC_REPORTS, label: 'View Academic Reports' },
+        ]
+    },
+    {
+        title: 'User Administration',
+        permissions: [
+            { key: Permission.CAN_MANAGE_USERS, label: 'Manage Users' },
+            { key: Permission.CAN_DELETE_USERS, label: 'Delete Users' },
+        ]
+    },
+];
+
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, userToEdit, defaultRole, lockRole = false }) => {
     const { user: currentUser, activeSchoolId } = useAuth();
     const { schools } = useData();
@@ -66,12 +112,13 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
     const [isSaving, setIsSaving] = useState(false);
     const [isSendingReset, setIsSendingReset] = useState(false);
     const [disabledLinks, setDisabledLinks] = useState<Record<string, boolean>>({});
-    // FIX: Corrected typo in state variable name to match property in User type.
     const [permissionsOverrides, setPermissionsOverrides] = useState<Partial<Record<Permission, boolean>>>({});
     const [errors, setErrors] = useState<{ name?: string; email?: string; role?: string; schoolId?: string; password?: string; confirmPassword?: string; }>({});
 
     const isOwnerGlobalView = currentUser?.role === UserRole.Owner && !activeSchoolId;
     const effectiveSchoolId = currentUser?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : currentUser?.schoolId;
+    
+    // Ensure links are consistently ordered as per NAV_LINKS definition
     const linksForRole = NAV_LINKS[formData.role] || [];
 
     useEffect(() => {
@@ -254,7 +301,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
         }
     
         return (
-            <div className="flex items-center justify-between py-1">
+            <div className="flex items-center justify-between py-1" key={permission}>
                 <label htmlFor={`perm-${permission}`} className="text-sm text-secondary-800 dark:text-secondary-200">{label}</label>
                 <select
                     id={`perm-${permission}`}
@@ -262,7 +309,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     onChange={e => handlePermissionChange(permission, e.target.value)}
                     className="input-field text-xs py-1 px-2 w-32"
                 >
-                    <option value="default">Default (by role)</option>
+                    <option value="default">Default</option>
                     <option value="allow">Allow</option>
                     <option value="deny">Deny</option>
                 </select>
@@ -367,8 +414,8 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     <div className="pt-2">
                         <label className="input-label mb-2">Menu Permissions</label>
                         <div className="space-y-2 max-h-40 overflow-y-auto p-3 bg-secondary-50 dark:bg-secondary-700 rounded-md border dark:border-secondary-600">
-                             {linksForRole.map(link => (
-                                <label key={link.path} className="flex items-center space-x-3">
+                             {linksForRole.length > 0 ? linksForRole.map(link => (
+                                <label key={link.path} className="flex items-center space-x-3 cursor-pointer hover:bg-secondary-100 dark:hover:bg-secondary-600 p-1 rounded">
                                     <input
                                         type="checkbox"
                                         checked={!disabledLinks[link.path]}
@@ -377,7 +424,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                                     />
                                     <span className="text-secondary-800 dark:text-secondary-200">{link.name}</span>
                                 </label>
-                            ))}
+                            )) : (
+                                <p className="text-sm text-secondary-500">No menu items available for this role.</p>
+                            )}
                         </div>
                     </div>
                 )}
@@ -387,22 +436,14 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSave, 
                     <div className="pt-2">
                         <label className="input-label mb-2 font-semibold">Fine-Grained Permissions</label>
                         <div className="space-y-4 p-3 bg-secondary-50 dark:bg-secondary-700 rounded-md border dark:border-secondary-600">
-                            <div>
-                                <h4 className="font-medium text-secondary-800 dark:text-secondary-200 text-sm">Students</h4>
-                                <div className="mt-1 pl-2">
-                                    {renderPermissionSelector(Permission.CAN_VIEW_STUDENTS, 'View Students')}
-                                    {renderPermissionSelector(Permission.CAN_EDIT_STUDENTS, 'Create/Edit Students')}
-                                    {renderPermissionSelector(Permission.CAN_DELETE_STUDENTS, 'Delete Students')}
+                            {PERMISSION_GROUPS.map(group => (
+                                <div key={group.title}>
+                                    <h4 className="font-bold text-primary-700 dark:text-primary-300 text-xs uppercase mb-2 pb-1 border-b dark:border-secondary-600">{group.title}</h4>
+                                    <div className="pl-1 space-y-1">
+                                        {group.permissions.map(perm => renderPermissionSelector(perm.key, perm.label))}
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <h4 className="font-medium text-secondary-800 dark:text-secondary-200 text-sm">Classes</h4>
-                                <div className="mt-1 pl-2">
-                                    {renderPermissionSelector(Permission.CAN_VIEW_CLASSES, 'View Classes')}
-                                    {renderPermissionSelector(Permission.CAN_EDIT_CLASSES, 'Create/Edit Classes')}
-                                    {renderPermissionSelector(Permission.CAN_DELETE_CLASSES, 'Delete Classes')}
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 )}

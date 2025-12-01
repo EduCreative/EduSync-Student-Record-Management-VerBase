@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { usePrint } from '../../context/PrintContext';
@@ -65,11 +64,18 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
 
         setIsIssuing(true);
         try {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Request timed out.")), 15000)
+            );
+
             // Even if reprinting, we update the record to save any changes made in the form
-            await issueLeavingCertificate(student.id, {
-                ...details,
-                conduct: details.conduct as Student['conduct'] // Cast string back to specific type for DB
-            });
+            await Promise.race([
+                issueLeavingCertificate(student.id, {
+                    ...details,
+                    conduct: details.conduct as Student['conduct'] // Cast string back to specific type for DB
+                }),
+                timeoutPromise
+            ]);
             
             const content = (
                 <PrintableLeavingCertificate 
@@ -81,8 +87,9 @@ const LeavingCertificatePage: React.FC<LeavingCertificatePageProps> = ({ student
             );
             
             showPrintPreview(content, `Leaving Certificate - ${student.name}`);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error issuing certificate:", error);
+            showToast('Error', error.message || 'Failed to issue certificate.', 'error');
         } finally {
             setIsIssuing(false);
         }

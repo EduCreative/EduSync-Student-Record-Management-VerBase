@@ -26,7 +26,7 @@ const BulkChallanReportModal: React.FC<BulkChallanReportModalProps> = ({ isOpen,
     const [month, setMonth] = useState(months[new Date().getMonth()]);
     const [year, setYear] = useState(currentYear);
     const [copies, setCopies] = useState<2 | 3>(3);
-    const [penaltyAmount, setPenaltyAmount] = useState(500);
+    const [penaltyAmount, setPenaltyAmount] = useState(0);
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);

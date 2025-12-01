@@ -53,13 +53,20 @@ const SettingsPage: React.FC = () => {
 
         setIsSchoolSaving(true);
         try {
-            // Update school name, address, logo
-            await updateSchool({
-                id: school.id,
-                name: schoolDetails.name,
-                address: schoolDetails.address,
-                logoUrl: schoolDetails.logoUrl
-            });
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Request timed out.")), 15000)
+            );
+
+            // Update school name, address, logo with timeout race
+            await Promise.race([
+                updateSchool({
+                    id: school.id,
+                    name: schoolDetails.name,
+                    address: schoolDetails.address,
+                    logoUrl: schoolDetails.logoUrl
+                }),
+                timeoutPromise
+            ]);
             
             // Update or create the default tuition fee in fee_heads
             const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
@@ -72,8 +79,8 @@ const SettingsPage: React.FC = () => {
             }
 
             showToast('Success', 'School details updated!', 'success');
-        } catch (error) {
-            showToast('Error', 'Failed to update school details.', 'error');
+        } catch (error: any) {
+            showToast('Error', error.message || 'Failed to update school details.', 'error');
         } finally {
             setIsSchoolSaving(false);
         }
