@@ -15,8 +15,8 @@ interface DefaulterReportModalProps {
 
 const availableColumns = {
     fatherName: "Father's Name",
-    amountDue: "Amount Due",
-    paid: "Paid"
+    amountDue: "Total Payable",
+    paid: "Total Paid"
 };
 type ColumnKey = keyof typeof availableColumns;
 
@@ -62,68 +62,77 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
     const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
     const school = useMemo(() => getSchoolById(effectiveSchoolId || ''), [getSchoolById, effectiveSchoolId]);
-    const studentMap = useMemo(() => new Map(students.map(s => [s.id, s])), [students]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, `${c.name}${c.section ? ` - ${c.section}` : ''}`])), [classes]);
 
     const schoolClasses = useMemo(() => classes.filter(c => c.schoolId === effectiveSchoolId), [classes, effectiveSchoolId]);
     const sortedClasses = useMemo(() => [...schoolClasses].sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity) || getClassLevel(a.name) - getClassLevel(b.name)), [schoolClasses]);
 
     const reportData = useMemo(() => {
-        // 1. Filter challans for defaulters in the relevant school/class
-        const defaulterChallans = fees.filter(fee => {
-            if (fee.status === 'Paid') return false;
-            const student = studentMap.get(fee.studentId);
-            if (!student || student.schoolId !== effectiveSchoolId || student.status !== 'Active') return false;
-            if (classId !== 'all' && student.classId !== classId) return false;
-            return true;
-        });
+        // 1. Filter relevant students based on school and class selection
+        const relevantStudents = students.filter(s => 
+            s.schoolId === effectiveSchoolId && 
+            s.status === 'Active' &&
+            (classId === 'all' || s.classId === classId)
+        );
 
-        // 2. Group challans by student and aggregate their due amounts
-        const studentDefaulterSummary = defaulterChallans.reduce((acc, challan) => {
-            const studentId = challan.studentId;
-            if (!acc[studentId]) {
-                const student = studentMap.get(studentId);
-                if (!student) return acc;
-                acc[studentId] = {
+        const studentSummaries: StudentDefaulterSummary[] = [];
+
+        // 2. Calculate Ledger Balance for each student to determine defaulter status
+        relevantStudents.forEach(student => {
+            const studentFees = fees.filter(f => f.studentId === student.id && f.status !== 'Cancelled');
+            
+            // Calculate Total Fees Charged (Excluding double-counted arrears)
+            // Formula: Sum(Challan Total - Previous Balance) + Student Opening Balance
+            const totalFeeCharged = studentFees.reduce((sum, f) => {
+                // Determine the net fee for this specific month (removing carry-over)
+                const currentMonthFee = f.totalAmount - (f.previousBalance || 0);
+                return sum + currentMonthFee;
+            }, 0) + (student.openingBalance || 0);
+
+            const totalPaid = studentFees.reduce((sum, f) => sum + f.paidAmount, 0);
+            const totalDiscount = studentFees.reduce((sum, f) => sum + f.discount, 0);
+            
+            // Ledger Balance
+            const netBalance = totalFeeCharged - totalPaid - totalDiscount;
+
+            // Only list students who actually owe money
+            if (netBalance > 0) {
+                studentSummaries.push({
                     studentId: student.id,
                     rollNumber: student.rollNumber,
                     studentName: student.name,
                     fatherName: student.fatherName,
                     classId: student.classId,
                     className: classMap.get(student.classId) || 'N/A',
-                    amountDue: 0,
-                    paid: 0,
-                    balance: 0,
-                };
+                    // "Amount Due" in the report represents Total Net Payable (Charges - Discounts)
+                    amountDue: totalFeeCharged - totalDiscount, 
+                    paid: totalPaid,
+                    balance: netBalance,
+                });
             }
-            const totalDue = challan.totalAmount - challan.discount;
-            acc[studentId].amountDue += totalDue;
-            acc[studentId].paid += challan.paidAmount;
-            acc[studentId].balance += totalDue - challan.paidAmount;
-            return acc;
-        }, {} as Record<string, StudentDefaulterSummary>);
+        });
 
-        // 3. Group the aggregated student summaries by class
-        const groupedByClass = Object.values(studentDefaulterSummary).reduce((acc, studentSummary) => {
-            const cid = studentSummary.classId;
+        // 3. Group by Class
+        const groupedByClass = studentSummaries.reduce((acc, summary) => {
+            const cid = summary.classId;
             if (!acc[cid]) {
                 acc[cid] = {
                     classId: cid,
-                    className: studentSummary.className,
+                    className: summary.className,
                     students: [],
                     subtotals: { amountDue: 0, paid: 0, balance: 0 },
                 };
             }
-            acc[cid].students.push(studentSummary);
-            acc[cid].subtotals.amountDue += studentSummary.amountDue;
-            acc[cid].subtotals.paid += studentSummary.paid;
-            acc[cid].subtotals.balance += studentSummary.balance;
+            acc[cid].students.push(summary);
+            acc[cid].subtotals.amountDue += summary.amountDue;
+            acc[cid].subtotals.paid += summary.paid;
+            acc[cid].subtotals.balance += summary.balance;
             return acc;
         }, {} as Record<string, ClassDefaulterGroup>);
 
         const schoolClassesMapForSort = new Map<string, Class>(schoolClasses.map(c => [c.id, c]));
 
-        // 4. Sort classes and students within each class
+        // 4. Sort Classes and Students
         return Object.values(groupedByClass)
             .sort((a: ClassDefaulterGroup, b: ClassDefaulterGroup) => {
                 const classA = schoolClassesMapForSort.get(a.classId);
@@ -143,7 +152,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 });
                 return classGroup;
             });
-    }, [fees, students, classMap, studentMap, effectiveSchoolId, classId, schoolClasses, sortBy]);
+    }, [fees, students, classMap, effectiveSchoolId, classId, schoolClasses, sortBy]);
     
     const grandTotal = useMemo(() => {
         return reportData.reduce((acc, classGroup) => {
@@ -175,8 +184,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                                     <th className="py-0 px-1 text-left">Student ID</th>
                                     <th className="py-0 px-1 text-left">Student Name</th>
                                     {activeColumns.includes('fatherName') && <th className="py-0 px-1 text-left">Father Name</th>}
-                                    {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">Amount Due</th>}
-                                    {activeColumns.includes('paid') && <th className="py-0 px-1 text-right">Paid</th>}
+                                    {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">Total Payable</th>}
+                                    {activeColumns.includes('paid') && <th className="py-0 px-1 text-right">Total Paid</th>}
                                     <th className="py-0 px-1 text-right">Balance</th>
                                 </tr>
                             </thead>
@@ -189,7 +198,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                                         {activeColumns.includes('fatherName') && <td className="py-0 px-1">{student.fatherName}</td>}
                                         {activeColumns.includes('amountDue') && <td className="py-0 px-1 text-right">{student.amountDue.toLocaleString()}</td>}
                                         {activeColumns.includes('paid') && <td className="py-0 px-1 text-right">{student.paid.toLocaleString()}</td>}
-                                        <td className="py-0 px-1 text-right">{student.balance.toLocaleString()}</td>
+                                        <td className="py-0 px-1 text-right font-bold">{student.balance.toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -227,8 +236,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const handleExport = () => {
         const headers: string[] = ['Sr.', 'Student ID', 'Student Name'];
         if (selectedColumns.fatherName) headers.push("Father's Name");
-        if (selectedColumns.amountDue) headers.push('Amount Due');
-        if (selectedColumns.paid) headers.push('Paid');
+        if (selectedColumns.amountDue) headers.push('Total Payable');
+        if (selectedColumns.paid) headers.push('Total Paid');
         headers.push('Balance');
 
         const csvRows = [headers.join(',')];
@@ -249,8 +258,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 subtotalRow[studentNameIndex] = 'Sub Total';
             }
     
-            if (headers.includes('Amount Due')) subtotalRow[headers.indexOf('Amount Due')] = classGroup.subtotals.amountDue;
-            if (headers.includes('Paid')) subtotalRow[headers.indexOf('Paid')] = classGroup.subtotals.paid;
+            if (headers.includes('Total Payable')) subtotalRow[headers.indexOf('Total Payable')] = classGroup.subtotals.amountDue;
+            if (headers.includes('Total Paid')) subtotalRow[headers.indexOf('Total Paid')] = classGroup.subtotals.paid;
             if (headers.includes('Balance')) subtotalRow[headers.indexOf('Balance')] = classGroup.subtotals.balance;
             csvRows.push(subtotalRow.map(escapeCsvCell).join(','));
             csvRows.push('');
@@ -263,8 +272,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             if(studentNameIndex !== -1) {
                 grandTotalRow[studentNameIndex] = 'Grand Total';
             }
-            if (headers.includes('Amount Due')) grandTotalRow[headers.indexOf('Amount Due')] = grandTotal.amountDue;
-            if (headers.includes('Paid')) grandTotalRow[headers.indexOf('Paid')] = grandTotal.paid;
+            if (headers.includes('Total Payable')) grandTotalRow[headers.indexOf('Total Payable')] = grandTotal.amountDue;
+            if (headers.includes('Total Paid')) grandTotalRow[headers.indexOf('Total Paid')] = grandTotal.paid;
             if (headers.includes('Balance')) grandTotalRow[headers.indexOf('Balance')] = grandTotal.balance;
             csvRows.push(grandTotalRow.map(escapeCsvCell).join(','));
         }

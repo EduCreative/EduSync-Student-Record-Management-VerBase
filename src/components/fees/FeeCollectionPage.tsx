@@ -10,6 +10,7 @@ import { Permission } from '../../permissions';
 import SingleChallanGenerationModal from './SingleChallanGenerationModal';
 import { getClassLevel } from '../../utils/sorting';
 import { formatDate } from '../../constants';
+import StudentFeeHistory from '../students/StudentFeeHistory';
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -33,6 +34,7 @@ const FeeCollectionPage: React.FC = () => {
     // Filters
     const [statusFilter, setStatusFilter] = useState<'Outstanding' | 'All' | 'Paid' | 'Unpaid' | 'Partial'>('Outstanding');
     const [classFilter, setClassFilter] = useState('all');
+    const [monthFilter, setMonthFilter] = useState(''); // Format: YYYY-MM
     const [sortBy, setSortBy] = useState<'date' | 'name' | 'rollNumber' | 'class'>('date');
 
     // Single Challan Generation
@@ -40,6 +42,9 @@ const FeeCollectionPage: React.FC = () => {
     const [studentForChallan, setStudentForChallan] = useState<Student | null>(null);
     const [isSingleChallanModalOpen, setIsSingleChallanModalOpen] = useState(false);
     const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
+    // Fee History Modal
+    const [viewHistoryStudent, setViewHistoryStudent] = useState<Student | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const ROWS_PER_PAGE = 15;
@@ -62,6 +67,16 @@ const FeeCollectionPage: React.FC = () => {
 
             // Class Filter
             if (classFilter !== 'all' && student.classId !== classFilter) return false;
+
+            // Month Filter (Challan Month)
+            if (monthFilter) {
+                const [fYear, fMonth] = monthFilter.split('-');
+                const challanMonthIndex = months.indexOf(challan.month);
+                const challanMonthStr = String(challanMonthIndex + 1).padStart(2, '0');
+                const challanYearStr = String(challan.year);
+                
+                if (challanYearStr !== fYear || challanMonthStr !== fMonth) return false;
+            }
 
             // Status Filter
             if (statusFilter === 'Outstanding') {
@@ -116,11 +131,11 @@ const FeeCollectionPage: React.FC = () => {
             return dateB - dateA;
         });
 
-    }, [fees, studentMap, effectiveSchoolId, statusFilter, classFilter, searchTerm, sortBy, classMap]);
+    }, [fees, studentMap, effectiveSchoolId, statusFilter, classFilter, monthFilter, searchTerm, sortBy, classMap]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter, classFilter, sortBy]);
+    }, [searchTerm, statusFilter, classFilter, monthFilter, sortBy]);
 
     const totalPages = Math.ceil(filteredChallans.length / ROWS_PER_PAGE);
     const paginatedChallans = useMemo(() => {
@@ -159,6 +174,15 @@ const FeeCollectionPage: React.FC = () => {
 
     const showingFrom = filteredChallans.length > 0 ? (currentPage - 1) * ROWS_PER_PAGE + 1 : 0;
     const showingTo = Math.min(currentPage * ROWS_PER_PAGE, filteredChallans.length);
+
+    // Edit logic for History Component
+    const handleEditFromHistory = (challan: FeeChallan) => {
+        const student = studentMap.get(challan.studentId);
+        if (student) {
+            setChallanToManage({ challan, student, mode: 'edit' });
+            setViewHistoryStudent(null); // Close history modal to focus on edit
+        }
+    };
 
     return (
         <>
@@ -228,6 +252,25 @@ const FeeCollectionPage: React.FC = () => {
                 </Modal>
             )}
 
+            {/* Fee History Modal */}
+            <Modal
+                isOpen={!!viewHistoryStudent}
+                onClose={() => setViewHistoryStudent(null)}
+                title={`Fee History: ${viewHistoryStudent?.name}`}
+            >
+                <div className="max-h-[70vh] overflow-y-auto pr-1">
+                    {viewHistoryStudent && (
+                        <StudentFeeHistory 
+                            studentId={viewHistoryStudent.id} 
+                            onEditChallan={handleEditFromHistory} 
+                        />
+                    )}
+                </div>
+                <div className="flex justify-end mt-4">
+                    <button onClick={() => setViewHistoryStudent(null)} className="btn-secondary">Close</button>
+                </div>
+            </Modal>
+
             <div className="p-4 sm:p-6 space-y-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h1 className="text-2xl font-bold text-secondary-900 dark:text-white">Fee Collection</h1>
@@ -240,8 +283,42 @@ const FeeCollectionPage: React.FC = () => {
                      </div>
                 </div>
 
-                <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg shadow-md grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div className="md:col-span-1">
+                {/* Filters Reordered: Search, Class, CHALLAN Month, Challan Status, Sort By, Payment Date */}
+                <div className="bg-white dark:bg-secondary-800 p-4 rounded-lg shadow-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+                    <div className="col-span-1">
+                        <label htmlFor="student-search" className="input-label">Search</label>
+                        <input
+                            id="student-search"
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="input-field"
+                            placeholder="Name, ID, Challan #"
+                        />
+                    </div>
+                    <div className="col-span-1">
+                        <label htmlFor="class-filter" className="input-label">Class</label>
+                         <select
+                            id="class-filter"
+                            value={classFilter}
+                            onChange={e => setClassFilter(e.target.value)}
+                            className="input-field"
+                        >
+                            <option value="all">All Classes</option>
+                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
+                        </select>
+                    </div>
+                    <div className="col-span-1">
+                        <label htmlFor="month-filter" className="input-label">Challan Month</label>
+                        <input 
+                            type="month" 
+                            id="month-filter" 
+                            value={monthFilter} 
+                            onChange={e => setMonthFilter(e.target.value)} 
+                            className="input-field"
+                        />
+                    </div>
+                    <div className="col-span-1">
                         <label htmlFor="status-filter" className="input-label">Challan Status</label>
                         <select
                             id="status-filter"
@@ -256,30 +333,7 @@ const FeeCollectionPage: React.FC = () => {
                             <option value="Partial">Partial Paid</option>
                         </select>
                     </div>
-                     <div className="md:col-span-1">
-                        <label htmlFor="class-filter" className="input-label">Class</label>
-                         <select
-                            id="class-filter"
-                            value={classFilter}
-                            onChange={e => setClassFilter(e.target.value)}
-                            className="input-field"
-                        >
-                            <option value="all">All Classes</option>
-                            {schoolClasses.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
-                        </select>
-                    </div>
-                    <div className="md:col-span-1">
-                        <label htmlFor="student-search" className="input-label">Search</label>
-                        <input
-                            id="student-search"
-                            type="text"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="input-field"
-                            placeholder="Student Name, ID, or Challan #"
-                        />
-                    </div>
-                    <div className="md:col-span-1">
+                    <div className="col-span-1">
                         <label htmlFor="sort-by" className="input-label">Sort By</label>
                         <select
                             id="sort-by"
@@ -293,7 +347,7 @@ const FeeCollectionPage: React.FC = () => {
                             <option value="class">Class</option>
                         </select>
                     </div>
-                    <div className="md:col-span-1">
+                    <div className="col-span-1">
                         <label htmlFor="session-date" className="input-label">Payment Date</label>
                         <input
                             id="session-date"
@@ -357,23 +411,28 @@ const FeeCollectionPage: React.FC = () => {
                                                 <Badge color={getStatusColor(challan.status)}>{challan.status}</Badge>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') ? (
-                                                    <button 
-                                                        onClick={() => setChallanToManage({ challan, student, mode: 'pay' })} 
-                                                        className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-                                                    >
-                                                        Record Payment
+                                                <div className="flex flex-col gap-1 items-center">
+                                                    {canManage && (challan.status === 'Unpaid' || challan.status === 'Partial') ? (
+                                                        <button 
+                                                            onClick={() => setChallanToManage({ challan, student, mode: 'pay' })} 
+                                                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                                                        >
+                                                            Record Payment
+                                                        </button>
+                                                    ) : (
+                                                        <div className="flex justify-center gap-2">
+                                                            {canManage && (challan.status === 'Paid' || challan.status === 'Partial') && (
+                                                                <button onClick={() => setChallanToManage({ challan, student, mode: 'edit' })} className="text-xs text-primary-600 hover:underline">Record Payment</button>
+                                                            )}
+                                                            {canManage && challan.status !== 'Paid' && challan.status !== 'Cancelled' && (
+                                                                <button onClick={() => setChallanToCancel(challan)} className="text-xs text-red-600 hover:underline">Cancel</button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <button onClick={() => setViewHistoryStudent(student)} className="text-xs text-secondary-500 hover:text-primary-600 hover:underline">
+                                                        View Fee History
                                                     </button>
-                                                ) : (
-                                                    <div className="flex justify-center gap-2">
-                                                        {canManage && (challan.status === 'Paid' || challan.status === 'Partial') && (
-                                                            <button onClick={() => setChallanToManage({ challan, student, mode: 'edit' })} className="text-xs text-primary-600 hover:underline">Record Payment</button>
-                                                        )}
-                                                        {canManage && challan.status !== 'Paid' && challan.status !== 'Cancelled' && (
-                                                             <button onClick={() => setChallanToCancel(challan)} className="text-xs text-red-600 hover:underline">Cancel</button>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
