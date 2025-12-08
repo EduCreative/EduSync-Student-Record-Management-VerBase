@@ -8,7 +8,7 @@ import { toCamelCase, toSnakeCase } from '../utils/caseConverter';
 import type { Table } from 'dexie';
 import { useTheme } from './ThemeContext';
 
-const AlertTriangleIcon: React.FC<{className?: string}> = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const AlertTriangleIcon: React.FC<{ className?: string }> = ({ className }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
 
 const UnrecoverableErrorScreen: React.FC<{
     error: string;
@@ -117,7 +117,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { user, activeSchoolId } = useAuth();
     const { showToast } = useToast();
     const { syncMode } = useTheme();
-    
+
     const [loading, setLoading] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -169,10 +169,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const fetchTable = async (tableName: string, options: { order?: string, limit?: number, filterBySchool?: boolean } = {}) => {
                 let query = supabase.from(tableName).select('*');
-                
+
                 if (options.filterBySchool) {
                     const isAdminManagingUsers = (tableName === 'profiles' && (user.role === UserRole.Admin || (user.role === UserRole.Owner && activeSchoolId)));
-            
+
                     if (effectiveSchoolId) {
                         if (isAdminManagingUsers) {
                             query = query.or(`school_id.eq.${effectiveSchoolId},school_id.is.null`);
@@ -186,15 +186,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         return [];
                     }
                 }
-                
+
                 if (options.order) query = query.order(options.order, { ascending: false });
                 if (options.limit) query = query.limit(options.limit);
-                
+
                 const { data, error } = await query;
                 if (error) throw new Error(`Failed to fetch ${tableName}: ${error.message}`);
                 return toCamelCase(data || []);
             };
-            
+
             const fetchDependentInChunks = async (tableName: string, studentIds: string[]) => {
                 if (studentIds.length === 0) return [];
 
@@ -225,7 +225,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     }
                     return [];
                 };
-                
+
                 const worker = async () => {
                     while (chunkQueue.length > 0) {
                         const chunk = chunkQueue.shift();
@@ -235,10 +235,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         allData.push(...data);
                     }
                 };
-                
+
                 const workers = Array(MAX_CONCURRENT_REQUESTS).fill(null).map(() => worker());
                 await Promise.all(workers);
-                
+
                 return toCamelCase(allData);
             };
 
@@ -312,7 +312,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     ];
                     await Promise.all(allPuts);
                 });
-                
+
                 setSchools(await db.schools.toArray());
                 setUsers(await db.users.toArray());
                 setClasses(await db.classes.toArray());
@@ -370,7 +370,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setLogs(prev => [toCamelCase(data[0]) as ActivityLog, ...prev]);
         }
     }, [user, activeSchoolId]);
-    
+
     const getSchoolById = useCallback((schoolId: string) => schools.find(s => s.id === schoolId), [schools]);
 
     const updateUser = async (updatedUser: User) => {
@@ -386,41 +386,136 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await supabase.from('profiles').update({ status: 'Inactive' }).eq('id', userId);
         await fetchData();
     };
-    
+
     // Fixed: Prefixed unused variables with _ to fix build errors
     const addUserByAdmin = async (_userData: any) => { /* implementation */ };
-    
-    const addStudent = async (data: any) => { 
-        await supabase.from('students').insert(toSnakeCase({ ...data, status: 'Active' })); 
-        await fetchData(); 
+
+    const addStudent = async (data: Omit<Student, 'id' | 'status'>) => {
+        const studentData = { ...data, status: 'Active' };
+        const { data: inserted, error } = await supabase.from('students').insert(toSnakeCase(studentData)).select().single();
+        if (error) throw error;
+        const newStudent = toCamelCase(inserted) as Student;
+        setStudents(prev => [...prev, newStudent]);
+        if (syncMode === 'offline') await db.students.put(newStudent);
+        addLog('Add Student', `Added new student: ${newStudent.name}`);
     };
-    const updateStudent = async (data: any) => { 
-        await supabase.from('students').update(toSnakeCase(data)).eq('id', data.id); 
-        await fetchData(); 
+
+    const updateStudent = async (updatedStudent: Student) => {
+        const { data: updated, error } = await supabase.from('students').update(toSnakeCase(updatedStudent)).eq('id', updatedStudent.id).select().single();
+        if (error) throw error;
+        const newStudent = toCamelCase(updated) as Student;
+        setStudents(prev => prev.map(s => s.id === newStudent.id ? newStudent : s));
+        if (syncMode === 'offline') await db.students.put(newStudent);
+        addLog('Update Student', `Updated student: ${newStudent.name}`);
     };
-    const deleteStudent = async (id: string) => { 
-        await supabase.from('students').update({ status: 'Deleted' }).eq('id', id); 
-        await fetchData(); 
+
+    const deleteStudent = async (studentId: string) => {
+        const { error } = await supabase.from('students').update({ status: 'Deleted' }).eq('id', studentId);
+        if (error) throw error;
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, status: 'Deleted' } : s));
+        if (syncMode === 'offline') {
+            const student = students.find(s => s.id === studentId);
+            if (student) await db.students.put({ ...student, status: 'Deleted' });
+        }
+        addLog('Delete Student', `Marked student ID ${studentId} as Deleted`);
     };
-    
+
     // Fixed: Prefixed unused variables with _ to fix build errors in placeholders
-    const addClass = async (_data: any) => { /* impl */ await fetchData(); };
-    const updateClass = async (_data: any) => { /* impl */ await fetchData(); };
-    const deleteClass = async (_id: string) => { /* impl */ await fetchData(); };
-    const addSubject = async (_data: any) => { /* impl */ await fetchData(); };
-    const updateSubject = async (_data: any) => { /* impl */ await fetchData(); };
-    const deleteSubject = async (_id: string) => { /* impl */ await fetchData(); };
-    const addExam = async (_data: any) => { /* impl */ await fetchData(); };
-    const updateExam = async (_data: any) => { /* impl */ await fetchData(); };
-    const deleteExam = async (_id: string) => { /* impl */ await fetchData(); };
-    const setAttendance = async (_date: string, _data: any) => { /* impl */ await fetchData(); };
+    const addClass = async (classData: Omit<Class, 'id'>) => {
+        const { data: inserted, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select().single();
+        if (error) throw error;
+        const newClass = toCamelCase(inserted) as Class;
+        setClasses(prev => [...prev, newClass]);
+        if (syncMode === 'offline') await db.classes.put(newClass);
+    };
+    const updateClass = async (updatedClass: Class) => {
+        const { data: updated, error } = await supabase.from('classes').update(toSnakeCase(updatedClass)).eq('id', updatedClass.id).select().single();
+        if (error) throw error;
+        const newClass = toCamelCase(updated) as Class;
+        setClasses(prev => prev.map(c => c.id === newClass.id ? newClass : c));
+        if (syncMode === 'offline') await db.classes.put(newClass);
+    };
+    const deleteClass = async (classId: string) => {
+        const { error } = await supabase.from('classes').delete().eq('id', classId);
+        if (error) throw error;
+        setClasses(prev => prev.filter(c => c.id !== classId));
+        if (syncMode === 'offline') await db.classes.delete(classId);
+    };
+    const addSubject = async (subjectData: Omit<Subject, 'id'>) => {
+        const { data: inserted, error } = await supabase.from('subjects').insert(toSnakeCase(subjectData)).select().single();
+        if (error) throw error;
+        const newSubject = toCamelCase(inserted) as Subject;
+        setSubjects(prev => [...prev, newSubject]);
+        if (syncMode === 'offline') await db.subjects.put(newSubject);
+    };
+    const updateSubject = async (updatedSubject: Subject) => {
+        const { data: updated, error } = await supabase.from('subjects').update(toSnakeCase(updatedSubject)).eq('id', updatedSubject.id).select().single();
+        if (error) throw error;
+        const newSubject = toCamelCase(updated) as Subject;
+        setSubjects(prev => prev.map(s => s.id === newSubject.id ? newSubject : s));
+        if (syncMode === 'offline') await db.subjects.put(newSubject);
+    };
+    const deleteSubject = async (subjectId: string) => {
+        const { error } = await supabase.from('subjects').delete().eq('id', subjectId);
+        if (error) throw error;
+        setSubjects(prev => prev.filter(s => s.id !== subjectId));
+        if (syncMode === 'offline') await db.subjects.delete(subjectId);
+    };
+    const addExam = async (examData: Omit<Exam, 'id'>) => {
+        const { data: inserted, error } = await supabase.from('exams').insert(toSnakeCase(examData)).select().single();
+        if (error) throw error;
+        const newExam = toCamelCase(inserted) as Exam;
+        setExams(prev => [...prev, newExam]);
+        if (syncMode === 'offline') await db.exams.put(newExam);
+    };
+    const updateExam = async (updatedExam: Exam) => {
+        const { data: updated, error } = await supabase.from('exams').update(toSnakeCase(updatedExam)).eq('id', updatedExam.id).select().single();
+        if (error) throw error;
+        const newExam = toCamelCase(updated) as Exam;
+        setExams(prev => prev.map(e => e.id === newExam.id ? newExam : e));
+        if (syncMode === 'offline') await db.exams.put(newExam);
+    };
+    const deleteExam = async (examId: string) => {
+        const { error } = await supabase.from('exams').delete().eq('id', examId);
+        if (error) throw error;
+        setExams(prev => prev.filter(e => e.id !== examId));
+        if (syncMode === 'offline') await db.exams.delete(examId);
+    };
+    const setAttendance = async (date: string, attendanceData: { studentId: string; status: 'Present' | 'Absent' | 'Leave' }[]) => {
+        const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
+        const records = attendanceData.map(a => ({
+            student_id: a.studentId,
+            date,
+            status: a.status,
+            school_id: effectiveSchoolId
+        }));
+
+        // Upsert attendance
+        const { data, error } = await supabase.from('attendance').upsert(records, { onConflict: 'student_id,date' }).select();
+        if (error) throw error;
+
+        const newRecords = toCamelCase(data) as Attendance[];
+
+        setAttendanceState(prev => {
+            // efficient merge? or just simple replace since date/student_id is unique
+            // We need to remove old records for this date/student combo and add new ones
+            // But since it's a list, we can just filter out ones that match studentId+date and append new ones
+            const map = new Map(prev.map(r => [`${r.studentId}-${r.date}`, r]));
+            newRecords.forEach(r => map.set(`${r.studentId}-${r.date}`, r));
+            return Array.from(map.values());
+        });
+
+        if (syncMode === 'offline') {
+            await db.attendance.bulkPut(newRecords);
+        }
+    };
 
     const recalculatePaymentStatuses = async (studentId: string) => {
         const student = students.find(s => s.id === studentId);
         if (!student) return;
 
         const studentChallans = fees.filter(f => f.studentId === studentId && f.status !== 'Cancelled');
-        
+
         const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         studentChallans.sort((a, b) => {
             const dateA = new Date(a.year, months.indexOf(a.month));
@@ -436,9 +531,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         for (const challan of studentChallans) {
             const challanTotal = challan.feeItems.reduce((sum, item) => sum + item.amount, 0);
-            
+
             let newStatus: FeeChallan['status'] = 'Unpaid';
-            
+
             if (totalCredit >= challanTotal) {
                 newStatus = 'Paid';
                 totalCredit -= challanTotal;
@@ -464,19 +559,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }));
         }
     };
-    
+
     const recordFeePayment = async (challanId: string, amount: number, discount: number, paidDate: string) => {
         const challan = fees.find(f => f.id === challanId);
         if (!challan) throw new Error('Challan not found.');
 
         const currentHistory = challan.paymentHistory || [];
-        
+
         if (challan.paidAmount > 0 && currentHistory.length === 0) {
-             currentHistory.push({
-                 amount: challan.paidAmount,
-                 date: challan.paidDate || paidDate, 
-                 method: 'Legacy'
-             });
+            currentHistory.push({
+                amount: challan.paidAmount,
+                date: challan.paidDate || paidDate,
+                method: 'Legacy'
+            });
         }
 
         const newPaymentEntry: PaymentRecord = { amount: amount, date: paidDate, method: 'Manual' };
@@ -487,11 +582,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newStatus: FeeChallan['status'] = newPaidAmount >= totalPayable ? 'Paid' : 'Partial';
 
         const { data, error } = await supabase.from('fee_challans')
-            .update({ 
-                paid_amount: newPaidAmount, 
-                discount, 
-                status: newStatus, 
-                paid_date: paidDate, 
+            .update({
+                paid_amount: newPaidAmount,
+                discount,
+                status: newStatus,
+                paid_date: paidDate,
                 payment_history: updatedHistory
             })
             .eq('id', challanId)
@@ -552,7 +647,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addLog('Payment Edited', `Payment edited for challan #${challan.challanNumber}.`);
         showToast('Success', 'Payment updated successfully.');
     };
-    
+
     const cancelChallan = async (challanId: string) => {
         const challan = fees.find(f => f.id === challanId);
         if (!challan) throw new Error('Challan not found.');
@@ -587,7 +682,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const effectiveSchoolId = user?.role === UserRole.Owner && activeSchoolId ? activeSchoolId : user?.schoolId;
             const tuitionFeeHead = feeHeads.find(fh => fh.schoolId === effectiveSchoolId && fh.name.toLowerCase() === 'tuition fee');
 
-            const monthIndex = new Date(Date.parse(month +" 1, 2012")).getMonth();
+            const monthIndex = new Date(Date.parse(month + " 1, 2012")).getMonth();
             const defaultDueDate = new Date(year, monthIndex, 10).toISOString().split('T')[0];
             const dueDate = dueDateOverride || defaultDueDate;
 
@@ -599,7 +694,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (alreadyExists) continue;
 
                 const studentFees = fees.filter(f => f.studentId === studentId && f.status !== 'Cancelled');
-                
+
                 const totalFeeCharged = studentFees.reduce((sum, f) => {
                     const feeSum = f.feeItems.reduce((acc, item) => acc + item.amount, 0);
                     return sum + feeSum;
@@ -611,7 +706,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 const openingBalance = student.openingBalance || 0;
                 let previousBalance = (openingBalance + totalFeeCharged) - totalPaidAndDiscount;
-                
+
                 if (previousBalance < 0) previousBalance = 0;
 
                 const studentFeeStructureMap = new Map((student.feeStructure || []).map(item => [item.feeHeadId, item.amount]));
@@ -629,10 +724,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 const currentMonthTotal = feeItems.reduce((sum, item) => sum + item.amount, 0);
                 const totalAmount = currentMonthTotal + previousBalance;
-                
+
                 const monthNum = (monthIndex + 1).toString().padStart(2, '0');
                 const challanNumber = `${year}${monthNum}-${student.rollNumber}`;
-                
+
                 challansToCreate.push({
                     challanNumber,
                     studentId,
@@ -654,13 +749,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (challansToCreate.length > 0) {
                 const { data, error } = await supabase.from('fee_challans').insert(toSnakeCase(challansToCreate)).select();
                 if (error) throw new Error(error.message);
-                
+
                 const newChallans = toCamelCase(data) as FeeChallan[];
                 const count = newChallans.length;
 
                 setFees(prevFees => [...prevFees, ...newChallans]);
                 if (syncMode === 'offline') {
-                   await db.fees.bulkPut(newChallans);
+                    await db.fees.bulkPut(newChallans);
                 }
 
                 showToast('Success', `${count} new challans generated.`, 'success');
@@ -714,20 +809,91 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             throw error;
         }
     };
-    
+
     // Fixed: Prefixed unused variables with _ to fix build errors in placeholders
-    const addFeeHead = async (_d: any) => { /* impl */ await fetchData(); };
-    const updateFeeHead = async (_d: any) => { /* impl */ await fetchData(); };
-    const deleteFeeHead = async (_id: string) => { /* impl */ await fetchData(); };
-    const issueLeavingCertificate = async (_id: string, _d: any) => { /* impl */ await fetchData(); };
-    const saveResults = async (_r: any) => { /* impl */ await fetchData(); };
+    const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
+        const { data: inserted, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
+        if (error) throw error;
+        const newHead = toCamelCase(inserted) as FeeHead;
+        setFeeHeads(prev => [...prev, newHead]);
+        if (syncMode === 'offline') await db.feeHeads.put(newHead);
+    };
+    const updateFeeHead = async (updatedFeeHead: FeeHead) => {
+        const { data: updated, error } = await supabase.from('fee_heads').update(toSnakeCase(updatedFeeHead)).eq('id', updatedFeeHead.id).select().single();
+        if (error) throw error;
+        const newHead = toCamelCase(updated) as FeeHead;
+        setFeeHeads(prev => prev.map(h => h.id === newHead.id ? newHead : h));
+        if (syncMode === 'offline') await db.feeHeads.put(newHead);
+    };
+    const deleteFeeHead = async (feeHeadId: string) => {
+        const { error } = await supabase.from('fee_heads').delete().eq('id', feeHeadId);
+        if (error) throw error;
+        setFeeHeads(prev => prev.filter(h => h.id !== feeHeadId));
+        if (syncMode === 'offline') await db.feeHeads.delete(feeHeadId);
+    };
+    const issueLeavingCertificate = async (studentId: string, details: { dateOfLeaving: string; reasonForLeaving: string; conduct: Student['conduct']; progress?: string; placeOfBirth?: string; }) => {
+        const updateData = {
+            status: 'Left',
+            date_of_leaving: details.dateOfLeaving,
+            reason_for_leaving: details.reasonForLeaving,
+            conduct: details.conduct,
+            progress: details.progress,
+            place_of_birth: details.placeOfBirth
+        };
+        const { data: updated, error } = await supabase.from('students').update(updateData).eq('id', studentId).select().single();
+        if (error) throw error;
+        const newStudent = toCamelCase(updated) as Student;
+        setStudents(prev => prev.map(s => s.id === newStudent.id ? newStudent : s));
+        if (syncMode === 'offline') await db.students.put(newStudent);
+        addLog('Leaving Certificate', `Issued leaving certificate for student ID ${studentId}`);
+    };
+    const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
+        if (resultsToSave.length === 0) return;
+        const { data, error } = await supabase.from('results').upsert(toSnakeCase(resultsToSave), { onConflict: 'student_id,exam_id,subject_id' }).select();
+        if (error) throw error;
+        const newResults = toCamelCase(data) as Result[];
+
+        setResults(prev => {
+            const map = new Map(prev.map(r => [`${r.studentId}-${r.examId}-${r.subjectId}`, r]));
+            newResults.forEach(r => map.set(`${r.studentId}-${r.examId}-${r.subjectId}`, r));
+            return Array.from(map.values());
+        });
+
+        if (syncMode === 'offline') await db.results.bulkPut(newResults);
+        addLog('Results Saved', `Saved ${newResults.length} results.`);
+    };
     const addSchool = async (_n: any, _a: any, _l: any) => { /* impl */ };
     const updateSchool = async (_d: any) => { /* impl */ };
     const deleteSchool = async (_id: string) => { /* impl */ };
-    const addEvent = async (_d: any) => { /* impl */ await fetchData(); };
-    const updateEvent = async (_d: any) => { /* impl */ await fetchData(); };
-    const deleteEvent = async (_id: string) => { /* impl */ await fetchData(); };
-    const bulkAddStudents = async (_d: any) => { /* impl */ };
+    const addEvent = async (eventData: Omit<SchoolEvent, 'id'>) => {
+        const { data: inserted, error } = await supabase.from('school_events').insert(toSnakeCase(eventData)).select().single();
+        if (error) throw error;
+        const newEvent = toCamelCase(inserted) as SchoolEvent;
+        setEvents(prev => [...prev, newEvent]);
+        if (syncMode === 'offline') await db.events.put(newEvent);
+    };
+    const updateEvent = async (updatedEvent: SchoolEvent) => {
+        const { data: updated, error } = await supabase.from('school_events').update(toSnakeCase(updatedEvent)).eq('id', updatedEvent.id).select().single();
+        if (error) throw error;
+        const newEvent = toCamelCase(updated) as SchoolEvent;
+        setEvents(prev => prev.map(e => e.id === newEvent.id ? newEvent : e));
+        if (syncMode === 'offline') await db.events.put(newEvent);
+    };
+    const deleteEvent = async (eventId: string) => {
+        const { error } = await supabase.from('school_events').delete().eq('id', eventId);
+        if (error) throw error;
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        if (syncMode === 'offline') await db.events.delete(eventId);
+    };
+    const bulkAddStudents = async (studentsData: Omit<Student, 'id' | 'status'>[]) => {
+        const dataToInsert = studentsData.map(s => toSnakeCase({ ...s, status: 'Active' }));
+        const { data: inserted, error } = await supabase.from('students').insert(dataToInsert).select();
+        if (error) throw error;
+        const newStudents = toCamelCase(inserted) as Student[];
+        setStudents(prev => [...prev, ...newStudents]);
+        if (syncMode === 'offline') await db.students.bulkPut(newStudents);
+        addLog('Bulk Add Students', `Added ${newStudents.length} students via bulk import.`);
+    };
     const bulkAddUsers = async (_d: any) => { /* impl */ };
     const bulkAddClasses = async (_d: any) => { /* impl */ };
     const backupData = async () => { /* impl */ };
