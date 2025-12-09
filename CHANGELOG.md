@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-02-21
+
+### Fixed
+- **Build Error:** Resolved TypeScript compilation errors in `DataContext.tsx` where `Result` properties `exam` and `subject` were incorrectly referenced as `examId` and `subjectId`.
+- **Data Integrity:** Ensured `saveResults` correctly uses string names for exams and subjects, aligning with the `Result` interface and the frontend implementation.
+
 ## [2.3.0] - 2025-02-21
 
 ### Changed

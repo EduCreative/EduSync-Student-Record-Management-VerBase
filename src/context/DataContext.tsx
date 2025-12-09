@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { School, User, UserRole, Class, Student, Attendance, FeeChallan, Result, ActivityLog, FeeHead, SchoolEvent, Subject, Exam, PaymentRecord } from '../types';
 import { useAuth } from './AuthContext';
@@ -849,13 +850,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     const saveResults = async (resultsToSave: Omit<Result, 'id'>[]) => {
         if (resultsToSave.length === 0) return;
-        const { data, error } = await supabase.from('results').upsert(toSnakeCase(resultsToSave), { onConflict: 'student_id,exam_id,subject_id' }).select();
+        const { data, error } = await supabase.from('results').upsert(toSnakeCase(resultsToSave), { onConflict: 'student_id,exam,subject' }).select();
         if (error) throw error;
         const newResults = toCamelCase(data) as Result[];
 
         setResults(prev => {
-            const map = new Map(prev.map(r => [`${r.studentId}-${r.examId}-${r.subjectId}`, r]));
-            newResults.forEach(r => map.set(`${r.studentId}-${r.examId}-${r.subjectId}`, r));
+            const map = new Map(prev.map(r => [`${r.studentId}-${r.exam}-${r.subject}`, r]));
+            newResults.forEach(r => map.set(`${r.studentId}-${r.exam}-${r.subject}`, r));
             return Array.from(map.values());
         });
 
