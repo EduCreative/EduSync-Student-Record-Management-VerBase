@@ -388,7 +388,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await fetchData();
     };
 
-    // Fixed: Prefixed unused variables with _ to fix build errors
     const addUserByAdmin = async (_userData: any) => { /* implementation */ };
 
     const addStudent = async (data: Omit<Student, 'id' | 'status'>) => {
@@ -421,7 +420,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addLog('Delete Student', `Marked student ID ${studentId} as Deleted`);
     };
 
-    // Fixed: Prefixed unused variables with _ to fix build errors in placeholders
     const addClass = async (classData: Omit<Class, 'id'>) => {
         const { data: inserted, error } = await supabase.from('classes').insert(toSnakeCase(classData)).select().single();
         if (error) throw error;
@@ -491,16 +489,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             school_id: effectiveSchoolId
         }));
 
-        // Upsert attendance
         const { data, error } = await supabase.from('attendance').upsert(records, { onConflict: 'student_id,date' }).select();
         if (error) throw error;
 
         const newRecords = toCamelCase(data) as Attendance[];
 
         setAttendanceState(prev => {
-            // efficient merge? or just simple replace since date/student_id is unique
-            // We need to remove old records for this date/student combo and add new ones
-            // But since it's a list, we can just filter out ones that match studentId+date and append new ones
             const map = new Map(prev.map(r => [`${r.studentId}-${r.date}`, r]));
             newRecords.forEach(r => map.set(`${r.studentId}-${r.date}`, r));
             return Array.from(map.values());
@@ -644,7 +638,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         await recalculatePaymentStatuses(challan.studentId);
 
-        // Fixed: Removed unused 'student' variable assignment
         addLog('Payment Edited', `Payment edited for challan #${challan.challanNumber}.`);
         showToast('Success', 'Payment updated successfully.');
     };
@@ -811,7 +804,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    // Fixed: Prefixed unused variables with _ to fix build errors in placeholders
     const addFeeHead = async (feeHeadData: Omit<FeeHead, 'id'>) => {
         const { data: inserted, error } = await supabase.from('fee_heads').insert(toSnakeCase(feeHeadData)).select().single();
         if (error) throw error;

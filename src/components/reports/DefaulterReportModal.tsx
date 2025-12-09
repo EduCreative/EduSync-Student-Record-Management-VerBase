@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useData } from '../../context/DataContext';
@@ -13,10 +14,14 @@ interface DefaulterReportModalProps {
     onClose: () => void;
 }
 
+const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
 const availableColumns = {
     fatherName: "Father's Name",
-    amountDue: "Total Payable",
-    paid: "Total Paid"
+    amountDue: "Payable", // Changed label slightly to be generic
+    paid: "Paid"
 };
 type ColumnKey = keyof typeof availableColumns;
 
@@ -49,7 +54,13 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const { showPrintPreview } = usePrint();
 
     const [classId, setClassId] = useState('all');
-    const [sortBy, setSortBy] = useState('studentName'); // 'studentName', 'rollNumber', 'balance'
+    const [sortBy, setSortBy] = useState('rollNumber'); // 'rollNumber' (Student ID)
+    
+    // New state for report type
+    const [reportType, setReportType] = useState<'cumulative' | 'monthly'>('cumulative');
+    const [month, setMonth] = useState(months[new Date().getMonth()]);
+    const [year, setYear] = useState(currentYear);
+
     const [selectedColumns, setSelectedColumns] = useState<Record<ColumnKey, boolean>>({
         fatherName: true,
         amountDue: true,
@@ -77,40 +88,74 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
 
         const studentSummaries: StudentDefaulterSummary[] = [];
 
-        // 2. Calculate Ledger Balance for each student to determine defaulter status
-        relevantStudents.forEach(student => {
-            const studentFees = fees.filter(f => f.studentId === student.id && f.status !== 'Cancelled');
-            
-            // Calculate Total Fees Charged (Excluding double-counted arrears)
-            // Formula: Sum(Challan Total - Previous Balance) + Student Opening Balance
-            const totalFeeCharged = studentFees.reduce((sum, f) => {
-                // Determine the net fee for this specific month (removing carry-over)
-                const currentMonthFee = f.totalAmount - (f.previousBalance || 0);
-                return sum + currentMonthFee;
-            }, 0) + (student.openingBalance || 0);
+        if (reportType === 'cumulative') {
+            // --- CUMULATIVE LOGIC (All Time) ---
+            relevantStudents.forEach(student => {
+                const studentFees = fees.filter(f => f.studentId === student.id && f.status !== 'Cancelled');
+                
+                // Calculate Total Fees Charged (Excluding double-counted arrears)
+                // Formula: Sum(Challan Total - Previous Balance) + Student Opening Balance
+                const totalFeeCharged = studentFees.reduce((sum, f) => {
+                    // Determine the net fee for this specific month (removing carry-over)
+                    const currentMonthFee = f.totalAmount - (f.previousBalance || 0);
+                    return sum + currentMonthFee;
+                }, 0) + (student.openingBalance || 0);
 
-            const totalPaid = studentFees.reduce((sum, f) => sum + f.paidAmount, 0);
-            const totalDiscount = studentFees.reduce((sum, f) => sum + f.discount, 0);
-            
-            // Ledger Balance
-            const netBalance = totalFeeCharged - totalPaid - totalDiscount;
+                const totalPaid = studentFees.reduce((sum, f) => sum + f.paidAmount, 0);
+                const totalDiscount = studentFees.reduce((sum, f) => sum + f.discount, 0);
+                
+                // Ledger Balance
+                const netBalance = totalFeeCharged - totalPaid - totalDiscount;
 
-            // Only list students who actually owe money
-            if (netBalance > 0) {
-                studentSummaries.push({
-                    studentId: student.id,
-                    rollNumber: student.rollNumber,
-                    studentName: student.name,
-                    fatherName: student.fatherName,
-                    classId: student.classId,
-                    className: classMap.get(student.classId) || 'N/A',
-                    // "Amount Due" in the report represents Total Net Payable (Charges - Discounts)
-                    amountDue: totalFeeCharged - totalDiscount, 
-                    paid: totalPaid,
-                    balance: netBalance,
-                });
-            }
-        });
+                // Only list students who actually owe money
+                if (netBalance > 0) {
+                    studentSummaries.push({
+                        studentId: student.id,
+                        rollNumber: student.rollNumber,
+                        studentName: student.name,
+                        fatherName: student.fatherName,
+                        classId: student.classId,
+                        className: classMap.get(student.classId) || 'N/A',
+                        amountDue: totalFeeCharged - totalDiscount, 
+                        paid: totalPaid,
+                        balance: netBalance,
+                    });
+                }
+            });
+        } else {
+            // --- SPECIFIC MONTH LOGIC ---
+            relevantStudents.forEach(student => {
+                const challan = fees.find(f => 
+                    f.studentId === student.id && 
+                    f.month === month && 
+                    f.year === year && 
+                    f.status !== 'Cancelled'
+                );
+
+                // We consider them a defaulter for this month if the challan exists and is not 'Paid'
+                if (challan && challan.status !== 'Paid') {
+                    // Calculate "Current Month Only" figures
+                    const currentDues = challan.totalAmount - (challan.previousBalance || 0);
+                    const netPayable = currentDues - (challan.discount || 0);
+                    const paid = challan.paidAmount;
+                    
+                    // Simple balance for this view: Payable - Paid. 
+                    const balance = netPayable - paid;
+
+                    studentSummaries.push({
+                        studentId: student.id,
+                        rollNumber: student.rollNumber,
+                        studentName: student.name,
+                        fatherName: student.fatherName,
+                        classId: student.classId,
+                        className: classMap.get(student.classId) || 'N/A',
+                        amountDue: netPayable, 
+                        paid: paid,
+                        balance: balance,
+                    });
+                }
+            });
+        }
 
         // 3. Group by Class
         const groupedByClass = studentSummaries.reduce((acc, summary) => {
@@ -152,7 +197,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 });
                 return classGroup;
             });
-    }, [fees, students, classMap, effectiveSchoolId, classId, schoolClasses, sortBy]);
+    }, [fees, students, classMap, effectiveSchoolId, classId, schoolClasses, sortBy, reportType, month, year]);
     
     const grandTotal = useMemo(() => {
         return reportData.reduce((acc, classGroup) => {
@@ -167,12 +212,16 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const handleGenerate = () => {
         const activeColumns = Object.keys(selectedColumns).filter(k => selectedColumns[k as ColumnKey]) as ColumnKey[];
         const subtotalColspan = 3 + (activeColumns.includes('fatherName') ? 1 : 0);
+        
+        const subtitle = reportType === 'cumulative' 
+            ? `Cumulative Defaulters (All Time) - Class: ${classId === 'all' ? 'All Classes' : classMap.get(classId) || ''}`
+            : `Defaulters for ${month} ${year} (Current Dues Only) - Class: ${classId === 'all' ? 'All Classes' : classMap.get(classId) || ''}`;
 
         const content = (
             <PrintableReportLayout
                 school={school}
                 title="Fee Defaulter Report"
-                subtitle={`For Class: ${classId === 'all' ? 'All Classes' : classMap.get(classId) || ''}`}
+                subtitle={subtitle}
             >
                 {reportData.map((classGroup) => (
                     <div key={classGroup.classId} className="class-group-container mb-6">
@@ -184,8 +233,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                                     <th className="py-0 px-1 text-left">Student ID</th>
                                     <th className="py-0 px-1 text-left">Student Name</th>
                                     {activeColumns.includes('fatherName') && <th className="py-0 px-1 text-left">Father Name</th>}
-                                    {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">Total Payable</th>}
-                                    {activeColumns.includes('paid') && <th className="py-0 px-1 text-right">Total Paid</th>}
+                                    {activeColumns.includes('amountDue') && <th className="py-0 px-1 text-right">{reportType === 'monthly' ? 'Current Payable' : 'Total Payable'}</th>}
+                                    {activeColumns.includes('paid') && <th className="py-0 px-1 text-right">{reportType === 'monthly' ? 'Paid (This Month)' : 'Total Paid'}</th>}
                                     <th className="py-0 px-1 text-right">Balance</th>
                                 </tr>
                             </thead>
@@ -236,8 +285,8 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
     const handleExport = () => {
         const headers: string[] = ['Sr.', 'Student ID', 'Student Name'];
         if (selectedColumns.fatherName) headers.push("Father's Name");
-        if (selectedColumns.amountDue) headers.push('Total Payable');
-        if (selectedColumns.paid) headers.push('Total Paid');
+        if (selectedColumns.amountDue) headers.push(reportType === 'monthly' ? 'Current Payable' : 'Total Payable');
+        if (selectedColumns.paid) headers.push(reportType === 'monthly' ? 'Paid' : 'Total Paid');
         headers.push('Balance');
 
         const csvRows = [headers.join(',')];
@@ -258,8 +307,12 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                 subtotalRow[studentNameIndex] = 'Sub Total';
             }
     
-            if (headers.includes('Total Payable')) subtotalRow[headers.indexOf('Total Payable')] = classGroup.subtotals.amountDue;
-            if (headers.includes('Total Paid')) subtotalRow[headers.indexOf('Total Paid')] = classGroup.subtotals.paid;
+            // FIX: Using generic search for header names to handle dynamic labels
+            const payHeader = reportType === 'monthly' ? 'Current Payable' : 'Total Payable';
+            const paidHeader = reportType === 'monthly' ? 'Paid' : 'Total Paid';
+
+            if (headers.includes(payHeader)) subtotalRow[headers.indexOf(payHeader)] = classGroup.subtotals.amountDue;
+            if (headers.includes(paidHeader)) subtotalRow[headers.indexOf(paidHeader)] = classGroup.subtotals.paid;
             if (headers.includes('Balance')) subtotalRow[headers.indexOf('Balance')] = classGroup.subtotals.balance;
             csvRows.push(subtotalRow.map(escapeCsvCell).join(','));
             csvRows.push('');
@@ -272,8 +325,11 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
             if(studentNameIndex !== -1) {
                 grandTotalRow[studentNameIndex] = 'Grand Total';
             }
-            if (headers.includes('Total Payable')) grandTotalRow[headers.indexOf('Total Payable')] = grandTotal.amountDue;
-            if (headers.includes('Total Paid')) grandTotalRow[headers.indexOf('Total Paid')] = grandTotal.paid;
+            const payHeader = reportType === 'monthly' ? 'Current Payable' : 'Total Payable';
+            const paidHeader = reportType === 'monthly' ? 'Paid' : 'Total Paid';
+
+            if (headers.includes(payHeader)) grandTotalRow[headers.indexOf(payHeader)] = grandTotal.amountDue;
+            if (headers.includes(paidHeader)) grandTotalRow[headers.indexOf(paidHeader)] = grandTotal.paid;
             if (headers.includes('Balance')) grandTotalRow[headers.indexOf('Balance')] = grandTotal.balance;
             csvRows.push(grandTotalRow.map(escapeCsvCell).join(','));
         }
@@ -295,12 +351,58 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                     <div>
                         <label htmlFor="sort-by-defaulter" className="input-label">Sort By</label>
                         <select id="sort-by-defaulter" value={sortBy} onChange={e => setSortBy(e.target.value)} className="input-field">
-                            <option value="studentName">Student Name</option>
                             <option value="rollNumber">Student ID</option>
+                            <option value="studentName">Student Name</option>
                             <option value="balance">Balance Amount</option>
                         </select>
                     </div>
                 </div>
+
+                <div className="border-t dark:border-secondary-700 pt-3">
+                    <label className="input-label mb-2">Report Type</label>
+                    <div className="flex flex-wrap gap-4 items-center mb-3">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input 
+                                type="radio" 
+                                name="reportType" 
+                                value="cumulative" 
+                                checked={reportType === 'cumulative'} 
+                                onChange={() => setReportType('cumulative')}
+                                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300" 
+                            />
+                            <span className="text-sm">Cumulative (All Time)</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input 
+                                type="radio" 
+                                name="reportType" 
+                                value="monthly" 
+                                checked={reportType === 'monthly'} 
+                                onChange={() => setReportType('monthly')}
+                                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300" 
+                            />
+                            <span className="text-sm">Specific Month Only</span>
+                        </label>
+                    </div>
+
+                    {reportType === 'monthly' && (
+                        <div className="grid grid-cols-2 gap-4 bg-secondary-50 dark:bg-secondary-900/50 p-3 rounded-md">
+                            <div>
+                                <label className="input-label text-xs">Month</label>
+                                <select value={month} onChange={e => setMonth(e.target.value)} className="input-field py-1 text-sm">
+                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="input-label text-xs">Year</label>
+                                <select value={year} onChange={e => setYear(Number(e.target.value))} className="input-field py-1 text-sm">
+                                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                  <div>
                     <label className="input-label">Include Columns</label>
                     <div className="grid grid-cols-2 gap-2 p-3 border rounded-md dark:border-secondary-600">
@@ -313,7 +415,7 @@ const DefaulterReportModal: React.FC<DefaulterReportModalProps> = ({ isOpen, onC
                     </div>
                 </div>
                 <div className="p-4 bg-secondary-50 dark:bg-secondary-700 rounded-md text-center">
-                    <p className="text-sm">Found <strong className="text-lg">{reportData.reduce((sum, g) => sum + g.students.length, 0)}</strong> defaulter records for the selected class(es).</p>
+                    <p className="text-sm">Found <strong className="text-lg">{reportData.reduce((sum, g) => sum + g.students.length, 0)}</strong> defaulter records for the selected criteria.</p>
                 </div>
                 <div className="flex justify-end space-x-3 pt-2">
                     <button onClick={handleExport} className="btn-secondary" disabled={reportData.length === 0}>Export CSV</button>

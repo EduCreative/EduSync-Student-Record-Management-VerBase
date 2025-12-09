@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -34,7 +35,7 @@ const FeeCollectionPage: React.FC = () => {
     // Filters
     const [statusFilter, setStatusFilter] = useState<'Outstanding' | 'All' | 'Paid' | 'Unpaid' | 'Partial'>('Outstanding');
     const [classFilter, setClassFilter] = useState('all');
-    const [monthFilter, setMonthFilter] = useState(''); // Format: YYYY-MM
+    const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7)); // Format: YYYY-MM
     const [sortBy, setSortBy] = useState<'date' | 'name' | 'rollNumber' | 'class'>('date');
 
     // Single Challan Generation
